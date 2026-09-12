@@ -1,0 +1,144 @@
+@layer theme, base, vendor, app, components, utilities; /* the order is set by whichever file loads first — app/globals.css
+   explains the stack */
+/* In the components layer so a Tailwind utility can override it — see the
+   layer order in app/globals.css. */
+@layer components {
+
+/* This component stays CSS, deliberately.
+ *
+ * Half of it — everything under `.calendar` — reaches into react-day-picker's
+ * own DOM, which no utility can address without an arbitrary descendant
+ * variant per rule. The other half is a control with three states whose
+ * geometry the pixel harness cannot check, because the popover only exists
+ * while it is open; converting the trigger moved the field six pixels and the
+ * screenshots caught it, and there is no equivalent safety net for the parts
+ * that only appear on click.
+ *
+ * A widget is a reasonable place for a stylesheet. See <Media>'s frame for the
+ * other exception, and CarCard for the conversion rules everywhere else. */
+
+.wrap { position: relative; }
+
+.trigger {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.trigger:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.trigger[aria-expanded="true"] { border-color: var(--color-accent); }
+
+.triggerIcon { color: var(--color-accent); flex: none; display: flex; }
+
+.value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.placeholder { color: var(--color-neutral-500); }
+
+.popover {
+  margin: 0;
+  border: 1px solid var(--color-divider);
+  color: var(--color-text);
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 4px);
+  left: 0;
+  padding: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Right-align when the field sits near the viewport edge. */
+.popoverEnd { left: auto; right: 0; }
+
+.shortcuts {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.shortcut {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-neutral-300);
+  cursor: pointer;
+}
+.shortcut:hover { border-color: var(--color-accent); color: var(--color-accent-text); }
+.shortcut:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── react-day-picker, pulled onto the palette ──────────────────────────── */
+
+.calendar {
+  --rdp-accent-color: var(--color-accent);
+  --rdp-day-width: 36px;
+  --rdp-day-height: 36px;
+  --rdp-day_button-width: 34px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-border-radius: var(--radius-sm);
+  --rdp-selected-border: 0;
+  font-size: 13px;
+  margin: 0;
+}
+
+.calendar :global(.rdp-month_caption) {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  padding: 0 0 8px;
+}
+
+.calendar :global(.rdp-weekday) {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-500);
+  font-weight: 400;
+}
+
+.calendar :global(.rdp-day_button) {
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+}
+.calendar :global(.rdp-day_button:hover) { background: var(--color-accent-900); }
+
+.calendar :global(.rdp-today .rdp-day_button) {
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.calendar :global(.rdp-selected .rdp-day_button) {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-weight: 600;
+}
+
+.calendar :global(.rdp-disabled .rdp-day_button) {
+  color: var(--color-neutral-700);
+  cursor: not-allowed;
+}
+.calendar :global(.rdp-disabled .rdp-day_button:hover) { background: transparent; }
+
+.calendar :global(.rdp-outside .rdp-day_button) { color: var(--color-neutral-700); }
+
+.calendar :global(.rdp-button_previous),
+.calendar :global(.rdp-button_next) {
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+}
+.calendar :global(.rdp-button_previous:hover),
+.calendar :global(.rdp-button_next:hover) { background: var(--color-accent-900); }
+.calendar :global(.rdp-chevron) { fill: currentColor; }
+
+}

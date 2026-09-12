@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/nocturne-5e251597-41bc-49b9-9aa7-52559f0e28c5/styles.css">
+<script src="_ds/nocturne-5e251597-41bc-49b9-9aa7-52559f0e28c5/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="./image-slot.js"></script>
+<style>
+  body { background: #0e1019; }
+  a:hover { color: var(--color-accent-300); }
+  .frame { background: var(--color-bg); border-radius: 14px; box-shadow: 0 0 0 1px #2c2f3e, 0 24px 60px rgba(0,0,0,.55); overflow: hidden; }
+  .sec { padding: 56px 80px; }
+  .h2 { font-family: var(--font-heading); font-weight: 500; font-size: 30px; letter-spacing: -0.02em; margin: 0; }
+  .kick { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--color-accent-400); margin-bottom: 8px; }
+  .msec { padding: 28px 20px; }
+  .mh2 { font-family: var(--font-heading); font-weight: 500; font-size: 21px; letter-spacing: -0.01em; margin: 0; }
+  .navlink { color: var(--color-neutral-300); text-decoration: none; font-size: 14px; }
+  .navlink:hover { color: var(--color-accent-300); }
+  .wa { background: #25d366; color: #0c1a11; border: 1px solid #25d366; }
+  .wa:hover { background: #1fbb59; }
+  .scroll-x { display: flex; gap: 11.2px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; scrollbar-width: thin; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:32px 40px 80px;font-family:var(--font-body);color:var(--color-text)">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:22.4px;flex-wrap:wrap;margin-bottom:22.4px;max-width:1980px">
+    <div>
+      <div class="kick">Xotic Car Rental · conversion-focused UX</div>
+      <h1 style="font-size:34px;margin:0 0 4px">Rental with driver — desktop &amp; mobile</h1>
+      <div style="font-size:13px;color:var(--color-neutral-500);max-width:720px">Seven live screens. The calculator, filters and WhatsApp handoff all work — click through either frame and both follow. Swap the number in the logic (<code style="color:var(--color-accent-300)">wa</code>) before going live.</div>
+    </div>
+    <div style="display:flex;gap:5.6px;flex-wrap:wrap;max-width:760px">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="7">
+        <button type="button" onClick="{{ n.on }}" style="font-family:var(--font-heading);font-size:12px;padding:7px 12px;border-radius:var(--radius-md);cursor:pointer;background:{{ n.bg }};color:{{ n.fg }};border:1px solid {{ n.bd }}">{{ n.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;gap:40px">
+
+    <!-- ══ DESKTOP 1440 ══ -->
+    <div style="flex:none;width:1440px">
+      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-600);margin-bottom:8.4px">Desktop · 1440</div>
+      <div class="frame">
+
+        <div style="display:flex;align-items:center;gap:22.4px;padding:16.8px 80px;background:rgba(22,24,38,.92);border-bottom:1px solid var(--color-divider)">
+          <div style="display:flex;align-items:center;gap:8.4px;margin-right:auto;cursor:pointer" onClick="{{ goHome }}">
+            <i class="ph ph-steering-wheel" style="font-size:26px;color:var(--color-accent)"></i>
+            <div>
+              <div style="font-family:var(--font-heading);font-weight:600;font-size:19px;letter-spacing:.16em">XOTIC</div>
+              <div style="font-size:8px;letter-spacing:.34em;color:var(--color-neutral-500)">CAR RENTAL</div>
+            </div>
+          </div>
+          <a class="navlink" href="#" onClick="{{ goHome }}">Home</a>
+          <a class="navlink" href="#" onClick="{{ goBrowse }}">Browse cars</a>
+          <a class="navlink" href="#" onClick="{{ goOcc }}">Occasions</a>
+          <a class="navlink" href="#" onClick="{{ goCity }}">Cities</a>
+          <a class="navlink" href="#" onClick="{{ goQuote }}">Price calculator</a>
+          <div style="width:1px;height:22px;background:var(--color-divider)"></div>
+          <a href="tel:+919876543210" style="display:flex;align-items:center;gap:5.6px;font-size:13px;color:var(--color-neutral-300);text-decoration:none"><i class="ph ph-phone-call" style="font-size:16px"></i>+91 98765 43210</a>
+          <a class="btn wa" href="{{ waGeneral }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:17px"></i>Book on WhatsApp</a>
+        </div>
+
+        <!-- ── HOME ── -->
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="position:relative;height:600px">
+            <div class="lighten" style="position:absolute;inset:0"><image-slot id="hero-main" shape="rect" placeholder="Drop hero car photo (shot on a dark background)"></image-slot></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(100deg,#161826 12%,rgba(22,24,38,.86) 46%,rgba(22,24,38,.15) 78%);pointer-events:none"></div>
+            <div style="position:absolute;inset:0;padding:72px 80px;pointer-events:none">
+              <div class="kick">Premium cars. Exceptional journeys.</div>
+              <h1 style="font-size:58px;line-height:1.04;max-width:660px;margin:0 0 16.8px">Luxury car rental with driver across India</h1>
+              <p style="font-size:17px;color:var(--color-neutral-300);max-width:470px;text-wrap:pretty">Weddings, celebrity pickups, corporate runs and weekend trips. Chauffeur-driven, fixed rates, and the full price before you commit.</p>
+              <div style="display:flex;gap:22.4px;margin-top:22.4px">
+                <div style="display:flex;align-items:center;gap:8.4px;font-size:13px;color:var(--color-neutral-300)"><i class="ph ph-shield-check" style="font-size:20px;color:var(--color-accent)"></i>Inspected fleet</div>
+                <div style="display:flex;align-items:center;gap:8.4px;font-size:13px;color:var(--color-neutral-300)"><i class="ph ph-user-circle-check" style="font-size:20px;color:var(--color-accent)"></i>Verified drivers</div>
+                <div style="display:flex;align-items:center;gap:8.4px;font-size:13px;color:var(--color-neutral-300)"><i class="ph ph-receipt" style="font-size:20px;color:var(--color-accent)"></i>Itemised quote, no surprises</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:0 80px;margin-top:-84px;position:relative">
+            <div style="background:var(--color-surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-md)">
+              <div style="display:flex;border-bottom:1px solid var(--color-divider)">
+                <sc-for list="{{ occTabs }}" as="t" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ t.on }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8.4px;padding:16.8px 11.2px;cursor:pointer;background:{{ t.bg }};border:0;border-bottom:2px solid {{ t.bd }};color:{{ t.fg }};font-family:var(--font-heading);font-size:14px">
+                    <i class="ph {{ t.icon }}" style="font-size:20px"></i>{{ t.label }}
+                  </button>
+                </sc-for>
+              </div>
+              <div style="display:grid;grid-template-columns:1.4fr 1fr 1.2fr auto;gap:16.8px;align-items:end;padding:22.4px">
+                <div class="field">
+                  <label>Pickup location</label>
+                  <select class="input" value="{{ q.from }}" onChange="{{ onFrom }}">
+                    <sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Pickup date</label>
+                  <input class="input" type="date" value="{{ q.date }}" onChange="{{ onDate }}">
+                </div>
+                <div class="field">
+                  <label>Package</label>
+                  <select class="input" value="{{ q.pkg }}" onChange="{{ onPkg }}">
+                    <sc-for list="{{ packages }}" as="p" hint-placeholder-count="3"><option value="{{ p.key }}">{{ p.label }}</option></sc-for>
+                  </select>
+                </div>
+                <button type="button" class="btn btn-primary" style="height:38px;padding-inline:22.4px" onClick="{{ goBrowse }}"><i class="ph ph-magnifying-glass" style="font-size:16px"></i>See cars &amp; prices</button>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16.8px;padding:0 22.4px 16.8px;font-size:12px;color:var(--color-neutral-500)">
+                <span style="display:flex;align-items:center;gap:5.6px"><i class="ph ph-crosshair" style="font-size:14px;color:var(--color-accent)"></i>Use my current location</span>
+                <span>{{ occLine }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22.4px">
+              <div><div class="kick">Book by occasion</div><h2 class="h2">What is the journey for?</h2></div>
+              <a href="#" onClick="{{ goOcc }}" style="font-size:13px">All occasions <i class="ph ph-arrow-right"></i></a>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16.8px">
+              <sc-for list="{{ occCards }}" as="o" hint-placeholder-count="4">
+                <div onClick="{{ o.on }}" style="position:relative;height:230px;border-radius:var(--radius-md);overflow:hidden;cursor:pointer;background:#1b1d29;box-shadow:var(--shadow-sm)">
+                  <image-slot id="occ-{{ o.key }}" shape="rect" placeholder="{{ o.name }}"></image-slot>
+                  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,24,38,.1),rgba(22,24,38,.94));pointer-events:none"></div>
+                  <div style="position:absolute;left:16.8px;right:16.8px;bottom:16.8px;pointer-events:none">
+                    <i class="ph {{ o.icon }}" style="font-size:24px;color:var(--color-accent-400)"></i>
+                    <div style="font-family:var(--font-heading);font-size:19px;margin-top:5.6px">{{ o.name }}</div>
+                    <div style="font-size:12px;color:var(--color-neutral-400);margin-top:2px">{{ o.tagline }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div class="sec" style="padding-top:0">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22.4px">
+              <div><div class="kick">Where you need us</div><h2 class="h2">Popular cities</h2></div>
+              <a href="#" onClick="{{ goCity }}" style="font-size:13px">All cities <i class="ph ph-arrow-right"></i></a>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:11.2px">
+              <sc-for list="{{ cityCards }}" as="c" hint-placeholder-count="6">
+                <div onClick="{{ c.on }}" style="position:relative;height:150px;border-radius:var(--radius-md);overflow:hidden;cursor:pointer;background:#1b1d29">
+                  <image-slot id="city-{{ c.key }}" shape="rect" placeholder="{{ c.name }}"></image-slot>
+                  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,24,38,0),rgba(22,24,38,.9));pointer-events:none"></div>
+                  <div style="position:absolute;left:11.2px;bottom:11.2px;pointer-events:none">
+                    <div style="font-family:var(--font-heading);font-size:15px">{{ c.name }}</div>
+                    <div style="font-size:11px;color:var(--color-neutral-400)">{{ c.count }} cars</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div class="sec" style="padding-top:0">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22.4px">
+              <div><div class="kick">Ready now</div><h2 class="h2">Featured cars</h2></div>
+              <a href="#" onClick="{{ goBrowse }}" style="font-size:13px">Browse all {{ fleetCount }} cars <i class="ph ph-arrow-right"></i></a>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16.8px">
+              <sc-for list="{{ featured }}" as="c" hint-placeholder-count="4">
+                <dc-import name="CarCard" car="{{ c }}" hint-size="100%,420px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="background:linear-gradient(120deg,#1a1c2b,#232532);padding:56px 80px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center">
+              <div>
+                <div class="kick">Transparent pricing</div>
+                <h2 class="h2" style="margin-bottom:11.2px">Know the exact price before you book</h2>
+                <p style="font-size:15px;color:var(--color-neutral-300);max-width:460px;text-wrap:pretty">Pick a package, set pickup, drop and return drop. We compute distance on the route, add extra km and hours, driver bata, night charge and any occasion cost — then hand the same breakdown to WhatsApp.</p>
+                <div style="display:flex;flex-direction:column;gap:8.4px;margin:22.4px 0">
+                  <div style="display:flex;align-items:center;gap:8.4px;font-size:13px"><i class="ph ph-check-circle" style="font-size:18px;color:var(--color-accent)"></i>Distance from the actual route, not guesswork</div>
+                  <div style="display:flex;align-items:center;gap:8.4px;font-size:13px"><i class="ph ph-check-circle" style="font-size:18px;color:var(--color-accent)"></i>Every extra listed before you pay</div>
+                  <div style="display:flex;align-items:center;gap:8.4px;font-size:13px"><i class="ph ph-check-circle" style="font-size:18px;color:var(--color-accent)"></i>25% advance on WhatsApp, balance to the driver</div>
+                </div>
+                <button type="button" class="btn btn-primary" onClick="{{ goQuote }}"><i class="ph ph-calculator" style="font-size:17px"></i>Open price calculator</button>
+              </div>
+              <div style="background:var(--color-bg);border-radius:var(--radius-lg);padding:22.4px;box-shadow:var(--shadow-md)">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:11.2px">
+                  <div style="font-family:var(--font-heading);font-size:17px">{{ qc.carName }}</div>
+                  <div class="tag tag-accent">{{ qc.pkgLabel }}</div>
+                </div>
+                <div style="font-size:12px;color:var(--color-neutral-500);margin-bottom:11.2px">{{ qc.routeLine }}</div>
+                <sc-for list="{{ qc.lines }}" as="l" hint-placeholder-count="5">
+                  <div style="display:flex;justify-content:space-between;gap:11.2px;padding:7px 0;border-bottom:1px solid var(--color-divider);font-size:13px">
+                    <span>{{ l.label }}<span style="display:block;font-size:11px;color:var(--color-neutral-600)">{{ l.note }}</span></span>
+                    <span style="white-space:nowrap">{{ l.amt }}</span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--color-neutral-400);padding:8.4px 0 0"><span>GST 5%</span><span>{{ qc.gst }}</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8.4px;padding-top:11.2px;border-top:1px solid var(--color-accent-700)">
+                  <span style="font-family:var(--font-heading);font-size:15px">Total</span>
+                  <span style="font-family:var(--font-heading);font-size:28px;color:var(--color-accent-300)">{{ qc.total }}</span>
+                </div>
+                <div style="font-size:11px;color:var(--color-neutral-500);margin-top:5.6px">Tolls, parking &amp; state permits at actuals</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="kick">Why Xotic</div>
+            <h2 class="h2" style="margin-bottom:22.4px">Built for occasions that cannot go wrong</h2>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:22.4px">
+              <sc-for list="{{ whyItems }}" as="w" hint-placeholder-count="5">
+                <div>
+                  <i class="ph {{ w.icon }}" style="font-size:28px;color:var(--color-accent)"></i>
+                  <div style="font-family:var(--font-heading);font-size:16px;margin:8.4px 0 4px">{{ w.title }}</div>
+                  <div style="font-size:12px;color:var(--color-neutral-500);text-wrap:pretty">{{ w.body }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── BROWSE ── -->
+        <sc-if value="{{ isBrowse }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:33.6px 80px 56px">
+          <div style="font-size:12px;color:var(--color-neutral-600);margin-bottom:11.2px">Home / Browse cars</div>
+          <h1 style="font-size:34px;margin:0 0 5.6px">{{ browseTitle }}</h1>
+          <div style="font-size:13px;color:var(--color-neutral-500);margin-bottom:22.4px">Rates shown are the {{ pkgLabel }} package in the car's home city. Exact price depends on your route.</div>
+          <div style="display:grid;grid-template-columns:264px 1fr;gap:33.6px;align-items:start">
+            <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:16.8px;box-shadow:var(--shadow-sm)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16.8px">
+                <div style="font-family:var(--font-heading);font-size:15px">Filters</div>
+                <button type="button" class="btn btn-ghost" style="font-size:12px" onClick="{{ clearFilters }}">Clear</button>
+              </div>
+              <sc-for list="{{ filterGroups }}" as="g" hint-placeholder-count="4">
+                <div style="margin-bottom:16.8px">
+                  <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:8.4px">{{ g.label }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:5.6px">
+                    <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="4">
+                      <button type="button" onClick="{{ o.on }}" style="font-size:12px;padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bd }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="border-top:1px solid var(--color-divider);padding-top:16.8px;font-size:12px;color:var(--color-neutral-500)">
+                Not finding the car? Send us the model on WhatsApp — we source from partner fleets.
+                <a class="btn wa btn-block" href="{{ waGeneral }}" target="_blank" style="margin-top:11.2px"><i class="ph ph-whatsapp-logo" style="font-size:16px"></i>Ask for a car</a>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16.8px">
+                <div style="font-size:13px;color:var(--color-neutral-400)"><strong style="color:var(--color-text)">{{ resultCount }}</strong> cars available{{ filterSummary }}</div>
+                <div style="display:flex;align-items:center;gap:8.4px">
+                  <span style="font-size:12px;color:var(--color-neutral-500)">Sort</span>
+                  <div class="seg">
+                    <sc-for list="{{ sortOpts }}" as="s" hint-placeholder-count="3">
+                      <label class="seg-opt"><input type="radio" name="sort-d" value="{{ s.key }}" checked="{{ s.on2 }}" onChange="{{ s.on }}">{{ s.label }}</label>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16.8px">
+                <sc-for list="{{ browseCars }}" as="c" hint-placeholder-count="6">
+                  <dc-import name="CarCard" car="{{ c }}" hint-size="100%,420px"></dc-import>
+                </sc-for>
+              </div>
+              <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:56px;text-align:center;background:var(--color-surface);border-radius:var(--radius-md)">
+                  <i class="ph ph-car-profile" style="font-size:34px;color:var(--color-neutral-600)"></i>
+                  <div style="font-family:var(--font-heading);font-size:19px;margin:11.2px 0 5.6px">No cars match those filters</div>
+                  <div style="font-size:13px;color:var(--color-neutral-500);margin-bottom:16.8px">Clear a filter, or tell us the car on WhatsApp and we will source it.</div>
+                  <button type="button" class="btn btn-secondary" onClick="{{ clearFilters }}">Clear filters</button>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── DETAIL ── -->
+        <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:33.6px 80px 56px">
+          <div style="font-size:12px;color:var(--color-neutral-600);margin-bottom:16.8px">Home / Browse cars / <span style="color:var(--color-neutral-300)">{{ car.name }}</span></div>
+          <div style="display:grid;grid-template-columns:1fr 400px;gap:33.6px;align-items:start">
+            <div>
+              <div style="position:relative;height:420px;border-radius:var(--radius-lg);overflow:hidden;background:#1b1d29">
+                <image-slot id="car-{{ car.id }}" shape="rect" placeholder="Drop {{ car.name }} photo"></image-slot>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11.2px;margin-top:11.2px">
+                <div style="height:104px;border-radius:var(--radius-md);overflow:hidden;background:#1b1d29"><image-slot id="car-{{ car.id }}-b" shape="rect" placeholder="Interior"></image-slot></div>
+                <div style="height:104px;border-radius:var(--radius-md);overflow:hidden;background:#1b1d29"><image-slot id="car-{{ car.id }}-c" shape="rect" placeholder="Rear"></image-slot></div>
+                <div style="height:104px;border-radius:var(--radius-md);overflow:hidden;background:#1b1d29"><image-slot id="car-{{ car.id }}-d" shape="rect" placeholder="Detail"></image-slot></div>
+              </div>
+
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:22.4px;margin-top:33.6px">
+                <div>
+                  <h1 style="font-size:36px;margin:0 0 5.6px">{{ car.name }}</h1>
+                  <div style="font-size:13px;color:var(--color-neutral-500)">{{ car.year }} · {{ car.type }} · Home city {{ car.cityLabel }}</div>
+                </div>
+                <div style="display:flex;gap:5.6px;flex-wrap:wrap;justify-content:flex-end">
+                  <sc-for list="{{ car.occTags }}" as="t" hint-placeholder-count="3"><span class="tag tag-outline">{{ t }}</span></sc-for>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11.2px;margin-top:22.4px">
+                <sc-for list="{{ car.specs }}" as="s" hint-placeholder-count="4">
+                  <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:11.2px">
+                    <i class="ph {{ s.icon }}" style="font-size:20px;color:var(--color-accent)"></i>
+                    <div style="font-size:11px;color:var(--color-neutral-500);margin-top:5.6px">{{ s.label }}</div>
+                    <div style="font-family:var(--font-heading);font-size:15px">{{ s.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <h3 style="margin:33.6px 0 11.2px">Rate card</h3>
+              <table class="table">
+                <thead><tr><th>Charge</th><th>Rate</th><th style="text-align:right">When it applies</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ car.rateRows }}" as="r" hint-placeholder-count="7">
+                    <tr><td>{{ r.k }}</td><td style="color:var(--color-accent-300);white-space:nowrap">{{ r.v }}</td><td style="text-align:right;color:var(--color-neutral-500);font-size:12px">{{ r.note }}</td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:22.4px;margin-top:33.6px">
+                <div>
+                  <h4 style="margin-bottom:8.4px">Included</h4>
+                  <sc-for list="{{ inclusions }}" as="i" hint-placeholder-count="5">
+                    <div style="display:flex;gap:8.4px;font-size:13px;color:var(--color-neutral-300);padding:4px 0"><i class="ph ph-check" style="font-size:16px;color:var(--color-accent)"></i>{{ i }}</div>
+                  </sc-for>
+                </div>
+                <div>
+                  <h4 style="margin-bottom:8.4px">Not included</h4>
+                  <sc-for list="{{ exclusions }}" as="e" hint-placeholder-count="4">
+                    <div style="display:flex;gap:8.4px;font-size:13px;color:var(--color-neutral-400);padding:4px 0"><i class="ph ph-minus" style="font-size:16px;color:var(--color-neutral-600)"></i>{{ e }}</div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <h3 style="margin:33.6px 0 16.8px">Similar cars</h3>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16.8px">
+                <sc-for list="{{ similar }}" as="c" hint-placeholder-count="3">
+                  <dc-import name="CarCard" car="{{ c }}" hint-size="100%,420px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:22.4px;box-shadow:var(--shadow-md)">
+              <div style="font-size:12px;color:var(--color-neutral-500)">Starts from</div>
+              <div style="display:flex;align-items:baseline;gap:8.4px">
+                <div style="font-family:var(--font-heading);font-size:36px;color:var(--color-accent-300)">{{ car.priceLabel }}</div>
+                <div style="font-size:12px;color:var(--color-neutral-500)">{{ car.pkgLabel }}</div>
+              </div>
+              <div style="font-size:12px;color:var(--color-neutral-400);margin-top:5.6px">+ {{ car.extraKmLabel }}/km and {{ car.extraHrLabel }}/hr beyond the package</div>
+
+              <div style="margin:16.8px 0">
+                <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:8.4px">Choose a package</div>
+                <div style="display:flex;flex-direction:column;gap:5.6px">
+                  <sc-for list="{{ pkgCards }}" as="p" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ p.on }}" style="display:flex;justify-content:space-between;align-items:center;gap:11.2px;text-align:left;padding:11.2px;border-radius:var(--radius-md);cursor:pointer;background:{{ p.bg }};border:1px solid {{ p.bd }};color:var(--color-text)">
+                      <span><span style="font-family:var(--font-heading);font-size:14px;display:block">{{ p.label }}</span><span style="font-size:11px;color:var(--color-neutral-500)">{{ p.sub }}</span></span>
+                      <span style="font-family:var(--font-heading);font-size:16px;color:{{ p.priceColor }}">{{ p.price }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-primary btn-block" style="height:42px" onClick="{{ goQuoteCar }}"><i class="ph ph-calculator" style="font-size:17px"></i>Get exact price for my route</button>
+              <a class="btn wa btn-block" style="height:42px" href="{{ car.waHref }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:18px"></i>Enquire on WhatsApp</a>
+              <div style="display:flex;align-items:center;gap:5.6px;font-size:11px;color:var(--color-neutral-500);margin-top:11.2px;justify-content:center"><i class="ph ph-lightning" style="font-size:14px;color:var(--color-accent)"></i>Typical reply in under 10 minutes</div>
+
+              <div style="border-top:1px solid var(--color-divider);margin-top:16.8px;padding-top:16.8px;display:flex;gap:11.2px;align-items:center">
+                <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex:none;background:#1b1d29"><image-slot id="driver-1" shape="circle" placeholder="Driver"></image-slot></div>
+                <div>
+                  <div style="font-size:13px;font-family:var(--font-heading)">Your driver: verified &amp; uniformed</div>
+                  <div style="font-size:11px;color:var(--color-neutral-500)">Police-verified, 8+ years, speaks English, Hindi, Malayalam</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── QUOTE / CALCULATOR ── -->
+        <sc-if value="{{ isQuote }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:33.6px 80px 56px">
+          <div class="kick">Price calculator</div>
+          <h1 style="font-size:34px;margin:0 0 5.6px">Build your trip, see the exact price</h1>
+          <div style="font-size:13px;color:var(--color-neutral-500);margin-bottom:22.4px">Package first, then the route. Everything recalculates as you change it.</div>
+          <div style="display:grid;grid-template-columns:1fr 396px;gap:33.6px;align-items:start">
+            <div style="display:flex;flex-direction:column;gap:16.8px">
+
+              <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:22.4px;box-shadow:var(--shadow-sm)">
+                <div style="display:flex;align-items:center;gap:8.4px;margin-bottom:16.8px">
+                  <span style="width:22px;height:22px;border-radius:50%;background:var(--color-accent-800);color:var(--color-accent-100);display:grid;place-items:center;font-size:11px">1</span>
+                  <div style="font-family:var(--font-heading);font-size:17px">Pick your package</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11.2px">
+                  <sc-for list="{{ pkgCards }}" as="p" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ p.on }}" style="text-align:left;padding:16.8px;border-radius:var(--radius-md);cursor:pointer;background:{{ p.bg }};border:1px solid {{ p.bd }};color:var(--color-text)">
+                      <i class="ph {{ p.icon }}" style="font-size:22px;color:{{ p.priceColor }}"></i>
+                      <div style="font-family:var(--font-heading);font-size:16px;margin-top:8.4px">{{ p.label }}</div>
+                      <div style="font-size:11px;color:var(--color-neutral-500);margin-top:2px">{{ p.sub }}</div>
+                      <div style="font-family:var(--font-heading);font-size:18px;color:{{ p.priceColor }};margin-top:8.4px">{{ p.price }}</div>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:22.4px;box-shadow:var(--shadow-sm)">
+                <div style="display:flex;align-items:center;gap:8.4px;margin-bottom:16.8px">
+                  <span style="width:22px;height:22px;border-radius:50%;background:var(--color-accent-800);color:var(--color-accent-100);display:grid;place-items:center;font-size:11px">2</span>
+                  <div style="font-family:var(--font-heading);font-size:17px">Route</div>
+                  <div class="seg" style="margin-left:auto">
+                    <sc-for list="{{ tripOpts }}" as="t" hint-placeholder-count="3">
+                      <label class="seg-opt"><input type="radio" name="trip-d" value="{{ t.key }}" checked="{{ t.on2 }}" onChange="{{ t.on }}">{{ t.label }}</label>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 320px;gap:22.4px">
+                  <div style="display:flex;flex-direction:column;gap:11.2px">
+                    <div class="field"><label><i class="ph ph-map-pin-line" style="color:var(--color-accent)"></i> Pickup location</label>
+                      <select class="input" value="{{ q.from }}" onChange="{{ onFrom }}"><sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select>
+                    </div>
+                    <div class="field"><label><i class="ph ph-flag" style="color:var(--color-accent)"></i> Drop location</label>
+                      <select class="input" value="{{ q.to }}" onChange="{{ onTo }}"><sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select>
+                    </div>
+                    <div class="field"><label><i class="ph ph-arrow-u-down-left" style="color:var(--color-accent)"></i> Return drop (optional)</label>
+                      <select class="input" value="{{ q.ret }}" onChange="{{ onRet }}"><option value="">No return — one-way drop</option><sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="position:relative;border-radius:var(--radius-md);overflow:hidden;background:#12141f;box-shadow:var(--shadow-sm);height:200px">
+                      <svg viewBox="0 0 320 200" style="width:100%;height:100%;display:block">
+                        <rect x="0" y="0" width="320" height="200" fill="#12141f"></rect>
+                        <g stroke="#232532" stroke-width="1">
+                          <path d="M0 40H320M0 80H320M0 120H320M0 160H320M40 0V200M80 0V200M120 0V200M160 0V200M200 0V200M240 0V200M280 0V200"></path>
+                        </g>
+                        <path d="M-10 150 L120 120 L200 70 L340 40" stroke="#2c3040" stroke-width="6" fill="none"></path>
+                        <polyline points="{{ map.pts }}" fill="none" stroke="#9184d9" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="6 4"></polyline>
+                        <sc-for list="{{ map.marks }}" as="m" hint-placeholder-count="3">
+                          <circle cx="{{ m.x }}" cy="{{ m.y }}" r="6" fill="#161826" stroke="#9184d9" stroke-width="2"></circle>
+                        </sc-for>
+                      </svg>
+                      <div style="position:absolute;inset:0;pointer-events:none">
+                        <sc-for list="{{ map.marks }}" as="m" hint-placeholder-count="3">
+                          <div style="position:absolute;left:{{ m.lx }}%;top:{{ m.ly }}%;transform:{{ m.tf }};white-space:nowrap;font-size:10px;color:var(--color-neutral-200);background:rgba(22,24,38,.85);border-radius:4px;padding:1px 5px">{{ m.label }}</div>
+                        </sc-for>
+                      </div>
+                      <div style="position:absolute;left:8.4px;bottom:8.4px;display:flex;gap:5.6px;pointer-events:none">
+                        <span style="background:rgba(22,24,38,.9);border-radius:var(--radius-sm);padding:3px 8px;font-size:11px">{{ qc.kmLine }}</span>
+                        <span style="background:rgba(22,24,38,.9);border-radius:var(--radius-sm);padding:3px 8px;font-size:11px">{{ qc.hourLine }}</span>
+                      </div>
+                    </div>
+                    <div style="font-size:11px;color:var(--color-neutral-600);margin-top:5.6px">Route distance and drive time from the map lookup.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:22.4px;box-shadow:var(--shadow-sm)">
+                <div style="display:flex;align-items:center;gap:8.4px;margin-bottom:16.8px">
+                  <span style="width:22px;height:22px;border-radius:50%;background:var(--color-accent-800);color:var(--color-accent-100);display:grid;place-items:center;font-size:11px">3</span>
+                  <div style="font-family:var(--font-heading);font-size:17px">When, what for, and which car</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11.2px">
+                  <div class="field"><label>Pickup date</label><input class="input" type="date" value="{{ q.date }}" onChange="{{ onDate }}"></div>
+                  <div class="field"><label>Pickup time</label><input class="input" type="time" value="{{ q.time }}" onChange="{{ onTime }}"></div>
+                  <div class="field"><label>Occasion</label><select class="input" value="{{ q.occ }}" onChange="{{ onOcc }}"><sc-for list="{{ occasions }}" as="o" hint-placeholder-count="4"><option value="{{ o.key }}">{{ o.name }}</option></sc-for></select></div>
+                  <div class="field"><label>Waiting / halt hours</label><input class="input" type="number" min="0" max="12" value="{{ q.halt }}" onChange="{{ onHalt }}"></div>
+                </div>
+                <div class="field" style="margin-top:11.2px"><label>Car</label>
+                  <select class="input" value="{{ q.carId }}" onChange="{{ onQCar }}"><sc-for list="{{ carOptions }}" as="c" hint-placeholder-count="6"><option value="{{ c.id }}">{{ c.label }}</option></sc-for></select>
+                </div>
+                <div style="display:flex;align-items:center;gap:8.4px;margin-top:11.2px;font-size:12px;color:var(--color-neutral-500)"><i class="ph ph-moon-stars" style="font-size:16px;color:var(--color-accent)"></i>{{ qc.nightNote }}</div>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:22.4px;box-shadow:var(--shadow-md)">
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <div style="font-family:var(--font-heading);font-size:19px">Your quote</div>
+                <span class="tag tag-accent">{{ qc.tripLabel }}</span>
+              </div>
+              <div style="font-size:12px;color:var(--color-neutral-500);margin:5.6px 0 16.8px">{{ qc.carName }} · {{ qc.routeLine }}</div>
+
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8.4px;margin-bottom:16.8px">
+                <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:8.4px"><div style="font-size:10px;color:var(--color-neutral-500)">Distance</div><div style="font-family:var(--font-heading);font-size:16px">{{ qc.km }} km</div></div>
+                <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:8.4px"><div style="font-size:10px;color:var(--color-neutral-500)">Duration</div><div style="font-family:var(--font-heading);font-size:16px">{{ qc.hours }} hr</div></div>
+                <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:8.4px"><div style="font-size:10px;color:var(--color-neutral-500)">Package covers</div><div style="font-family:var(--font-heading);font-size:16px">{{ qc.incLine }}</div></div>
+              </div>
+
+              <sc-for list="{{ qc.lines }}" as="l" hint-placeholder-count="6">
+                <div style="display:flex;justify-content:space-between;gap:11.2px;padding:8.4px 0;border-bottom:1px solid var(--color-divider);font-size:13px">
+                  <span>{{ l.label }}<span style="display:block;font-size:11px;color:var(--color-neutral-600)">{{ l.note }}</span></span>
+                  <span style="white-space:nowrap">{{ l.amt }}</span>
+                </div>
+              </sc-for>
+              <div style="display:flex;justify-content:space-between;padding:8.4px 0;font-size:13px;color:var(--color-neutral-400)"><span>Subtotal</span><span>{{ qc.subtotal }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--color-neutral-400)"><span>GST 5%</span><span>{{ qc.gst }}</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:11.2px;padding-top:11.2px;border-top:1px solid var(--color-accent-700)">
+                <span style="font-family:var(--font-heading);font-size:16px">Total payable</span>
+                <span style="font-family:var(--font-heading);font-size:30px;color:var(--color-accent-300)">{{ qc.total }}</span>
+              </div>
+              <div style="font-size:11px;color:var(--color-neutral-500);margin-top:8.4px;line-height:1.5">Tolls, parking and state permits at actuals, paid directly. Fuel and driver included.</div>
+              <button type="button" class="btn btn-primary btn-block" style="height:44px;margin-top:16.8px" onClick="{{ goSummary }}">Review &amp; confirm on WhatsApp <i class="ph ph-arrow-right" style="font-size:16px"></i></button>
+              <div style="display:flex;justify-content:center;gap:16.8px;margin-top:11.2px;font-size:11px;color:var(--color-neutral-500)">
+                <span><i class="ph ph-lock-simple"></i> No payment on site</span>
+                <span><i class="ph ph-currency-inr"></i> {{ qc.advance }} advance to confirm</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── SUMMARY ── -->
+        <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:33.6px 80px 56px">
+          <div style="display:flex;align-items:center;gap:8.4px;font-size:12px;color:var(--color-neutral-600);margin-bottom:16.8px">
+            <span>Calculator</span><i class="ph ph-caret-right"></i><span style="color:var(--color-accent-300)">Booking summary</span><i class="ph ph-caret-right"></i><span>WhatsApp confirmation</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 420px;gap:33.6px;align-items:start">
+            <div>
+              <h1 style="font-size:34px;margin:0 0 5.6px">Check the details, then send it to us</h1>
+              <div style="font-size:14px;color:var(--color-neutral-400);margin-bottom:22.4px">One tap opens WhatsApp with this whole quote written out. Nothing is charged here.</div>
+
+              <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:22.4px;display:flex;gap:16.8px;box-shadow:var(--shadow-sm)">
+                <div style="width:196px;height:130px;flex:none;border-radius:var(--radius-md);overflow:hidden;background:#1b1d29"><image-slot id="car-{{ qc.carId }}" shape="rect" placeholder="{{ qc.carName }}"></image-slot></div>
+                <div style="flex:1">
+                  <div style="font-family:var(--font-heading);font-size:22px">{{ qc.carName }}</div>
+                  <div style="font-size:12px;color:var(--color-neutral-500);margin-bottom:11.2px">{{ qc.carMeta }}</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8.4px 22.4px;font-size:13px">
+                    <div><span style="color:var(--color-neutral-500)">Package</span><br>{{ qc.pkgLabel }}</div>
+                    <div><span style="color:var(--color-neutral-500)">Occasion</span><br>{{ qc.occName }}</div>
+                    <div><span style="color:var(--color-neutral-500)">Pickup</span><br>{{ qc.whenLine }}</div>
+                    <div><span style="color:var(--color-neutral-500)">Trip</span><br>{{ qc.tripLabel }} · {{ qc.km }} km · {{ qc.hours }} hr</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:11.2px;margin-top:16.8px">
+                <sc-for list="{{ qc.stops }}" as="s" hint-placeholder-count="3">
+                  <div style="display:flex;gap:11.2px;align-items:center;background:var(--color-surface);border-radius:var(--radius-md);padding:11.2px 16.8px">
+                    <i class="ph {{ s.icon }}" style="font-size:20px;color:var(--color-accent)"></i>
+                    <div><div style="font-size:11px;color:var(--color-neutral-500)">{{ s.role }}</div><div style="font-size:14px">{{ s.name }}</div></div>
+                    <div style="margin-left:auto;font-size:12px;color:var(--color-neutral-500)">{{ s.leg }}</div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <h3 style="margin:33.6px 0 11.2px">Price breakdown</h3>
+              <table class="table">
+                <tbody>
+                  <sc-for list="{{ qc.lines }}" as="l" hint-placeholder-count="6">
+                    <tr><td>{{ l.label }}<div style="font-size:11px;color:var(--color-neutral-600)">{{ l.note }}</div></td><td style="text-align:right;white-space:nowrap">{{ l.amt }}</td></tr>
+                  </sc-for>
+                  <tr><td style="color:var(--color-neutral-400)">GST 5%</td><td style="text-align:right;color:var(--color-neutral-400)">{{ qc.gst }}</td></tr>
+                  <tr><td style="font-family:var(--font-heading);font-size:16px">Total payable</td><td style="text-align:right;font-family:var(--font-heading);font-size:20px;color:var(--color-accent-300)">{{ qc.total }}</td></tr>
+                </tbody>
+              </table>
+              <div style="display:flex;gap:22.4px;margin-top:22.4px">
+                <div style="flex:1">
+                  <h4 style="margin-bottom:8.4px">Included</h4>
+                  <sc-for list="{{ inclusions }}" as="i" hint-placeholder-count="5"><div style="display:flex;gap:8.4px;font-size:13px;color:var(--color-neutral-300);padding:3px 0"><i class="ph ph-check" style="color:var(--color-accent)"></i>{{ i }}</div></sc-for>
+                </div>
+                <div style="flex:1">
+                  <h4 style="margin-bottom:8.4px">Paid at actuals</h4>
+                  <sc-for list="{{ exclusions }}" as="e" hint-placeholder-count="4"><div style="display:flex;gap:8.4px;font-size:13px;color:var(--color-neutral-400);padding:3px 0"><i class="ph ph-minus" style="color:var(--color-neutral-600)"></i>{{ e }}</div></sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:16.8px">
+              <div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:22.4px;box-shadow:var(--shadow-md)">
+                <div style="font-size:12px;color:var(--color-neutral-500)">Total payable</div>
+                <div style="font-family:var(--font-heading);font-size:42px;color:var(--color-accent-300);line-height:1.1">{{ qc.total }}</div>
+                <div style="font-size:12px;color:var(--color-neutral-400);margin-bottom:16.8px">{{ qc.advance }} advance on WhatsApp confirms the car. Balance to the driver.</div>
+                <a class="btn wa btn-block" style="height:48px;font-size:15px" href="{{ waHref }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:21px"></i>Send this quote on WhatsApp</a>
+                <a class="btn btn-secondary btn-block" style="height:42px" href="tel:+919876543210"><i class="ph ph-phone-call" style="font-size:17px"></i>Or call +91 98765 43210</a>
+                <div style="display:flex;flex-direction:column;gap:5.6px;margin-top:16.8px;font-size:12px;color:var(--color-neutral-400)">
+                  <span><i class="ph ph-clock-user" style="color:var(--color-accent)"></i> Replies in under 10 minutes, 6am–midnight</span>
+                  <span><i class="ph ph-arrows-clockwise" style="color:var(--color-accent)"></i> Free cancellation up to 24 hours before</span>
+                  <span><i class="ph ph-seal-check" style="color:var(--color-accent)"></i> Driver details shared 12 hours before pickup</span>
+                </div>
+              </div>
+              <div style="background:#12141f;border-radius:var(--radius-md);padding:16.8px;box-shadow:var(--shadow-sm)">
+                <div style="display:flex;align-items:center;gap:8.4px;font-size:12px;color:var(--color-neutral-500);margin-bottom:11.2px"><i class="ph ph-chat-teardrop-text" style="font-size:16px;color:#25d366"></i>What we receive</div>
+                <div style="background:#1d2a22;border-radius:var(--radius-md);padding:11.2px;font-size:12px;line-height:1.6;white-space:pre-line;color:var(--color-neutral-200)">{{ waPreview }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── OCCASION ── -->
+        <sc-if value="{{ isOcc }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="position:relative;height:400px">
+            <div class="lighten" style="position:absolute;inset:0"><image-slot id="occhero-{{ occPage.key }}" shape="rect" placeholder="Drop a {{ occPage.name }} photo"></image-slot></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(95deg,#161826 15%,rgba(22,24,38,.8) 55%,rgba(22,24,38,.1));pointer-events:none"></div>
+            <div style="position:absolute;inset:0;padding:56px 80px;display:flex;flex-direction:column;justify-content:center;pointer-events:none">
+              <div class="kick">{{ occPage.kicker }}</div>
+              <h1 style="font-size:48px;max-width:640px;margin:0 0 11.2px;line-height:1.06">{{ occPage.title }}</h1>
+              <p style="font-size:16px;color:var(--color-neutral-300);max-width:520px">{{ occPage.blurb }}</p>
+            </div>
+          </div>
+          <div style="padding:22.4px 80px;border-bottom:1px solid var(--color-divider);display:flex;gap:8.4px;align-items:center">
+            <span style="font-size:12px;color:var(--color-neutral-500);margin-right:8.4px">Occasion</span>
+            <sc-for list="{{ occTabs }}" as="t" hint-placeholder-count="4">
+              <button type="button" onClick="{{ t.on }}" style="display:flex;align-items:center;gap:5.6px;font-size:13px;padding:7px 12px;border-radius:var(--radius-md);cursor:pointer;background:{{ t.bg2 }};color:{{ t.fg }};border:1px solid {{ t.bd2 }}"><i class="ph {{ t.icon }}" style="font-size:16px"></i>{{ t.label }}</button>
+            </sc-for>
+          </div>
+          <div class="sec">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px">
+              <div>
+                <h2 class="h2" style="margin-bottom:16.8px">{{ occPage.h2 }}</h2>
+                <sc-for list="{{ occPage.includes }}" as="i" hint-placeholder-count="5">
+                  <div style="display:flex;gap:11.2px;padding:8.4px 0;border-bottom:1px solid var(--color-divider)">
+                    <i class="ph ph-check-circle" style="font-size:20px;color:var(--color-accent);flex:none"></i>
+                    <div><div style="font-size:14px">{{ i.t }}</div><div style="font-size:12px;color:var(--color-neutral-500)">{{ i.d }}</div></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div>
+                <h2 class="h2" style="margin-bottom:16.8px">Ready-made packages</h2>
+                <div style="display:flex;flex-direction:column;gap:11.2px">
+                  <sc-for list="{{ occPage.packages }}" as="p" hint-placeholder-count="3">
+                    <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:16.8px;display:flex;gap:16.8px;align-items:center;box-shadow:var(--shadow-sm)">
+                      <div style="flex:1">
+                        <div style="font-family:var(--font-heading);font-size:17px">{{ p.name }}</div>
+                        <div style="font-size:12px;color:var(--color-neutral-500);margin-top:2px">{{ p.detail }}</div>
+                      </div>
+                      <div style="text-align:right">
+                        <div style="font-family:var(--font-heading);font-size:20px;color:var(--color-accent-300)">{{ p.price }}</div>
+                        <div style="font-size:10px;color:var(--color-neutral-500)">{{ p.unit }}</div>
+                      </div>
+                      <button type="button" class="btn btn-primary" onClick="{{ goQuote }}">Price it</button>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:11.2px;align-items:center;background:var(--color-accent-900);border-radius:var(--radius-md);padding:16.8px;margin-top:16.8px">
+                  <i class="ph ph-info" style="font-size:20px;color:var(--color-accent-300)"></i>
+                  <div style="font-size:12px;color:var(--color-neutral-300)">{{ occPage.note }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sec" style="padding-top:0">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22.4px">
+              <div><div class="kick">Curated for this</div><h2 class="h2">{{ occPage.fleetTitle }}</h2></div>
+              <a href="#" onClick="{{ goBrowse }}" style="font-size:13px">See all cars <i class="ph ph-arrow-right"></i></a>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16.8px">
+              <sc-for list="{{ occCars }}" as="c" hint-placeholder-count="4">
+                <dc-import name="CarCard" car="{{ c }}" hint-size="100%,420px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:linear-gradient(120deg,#1a1c2b,#232532);padding:44.8px 80px;display:flex;align-items:center;gap:33.6px">
+            <div style="flex:1">
+              <h2 class="h2" style="margin-bottom:5.6px">{{ occPage.ctaTitle }}</h2>
+              <div style="font-size:14px;color:var(--color-neutral-400)">Send the date and the route. We hold the car for 24 hours while you decide.</div>
+            </div>
+            <button type="button" class="btn btn-primary" style="height:44px" onClick="{{ goQuote }}"><i class="ph ph-calculator" style="font-size:17px"></i>Calculate price</button>
+            <a class="btn wa" style="height:44px" href="{{ waGeneral }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:19px"></i>Chat on WhatsApp</a>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ── CITY ── -->
+        <sc-if value="{{ isCity }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="position:relative;height:330px">
+            <div class="lighten" style="position:absolute;inset:0"><image-slot id="cityhero-{{ cityPage.key }}" shape="rect" placeholder="Drop a {{ cityPage.name }} photo"></image-slot></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(95deg,#161826 18%,rgba(22,24,38,.72) 60%,rgba(22,24,38,.05));pointer-events:none"></div>
+            <div style="position:absolute;inset:0;padding:44.8px 80px;display:flex;flex-direction:column;justify-content:center;pointer-events:none">
+              <div class="kick">Car rental with driver</div>
+              <h1 style="font-size:46px;margin:0 0 8.4px">{{ cityPage.name }}</h1>
+              <p style="font-size:15px;color:var(--color-neutral-300);max-width:520px">{{ cityPage.count }} cars on call across {{ cityPage.name }} and {{ cityPage.state }} — airport pickups, temple and wedding runs, hill-station trips.</p>
+            </div>
+          </div>
+          <div style="padding:16.8px 80px;border-bottom:1px solid var(--color-divider);display:flex;gap:5.6px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--color-neutral-500);margin-right:8.4px">City</span>
+            <sc-for list="{{ cityTabs }}" as="c" hint-placeholder-count="6">
+              <button type="button" onClick="{{ c.on }}" style="font-size:13px;padding:6px 12px;border-radius:var(--radius-md);cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.name }}</button>
+            </sc-for>
+          </div>
+          <div class="sec">
+            <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:56px;align-items:start">
+              <div>
+                <div class="kick">Popular routes from {{ cityPage.name }}</div>
+                <h2 class="h2" style="margin-bottom:16.8px">Fares people ask for most</h2>
+                <table class="table">
+                  <thead><tr><th>Route</th><th>Distance</th><th>Package</th><th style="text-align:right">From</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{ cityRoutes }}" as="r" hint-placeholder-count="5">
+                      <tr><td>{{ r.name }}</td><td style="color:var(--color-neutral-400)">{{ r.km }} km</td><td style="color:var(--color-neutral-400);font-size:12px">{{ r.pkg }}</td><td style="text-align:right;color:var(--color-accent-300);white-space:nowrap">{{ r.price }}</td></tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+                <button type="button" class="btn btn-primary" style="margin-top:16.8px" onClick="{{ goQuote }}">Price my own route <i class="ph ph-arrow-right"></i></button>
+              </div>
+              <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:22.4px;box-shadow:var(--shadow-sm)">
+                <h4 style="margin-bottom:11.2px">{{ cityPage.name }} rate notes</h4>
+                <div style="font-size:13px;color:var(--color-neutral-300);line-height:1.7">
+                  City rate multiplier <strong style="color:var(--color-accent-300)">×{{ cityPage.multLabel }}</strong> applies to every package base. Night charge for pickups between 10pm and 6am. Airport entry and parking at actuals.
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:11.2px;margin-top:16.8px">
+                  <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:11.2px"><div style="font-size:10px;color:var(--color-neutral-500)">Cars in city</div><div style="font-family:var(--font-heading);font-size:19px">{{ cityPage.count }}</div></div>
+                  <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:11.2px"><div style="font-size:10px;color:var(--color-neutral-500)">Avg reply</div><div style="font-family:var(--font-heading);font-size:19px">8 min</div></div>
+                </div>
+                <a class="btn wa btn-block" style="margin-top:16.8px" href="{{ waGeneral }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:17px"></i>Ask about {{ cityPage.name }}</a>
+              </div>
+            </div>
+          </div>
+          <div class="sec" style="padding-top:0">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22.4px">
+              <div><div class="kick">Available here</div><h2 class="h2">Cars in {{ cityPage.name }}</h2></div>
+              <a href="#" onClick="{{ goBrowse }}" style="font-size:13px">Browse with filters <i class="ph ph-arrow-right"></i></a>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16.8px">
+              <sc-for list="{{ cityCars }}" as="c" hint-placeholder-count="4">
+                <dc-import name="CarCard" car="{{ c }}" hint-size="100%,420px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <div style="background:#25d366;padding:22.4px 80px;display:flex;align-items:center;gap:16.8px;color:#0c1a11">
+          <i class="ph-fill ph-whatsapp-logo" style="font-size:34px"></i>
+          <div style="flex:1">
+            <div style="font-family:var(--font-heading);font-weight:600;font-size:19px">Questions, custom routes, or a fleet for a function?</div>
+            <div style="font-size:13px;opacity:.8">Message us — quotes, driver details and confirmation all happen on WhatsApp.</div>
+          </div>
+          <a class="btn" style="background:#0c1a11;color:#eaf7ee;border-color:#0c1a11;height:42px;padding-inline:22.4px" href="{{ waGeneral }}" target="_blank">Chat on WhatsApp</a>
+        </div>
+        <div style="padding:33.6px 80px;display:flex;gap:56px;font-size:12px;color:var(--color-neutral-500);border-top:1px solid var(--color-divider)">
+          <div style="flex:1">
+            <div style="font-family:var(--font-heading);font-weight:600;font-size:17px;letter-spacing:.16em;color:var(--color-text)">XOTIC</div>
+            <div style="margin-top:5.6px">Chauffeur-driven car rental across India. Weddings, celebrity movement, corporate and leisure.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="color:var(--color-neutral-300)">Fleet</span><span>Luxury sedans</span><span>SUVs &amp; MUVs</span><span>Vans &amp; tempo</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="color:var(--color-neutral-300)">Occasions</span><span>Weddings</span><span>Celebrity pickup</span><span>Outstation tours</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="color:var(--color-neutral-300)">Contact</span><span>+91 98765 43210</span><span>hello@xotic.example</span><span>Kochi · Bangalore · Mumbai</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MOBILE 390 ══ -->
+    <div style="flex:none;width:390px">
+      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-600);margin-bottom:8.4px">Mobile · 390</div>
+      <div class="frame">
+        <div style="display:flex;align-items:center;gap:11.2px;padding:11.2px 20px;background:rgba(22,24,38,.95);border-bottom:1px solid var(--color-divider)">
+          <div style="display:flex;align-items:center;gap:5.6px;margin-right:auto;cursor:pointer" onClick="{{ goHome }}">
+            <i class="ph ph-steering-wheel" style="font-size:21px;color:var(--color-accent)"></i>
+            <div><div style="font-family:var(--font-heading);font-weight:600;font-size:15px;letter-spacing:.16em">XOTIC</div><div style="font-size:7px;letter-spacing:.3em;color:var(--color-neutral-500)">CAR RENTAL</div></div>
+          </div>
+          <a href="tel:+919876543210" class="btn btn-secondary" style="width:34px;height:34px;padding:0"><i class="ph ph-phone-call" style="font-size:16px"></i></a>
+          <a class="btn wa" style="width:34px;height:34px;padding:0" href="{{ waGeneral }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:17px"></i></a>
+          <i class="ph ph-list" style="font-size:22px;color:var(--color-neutral-300)"></i>
+        </div>
+
+        <!-- HOME · mobile -->
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="position:relative;height:430px">
+            <div class="lighten" style="position:absolute;inset:0"><image-slot id="hero-main" shape="rect" placeholder="Hero car photo"></image-slot></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,24,38,.55) 0%,rgba(22,24,38,.25) 38%,#161826 88%);pointer-events:none"></div>
+            <div style="position:absolute;left:20px;right:20px;bottom:20px;pointer-events:none">
+              <div class="kick">Premium cars. Exceptional journeys.</div>
+              <h1 style="font-size:31px;line-height:1.08;margin:0 0 8.4px">Luxury car rental with driver</h1>
+              <p style="font-size:13px;color:var(--color-neutral-300);margin:0">Weddings, celebrity pickups and city days — chauffeur-driven, priced upfront.</p>
+            </div>
+          </div>
+          <div style="padding:0 20px 20px">
+            <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:16.8px;box-shadow:var(--shadow-md)">
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:8.4px">What is it for?</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5.6px;margin-bottom:16.8px">
+                <sc-for list="{{ occTabs }}" as="t" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ t.on }}" style="display:flex;align-items:center;gap:5.6px;justify-content:center;min-height:44px;font-size:12px;border-radius:var(--radius-md);cursor:pointer;background:{{ t.bg2 }};color:{{ t.fg }};border:1px solid {{ t.bd2 }}"><i class="ph {{ t.icon }}" style="font-size:16px"></i>{{ t.label }}</button>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8.4px">
+                <div class="field"><label>Pickup location</label><select class="input" style="min-height:44px" value="{{ q.from }}" onChange="{{ onFrom }}"><sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8.4px">
+                  <div class="field"><label>Date</label><input class="input" style="min-height:44px" type="date" value="{{ q.date }}" onChange="{{ onDate }}"></div>
+                  <div class="field"><label>Package</label><select class="input" style="min-height:44px" value="{{ q.pkg }}" onChange="{{ onPkg }}"><sc-for list="{{ packages }}" as="p" hint-placeholder-count="3"><option value="{{ p.key }}">{{ p.label }}</option></sc-for></select></div>
+                </div>
+                <button type="button" class="btn btn-primary btn-block" style="min-height:48px;font-size:15px" onClick="{{ goBrowse }}"><i class="ph ph-magnifying-glass" style="font-size:17px"></i>See cars &amp; prices</button>
+                <div style="display:flex;align-items:center;justify-content:center;gap:5.6px;font-size:11px;color:var(--color-neutral-500)"><i class="ph ph-crosshair" style="color:var(--color-accent)"></i>Use my current location</div>
+              </div>
+            </div>
+          </div>
+          <div class="msec" style="padding-top:0">
+            <div class="mh2" style="margin-bottom:11.2px">Popular cities</div>
+            <div class="scroll-x">
+              <sc-for list="{{ cityCards }}" as="c" hint-placeholder-count="6">
+                <div onClick="{{ c.on }}" style="position:relative;width:132px;height:96px;flex:none;border-radius:var(--radius-md);overflow:hidden;background:#1b1d29">
+                  <image-slot id="city-{{ c.key }}" shape="rect" placeholder="{{ c.name }}"></image-slot>
+                  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,24,38,0),rgba(22,24,38,.92));pointer-events:none"></div>
+                  <div style="position:absolute;left:8.4px;bottom:8.4px;pointer-events:none"><div style="font-family:var(--font-heading);font-size:13px">{{ c.name }}</div><div style="font-size:10px;color:var(--color-neutral-400)">{{ c.count }} cars</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div class="msec" style="padding-top:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11.2px">
+              <div class="mh2">Featured cars</div>
+              <a href="#" onClick="{{ goBrowse }}" style="font-size:12px">All cars</a>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:11.2px">
+              <sc-for list="{{ featuredM }}" as="c" hint-placeholder-count="4">
+                <dc-import name="CarCard" car="{{ c }}" hint-size="100%,120px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:linear-gradient(150deg,#1a1c2b,#232532);padding:28px 20px">
+            <div class="kick">Transparent pricing</div>
+            <div class="mh2" style="margin-bottom:8.4px">Know the price before you book</div>
+            <p style="font-size:13px;color:var(--color-neutral-300)">Package, route, extra km and hours, bata, night charge — all itemised, then sent to WhatsApp.</p>
+            <div style="background:var(--color-bg);border-radius:var(--radius-md);padding:16.8px;margin:16.8px 0">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8.4px"><span style="font-family:var(--font-heading);font-size:15px">{{ qc.carName }}</span><span class="tag tag-accent">{{ qc.pkgLabel }}</span></div>
+              <sc-for list="{{ qc.lines }}" as="l" hint-placeholder-count="4">
+                <div style="display:flex;justify-content:space-between;gap:8.4px;padding:5.6px 0;border-bottom:1px solid var(--color-divider);font-size:12px"><span>{{ l.label }}</span><span style="white-space:nowrap">{{ l.amt }}</span></div>
+              </sc-for>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:8.4px"><span style="font-size:13px">Total incl. GST</span><span style="font-family:var(--font-heading);font-size:24px;color:var(--color-accent-300)">{{ qc.total }}</span></div>
+            </div>
+            <button type="button" class="btn btn-primary btn-block" style="min-height:48px" onClick="{{ goQuote }}"><i class="ph ph-calculator" style="font-size:17px"></i>Open price calculator</button>
+          </div>
+          <div class="msec">
+            <div class="mh2" style="margin-bottom:16.8px">Why Xotic</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16.8px">
+              <sc-for list="{{ whyItems }}" as="w" hint-placeholder-count="5">
+                <div><i class="ph {{ w.icon }}" style="font-size:24px;color:var(--color-accent)"></i><div style="font-family:var(--font-heading);font-size:14px;margin:5.6px 0 2px">{{ w.title }}</div><div style="font-size:11px;color:var(--color-neutral-500)">{{ w.body }}</div></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- BROWSE · mobile -->
+        <sc-if value="{{ isBrowse }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="padding:16.8px 20px;border-bottom:1px solid var(--color-divider)">
+            <h1 style="font-size:22px;margin:0 0 4px">{{ browseTitle }}</h1>
+            <div style="font-size:12px;color:var(--color-neutral-500)"><strong style="color:var(--color-text)">{{ resultCount }}</strong> cars · {{ pkgLabel }} rates</div>
+          </div>
+          <div style="padding:11.2px 20px;border-bottom:1px solid var(--color-divider);display:flex;flex-direction:column;gap:8.4px">
+            <sc-for list="{{ filterGroups }}" as="g" hint-placeholder-count="4">
+              <div>
+                <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600);margin-bottom:5.6px">{{ g.label }}</div>
+                <div class="scroll-x" style="gap:5.6px">
+                  <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="4">
+                    <button type="button" onClick="{{ o.on }}" style="flex:none;font-size:12px;min-height:34px;padding:0 11.2px;border-radius:var(--radius-sm);cursor:pointer;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bd }}">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2.8px">
+              <div class="seg">
+                <sc-for list="{{ sortOpts }}" as="s" hint-placeholder-count="3">
+                  <label class="seg-opt" style="font-size:12px"><input type="radio" name="sort-m" value="{{ s.key }}" checked="{{ s.on2 }}" onChange="{{ s.on }}">{{ s.label }}</label>
+                </sc-for>
+              </div>
+              <button type="button" class="btn btn-ghost" style="font-size:12px" onClick="{{ clearFilters }}">Clear</button>
+            </div>
+          </div>
+          <div class="msec" style="display:flex;flex-direction:column;gap:11.2px">
+            <sc-for list="{{ browseCarsM }}" as="c" hint-placeholder-count="5">
+              <dc-import name="CarCard" car="{{ c }}" hint-size="100%,120px"></dc-import>
+            </sc-for>
+            <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:33.6px 16.8px;text-align:center;background:var(--color-surface);border-radius:var(--radius-md)">
+                <i class="ph ph-car-profile" style="font-size:28px;color:var(--color-neutral-600)"></i>
+                <div style="font-family:var(--font-heading);font-size:16px;margin:8.4px 0 4px">No cars match</div>
+                <div style="font-size:12px;color:var(--color-neutral-500);margin-bottom:11.2px">Clear a filter, or ask us on WhatsApp.</div>
+                <button type="button" class="btn btn-secondary" onClick="{{ clearFilters }}">Clear filters</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- DETAIL · mobile -->
+        <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="position:relative;height:240px;background:#1b1d29">
+            <image-slot id="car-{{ car.id }}" shape="rect" placeholder="{{ car.name }}"></image-slot>
+            <div style="position:absolute;top:11.2px;left:11.2px;pointer-events:none"><span class="tag tag-accent">{{ car.badge }}</span></div>
+          </div>
+          <div class="msec">
+            <h1 style="font-size:24px;margin:0 0 4px">{{ car.name }}</h1>
+            <div style="font-size:12px;color:var(--color-neutral-500);margin-bottom:11.2px">{{ car.year }} · {{ car.type }} · {{ car.cityLabel }}</div>
+            <div style="display:flex;gap:5.6px;flex-wrap:wrap;margin-bottom:16.8px">
+              <sc-for list="{{ car.occTags }}" as="t" hint-placeholder-count="3"><span class="tag tag-outline">{{ t }}</span></sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8.4px">
+              <sc-for list="{{ car.specs }}" as="s" hint-placeholder-count="4">
+                <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:11.2px;display:flex;gap:8.4px;align-items:center">
+                  <i class="ph {{ s.icon }}" style="font-size:19px;color:var(--color-accent)"></i>
+                  <div><div style="font-size:10px;color:var(--color-neutral-500)">{{ s.label }}</div><div style="font-size:13px;font-family:var(--font-heading)">{{ s.value }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:16.8px">
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:8.4px">Choose a package</div>
+              <div style="display:flex;flex-direction:column;gap:5.6px">
+                <sc-for list="{{ pkgCards }}" as="p" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ p.on }}" style="display:flex;justify-content:space-between;align-items:center;gap:11.2px;text-align:left;min-height:52px;padding:11.2px;border-radius:var(--radius-md);cursor:pointer;background:{{ p.bg }};border:1px solid {{ p.bd }};color:var(--color-text)">
+                    <span><span style="font-family:var(--font-heading);font-size:14px;display:block">{{ p.label }}</span><span style="font-size:11px;color:var(--color-neutral-500)">{{ p.sub }}</span></span>
+                    <span style="font-family:var(--font-heading);font-size:16px;color:{{ p.priceColor }}">{{ p.price }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <h4 style="margin:22.4px 0 8.4px">Rate card</h4>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ car.rateRows }}" as="r" hint-placeholder-count="7">
+                <div style="display:flex;justify-content:space-between;gap:11.2px;padding:8.4px 0;border-bottom:1px solid var(--color-divider);font-size:13px">
+                  <span>{{ r.k }}<span style="display:block;font-size:10px;color:var(--color-neutral-600)">{{ r.note }}</span></span>
+                  <span style="color:var(--color-accent-300);white-space:nowrap">{{ r.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <h4 style="margin:22.4px 0 8.4px">Included</h4>
+            <sc-for list="{{ inclusions }}" as="i" hint-placeholder-count="5">
+              <div style="display:flex;gap:8.4px;font-size:13px;color:var(--color-neutral-300);padding:3px 0"><i class="ph ph-check" style="color:var(--color-accent)"></i>{{ i }}</div>
+            </sc-for>
+            <h4 style="margin:16.8px 0 8.4px">Not included</h4>
+            <sc-for list="{{ exclusions }}" as="e" hint-placeholder-count="4">
+              <div style="display:flex;gap:8.4px;font-size:13px;color:var(--color-neutral-400);padding:3px 0"><i class="ph ph-minus" style="color:var(--color-neutral-600)"></i>{{ e }}</div>
+            </sc-for>
+          </div>
+          <div style="position:sticky;bottom:0;display:flex;align-items:center;gap:11.2px;padding:11.2px 20px;background:rgba(22,24,38,.97);border-top:1px solid var(--color-divider)">
+            <div><div style="font-family:var(--font-heading);font-size:19px;color:var(--color-accent-300)">{{ car.priceLabel }}</div><div style="font-size:10px;color:var(--color-neutral-500)">{{ car.pkgLabel }}</div></div>
+            <button type="button" class="btn btn-primary" style="flex:1;min-height:48px" onClick="{{ goQuoteCar }}">Get exact price</button>
+            <a class="btn wa" style="min-height:48px;width:48px;padding:0" href="{{ car.waHref }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:21px"></i></a>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- QUOTE · mobile -->
+        <sc-if value="{{ isQuote }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="padding:16.8px 20px 0">
+            <div class="kick">Price calculator</div>
+            <h1 style="font-size:23px;margin:0 0 4px">Build your trip</h1>
+            <div style="font-size:12px;color:var(--color-neutral-500)">Package first, then the route.</div>
+          </div>
+          <div class="msec" style="display:flex;flex-direction:column;gap:16.8px">
+            <div>
+              <div style="display:flex;align-items:center;gap:8.4px;margin-bottom:8.4px"><span style="width:20px;height:20px;border-radius:50%;background:var(--color-accent-800);color:var(--color-accent-100);display:grid;place-items:center;font-size:10px">1</span><span style="font-family:var(--font-heading);font-size:15px">Package</span></div>
+              <div style="display:flex;flex-direction:column;gap:5.6px">
+                <sc-for list="{{ pkgCards }}" as="p" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ p.on }}" style="display:flex;align-items:center;gap:11.2px;text-align:left;min-height:56px;padding:11.2px;border-radius:var(--radius-md);cursor:pointer;background:{{ p.bg }};border:1px solid {{ p.bd }};color:var(--color-text)">
+                    <i class="ph {{ p.icon }}" style="font-size:20px;color:{{ p.priceColor }}"></i>
+                    <span style="flex:1"><span style="font-family:var(--font-heading);font-size:14px;display:block">{{ p.label }}</span><span style="font-size:11px;color:var(--color-neutral-500)">{{ p.sub }}</span></span>
+                    <span style="font-family:var(--font-heading);font-size:16px;color:{{ p.priceColor }}">{{ p.price }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8.4px;margin-bottom:8.4px"><span style="width:20px;height:20px;border-radius:50%;background:var(--color-accent-800);color:var(--color-accent-100);display:grid;place-items:center;font-size:10px">2</span><span style="font-family:var(--font-heading);font-size:15px">Route</span></div>
+              <div class="seg" style="width:100%;margin-bottom:11.2px">
+                <sc-for list="{{ tripOpts }}" as="t" hint-placeholder-count="3">
+                  <label class="seg-opt" style="flex:1;justify-content:center;min-height:40px"><input type="radio" name="trip-m" value="{{ t.key }}" checked="{{ t.on2 }}" onChange="{{ t.on }}">{{ t.label }}</label>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8.4px">
+                <div class="field"><label>Pickup location</label><select class="input" style="min-height:44px" value="{{ q.from }}" onChange="{{ onFrom }}"><sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select></div>
+                <div class="field"><label>Drop location</label><select class="input" style="min-height:44px" value="{{ q.to }}" onChange="{{ onTo }}"><sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select></div>
+                <div class="field"><label>Return drop (optional)</label><select class="input" style="min-height:44px" value="{{ q.ret }}" onChange="{{ onRet }}"><option value="">No return — one-way drop</option><sc-for list="{{ locOptions }}" as="l" hint-placeholder-count="6"><option value="{{ l.id }}">{{ l.name }}</option></sc-for></select></div>
+              </div>
+              <div style="position:relative;border-radius:var(--radius-md);overflow:hidden;background:#12141f;height:150px;margin-top:11.2px">
+                <svg viewBox="0 0 320 200" style="width:100%;height:100%;display:block">
+                  <rect x="0" y="0" width="320" height="200" fill="#12141f"></rect>
+                  <g stroke="#232532" stroke-width="1"><path d="M0 40H320M0 80H320M0 120H320M0 160H320M40 0V200M80 0V200M120 0V200M160 0V200M200 0V200M240 0V200M280 0V200"></path></g>
+                  <path d="M-10 150 L120 120 L200 70 L340 40" stroke="#2c3040" stroke-width="6" fill="none"></path>
+                  <polyline points="{{ map.pts }}" fill="none" stroke="#9184d9" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="6 4"></polyline>
+                  <sc-for list="{{ map.marks }}" as="m" hint-placeholder-count="3">
+                    <circle cx="{{ m.x }}" cy="{{ m.y }}" r="6" fill="#161826" stroke="#9184d9" stroke-width="2"></circle>
+                  </sc-for>
+                </svg>
+                <div style="position:absolute;inset:0;pointer-events:none">
+                  <sc-for list="{{ map.marks }}" as="m" hint-placeholder-count="3">
+                    <div style="position:absolute;left:{{ m.lx }}%;top:{{ m.ly }}%;transform:{{ m.tf }};white-space:nowrap;font-size:9px;color:var(--color-neutral-200);background:rgba(22,24,38,.85);border-radius:4px;padding:1px 4px">{{ m.label }}</div>
+                  </sc-for>
+                </div>
+                <div style="position:absolute;left:8.4px;bottom:8.4px;display:flex;gap:5.6px;pointer-events:none">
+                  <span style="background:rgba(22,24,38,.9);border-radius:var(--radius-sm);padding:3px 8px;font-size:10px">{{ qc.kmLine }}</span>
+                  <span style="background:rgba(22,24,38,.9);border-radius:var(--radius-sm);padding:3px 8px;font-size:10px">{{ qc.hourLine }}</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8.4px;margin-bottom:8.4px"><span style="width:20px;height:20px;border-radius:50%;background:var(--color-accent-800);color:var(--color-accent-100);display:grid;place-items:center;font-size:10px">3</span><span style="font-family:var(--font-heading);font-size:15px">When &amp; which car</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8.4px">
+                <div class="field"><label>Date</label><input class="input" style="min-height:44px" type="date" value="{{ q.date }}" onChange="{{ onDate }}"></div>
+                <div class="field"><label>Time</label><input class="input" style="min-height:44px" type="time" value="{{ q.time }}" onChange="{{ onTime }}"></div>
+                <div class="field"><label>Occasion</label><select class="input" style="min-height:44px" value="{{ q.occ }}" onChange="{{ onOcc }}"><sc-for list="{{ occasions }}" as="o" hint-placeholder-count="4"><option value="{{ o.key }}">{{ o.name }}</option></sc-for></select></div>
+                <div class="field"><label>Halt hours</label><input class="input" style="min-height:44px" type="number" min="0" max="12" value="{{ q.halt }}" onChange="{{ onHalt }}"></div>
+              </div>
+              <div class="field" style="margin-top:8.4px"><label>Car</label><select class="input" style="min-height:44px" value="{{ q.carId }}" onChange="{{ onQCar }}"><sc-for list="{{ carOptions }}" as="c" hint-placeholder-count="6"><option value="{{ c.id }}">{{ c.label }}</option></sc-for></select></div>
+              <div style="display:flex;gap:5.6px;align-items:center;margin-top:8.4px;font-size:11px;color:var(--color-neutral-500)"><i class="ph ph-moon-stars" style="color:var(--color-accent)"></i>{{ qc.nightNote }}</div>
+            </div>
+            <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:16.8px;box-shadow:var(--shadow-sm)">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8.4px"><span style="font-family:var(--font-heading);font-size:16px">Your quote</span><span class="tag tag-accent">{{ qc.tripLabel }}</span></div>
+              <div style="font-size:11px;color:var(--color-neutral-500);margin-bottom:11.2px">{{ qc.carName }} · {{ qc.routeLine }}</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5.6px;margin-bottom:11.2px">
+                <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:8.4px"><div style="font-size:9px;color:var(--color-neutral-500)">Distance</div><div style="font-family:var(--font-heading);font-size:14px">{{ qc.km }} km</div></div>
+                <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:8.4px"><div style="font-size:9px;color:var(--color-neutral-500)">Duration</div><div style="font-family:var(--font-heading);font-size:14px">{{ qc.hours }} hr</div></div>
+                <div style="background:var(--color-bg);border-radius:var(--radius-sm);padding:8.4px"><div style="font-size:9px;color:var(--color-neutral-500)">Covers</div><div style="font-family:var(--font-heading);font-size:14px">{{ qc.incLine }}</div></div>
+              </div>
+              <sc-for list="{{ qc.lines }}" as="l" hint-placeholder-count="5">
+                <div style="display:flex;justify-content:space-between;gap:8.4px;padding:7px 0;border-bottom:1px solid var(--color-divider);font-size:12px"><span>{{ l.label }}<span style="display:block;font-size:10px;color:var(--color-neutral-600)">{{ l.note }}</span></span><span style="white-space:nowrap">{{ l.amt }}</span></div>
+              </sc-for>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;color:var(--color-neutral-400)"><span>GST 5%</span><span>{{ qc.gst }}</span></div>
+              <div style="font-size:10px;color:var(--color-neutral-500)">Tolls, parking and permits at actuals.</div>
+            </div>
+          </div>
+          <div style="position:sticky;bottom:0;display:flex;align-items:center;gap:11.2px;padding:11.2px 20px;background:rgba(22,24,38,.97);border-top:1px solid var(--color-divider)">
+            <div><div style="font-size:10px;color:var(--color-neutral-500)">Total incl. GST</div><div style="font-family:var(--font-heading);font-size:21px;color:var(--color-accent-300)">{{ qc.total }}</div></div>
+            <button type="button" class="btn btn-primary" style="flex:1;min-height:48px" onClick="{{ goSummary }}">Review &amp; send <i class="ph ph-arrow-right"></i></button>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- SUMMARY · mobile -->
+        <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div class="msec" style="padding-bottom:0">
+            <div style="display:flex;align-items:center;gap:5.6px;font-size:11px;color:var(--color-neutral-600);margin-bottom:11.2px"><span>Calculator</span><i class="ph ph-caret-right"></i><span style="color:var(--color-accent-300)">Summary</span><i class="ph ph-caret-right"></i><span>WhatsApp</span></div>
+            <h1 style="font-size:23px;margin:0 0 4px">Check and send</h1>
+            <div style="font-size:12px;color:var(--color-neutral-400)">One tap opens WhatsApp with the whole quote. Nothing is charged here.</div>
+          </div>
+          <div class="msec" style="display:flex;flex-direction:column;gap:11.2px">
+            <div style="background:var(--color-surface);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm)">
+              <div style="height:150px;background:#1b1d29"><image-slot id="car-{{ qc.carId }}" shape="rect" placeholder="{{ qc.carName }}"></image-slot></div>
+              <div style="padding:16.8px">
+                <div style="font-family:var(--font-heading);font-size:18px">{{ qc.carName }}</div>
+                <div style="font-size:11px;color:var(--color-neutral-500);margin-bottom:11.2px">{{ qc.carMeta }}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8.4px;font-size:12px">
+                  <div><span style="color:var(--color-neutral-500)">Package</span><br>{{ qc.pkgLabel }}</div>
+                  <div><span style="color:var(--color-neutral-500)">Occasion</span><br>{{ qc.occName }}</div>
+                  <div><span style="color:var(--color-neutral-500)">Pickup</span><br>{{ qc.whenLine }}</div>
+                  <div><span style="color:var(--color-neutral-500)">Trip</span><br>{{ qc.km }} km · {{ qc.hours }} hr</div>
+                </div>
+              </div>
+            </div>
+            <sc-for list="{{ qc.stops }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex;gap:11.2px;align-items:center;background:var(--color-surface);border-radius:var(--radius-md);padding:11.2px">
+                <i class="ph {{ s.icon }}" style="font-size:18px;color:var(--color-accent)"></i>
+                <div><div style="font-size:10px;color:var(--color-neutral-500)">{{ s.role }}</div><div style="font-size:13px">{{ s.name }}</div></div>
+                <div style="margin-left:auto;font-size:11px;color:var(--color-neutral-500)">{{ s.leg }}</div>
+              </div>
+            </sc-for>
+            <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:16.8px">
+              <div style="font-family:var(--font-heading);font-size:15px;margin-bottom:8.4px">Price breakdown</div>
+              <sc-for list="{{ qc.lines }}" as="l" hint-placeholder-count="6">
+                <div style="display:flex;justify-content:space-between;gap:8.4px;padding:7px 0;border-bottom:1px solid var(--color-divider);font-size:12px"><span>{{ l.label }}<span style="display:block;font-size:10px;color:var(--color-neutral-600)">{{ l.note }}</span></span><span style="white-space:nowrap">{{ l.amt }}</span></div>
+              </sc-for>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;color:var(--color-neutral-400)"><span>GST 5%</span><span>{{ qc.gst }}</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:8.4px;border-top:1px solid var(--color-accent-700)"><span style="font-family:var(--font-heading);font-size:14px">Total payable</span><span style="font-family:var(--font-heading);font-size:24px;color:var(--color-accent-300)">{{ qc.total }}</span></div>
+              <div style="font-size:11px;color:var(--color-neutral-500);margin-top:5.6px">{{ qc.advance }} advance confirms the car. Balance to the driver.</div>
+            </div>
+            <div style="background:#12141f;border-radius:var(--radius-md);padding:11.2px">
+              <div style="display:flex;align-items:center;gap:5.6px;font-size:11px;color:var(--color-neutral-500);margin-bottom:8.4px"><i class="ph ph-chat-teardrop-text" style="color:#25d366"></i>What we receive</div>
+              <div style="background:#1d2a22;border-radius:var(--radius-md);padding:11.2px;font-size:11px;line-height:1.6;white-space:pre-line;color:var(--color-neutral-200)">{{ waPreview }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--color-neutral-400)">
+              <span><i class="ph ph-clock-user" style="color:var(--color-accent)"></i> Replies in under 10 minutes, 6am–midnight</span>
+              <span><i class="ph ph-arrows-clockwise" style="color:var(--color-accent)"></i> Free cancellation up to 24 hours before</span>
+              <span><i class="ph ph-seal-check" style="color:var(--color-accent)"></i> Driver details 12 hours before pickup</span>
+            </div>
+          </div>
+          <div style="position:sticky;bottom:0;padding:11.2px 20px;background:rgba(22,24,38,.97);border-top:1px solid var(--color-divider)">
+            <a class="btn wa btn-block" style="min-height:52px;font-size:15px;margin-top:0" href="{{ waHref }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:21px"></i>Send this quote — {{ qc.total }}</a>
+            <a class="btn btn-secondary btn-block" style="min-height:44px" href="tel:+919876543210">Or call +91 98765 43210</a>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- OCCASION · mobile -->
+        <sc-if value="{{ isOcc }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="position:relative;height:280px">
+            <div class="lighten" style="position:absolute;inset:0"><image-slot id="occhero-{{ occPage.key }}" shape="rect" placeholder="{{ occPage.name }} photo"></image-slot></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,24,38,.4),#161826 92%);pointer-events:none"></div>
+            <div style="position:absolute;left:20px;right:20px;bottom:16.8px;pointer-events:none">
+              <div class="kick">{{ occPage.kicker }}</div>
+              <h1 style="font-size:26px;line-height:1.1;margin:0 0 5.6px">{{ occPage.title }}</h1>
+              <p style="font-size:12px;color:var(--color-neutral-300);margin:0">{{ occPage.blurb }}</p>
+            </div>
+          </div>
+          <div style="padding:11.2px 20px;border-bottom:1px solid var(--color-divider)">
+            <div class="scroll-x" style="gap:5.6px">
+              <sc-for list="{{ occTabs }}" as="t" hint-placeholder-count="4">
+                <button type="button" onClick="{{ t.on }}" style="flex:none;display:flex;align-items:center;gap:5.6px;font-size:12px;min-height:36px;padding:0 11.2px;border-radius:var(--radius-md);cursor:pointer;background:{{ t.bg2 }};color:{{ t.fg }};border:1px solid {{ t.bd2 }}"><i class="ph {{ t.icon }}" style="font-size:15px"></i>{{ t.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div class="msec">
+            <div class="mh2" style="margin-bottom:11.2px">{{ occPage.h2 }}</div>
+            <sc-for list="{{ occPage.includes }}" as="i" hint-placeholder-count="5">
+              <div style="display:flex;gap:8.4px;padding:8.4px 0;border-bottom:1px solid var(--color-divider)">
+                <i class="ph ph-check-circle" style="font-size:18px;color:var(--color-accent);flex:none"></i>
+                <div><div style="font-size:13px">{{ i.t }}</div><div style="font-size:11px;color:var(--color-neutral-500)">{{ i.d }}</div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div class="msec" style="padding-top:0">
+            <div class="mh2" style="margin-bottom:11.2px">Ready-made packages</div>
+            <div style="display:flex;flex-direction:column;gap:8.4px">
+              <sc-for list="{{ occPage.packages }}" as="p" hint-placeholder-count="3">
+                <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:11.2px">
+                  <div style="display:flex;justify-content:space-between;gap:11.2px;align-items:baseline">
+                    <div><div style="font-family:var(--font-heading);font-size:15px">{{ p.name }}</div><div style="font-size:11px;color:var(--color-neutral-500)">{{ p.detail }}</div></div>
+                    <div style="text-align:right"><div style="font-family:var(--font-heading);font-size:17px;color:var(--color-accent-300)">{{ p.price }}</div><div style="font-size:9px;color:var(--color-neutral-500)">{{ p.unit }}</div></div>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-block" style="min-height:40px" onClick="{{ goQuote }}">Price it</button>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:8.4px;background:var(--color-accent-900);border-radius:var(--radius-md);padding:11.2px;margin-top:11.2px">
+              <i class="ph ph-info" style="font-size:18px;color:var(--color-accent-300);flex:none"></i>
+              <div style="font-size:11px;color:var(--color-neutral-300)">{{ occPage.note }}</div>
+            </div>
+          </div>
+          <div class="msec" style="padding-top:0">
+            <div class="mh2" style="margin-bottom:11.2px">{{ occPage.fleetTitle }}</div>
+            <div style="display:flex;flex-direction:column;gap:11.2px">
+              <sc-for list="{{ occCarsM }}" as="c" hint-placeholder-count="3">
+                <dc-import name="CarCard" car="{{ c }}" hint-size="100%,120px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+          <div style="position:sticky;bottom:0;display:flex;gap:8.4px;padding:11.2px 20px;background:rgba(22,24,38,.97);border-top:1px solid var(--color-divider)">
+            <button type="button" class="btn btn-primary" style="flex:1;min-height:48px" onClick="{{ goQuote }}">Calculate price</button>
+            <a class="btn wa" style="min-height:48px;width:48px;padding:0" href="{{ waGeneral }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:21px"></i></a>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- CITY · mobile -->
+        <sc-if value="{{ isCity }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="position:relative;height:230px">
+            <div class="lighten" style="position:absolute;inset:0"><image-slot id="cityhero-{{ cityPage.key }}" shape="rect" placeholder="{{ cityPage.name }} photo"></image-slot></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,24,38,.35),#161826 92%);pointer-events:none"></div>
+            <div style="position:absolute;left:20px;right:20px;bottom:16.8px;pointer-events:none">
+              <div class="kick">Car rental with driver</div>
+              <h1 style="font-size:28px;margin:0 0 4px">{{ cityPage.name }}</h1>
+              <p style="font-size:12px;color:var(--color-neutral-300);margin:0">{{ cityPage.count }} cars across {{ cityPage.name }} and {{ cityPage.state }}.</p>
+            </div>
+          </div>
+          <div style="padding:11.2px 20px;border-bottom:1px solid var(--color-divider)">
+            <div class="scroll-x" style="gap:5.6px">
+              <sc-for list="{{ cityTabs }}" as="c" hint-placeholder-count="6">
+                <button type="button" onClick="{{ c.on }}" style="flex:none;font-size:12px;min-height:36px;padding:0 11.2px;border-radius:var(--radius-md);cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div class="msec">
+            <div class="mh2" style="margin-bottom:11.2px">Popular routes</div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ cityRoutes }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex;justify-content:space-between;gap:11.2px;align-items:center;padding:11.2px 0;border-bottom:1px solid var(--color-divider)">
+                  <div><div style="font-size:13px">{{ r.name }}</div><div style="font-size:10px;color:var(--color-neutral-500)">{{ r.km }} km · {{ r.pkg }}</div></div>
+                  <div style="font-family:var(--font-heading);font-size:15px;color:var(--color-accent-300);white-space:nowrap">{{ r.price }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:16.8px;margin-top:16.8px">
+              <div style="font-family:var(--font-heading);font-size:15px;margin-bottom:5.6px">{{ cityPage.name }} rate notes</div>
+              <div style="font-size:12px;color:var(--color-neutral-300);line-height:1.6">City multiplier <strong style="color:var(--color-accent-300)">×{{ cityPage.multLabel }}</strong> on every package base. Night charge for 10pm–6am pickups. Airport entry and parking at actuals.</div>
+            </div>
+          </div>
+          <div class="msec" style="padding-top:0">
+            <div class="mh2" style="margin-bottom:11.2px">Cars in {{ cityPage.name }}</div>
+            <div style="display:flex;flex-direction:column;gap:11.2px">
+              <sc-for list="{{ cityCarsM }}" as="c" hint-placeholder-count="3">
+                <dc-import name="CarCard" car="{{ c }}" hint-size="100%,120px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+          <div style="position:sticky;bottom:0;display:flex;gap:8.4px;padding:11.2px 20px;background:rgba(22,24,38,.97);border-top:1px solid var(--color-divider)">
+            <button type="button" class="btn btn-primary" style="flex:1;min-height:48px" onClick="{{ goQuote }}">Price my route</button>
+            <a class="btn wa" style="min-height:48px;width:48px;padding:0" href="{{ waGeneral }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:21px"></i></a>
+          </div>
+        </div>
+        </sc-if>
+
+        <div style="background:#25d366;padding:16.8px 20px;display:flex;align-items:center;gap:11.2px;color:#0c1a11">
+          <i class="ph-fill ph-whatsapp-logo" style="font-size:26px"></i>
+          <div style="flex:1"><div style="font-family:var(--font-heading);font-weight:600;font-size:14px">Questions or a custom route?</div><div style="font-size:11px;opacity:.8">Quotes and confirmation on WhatsApp.</div></div>
+          <a class="btn" style="background:#0c1a11;color:#eaf7ee;border-color:#0c1a11;min-height:40px" href="{{ waGeneral }}" target="_blank">Chat</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1980,&quot;height&quot;:1400}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'home', carId: 'eclass', city: 'kochi', occ: 'wedding',
+    f: { city: 'all', type: 'all', occ: 'all', seats: 'all', sort: 'popular' },
+    q: { carId: 'eclass', pkg: 'p8', trip: 'local', from: 'kochi-marine', to: 'kochi-airport', ret: 'kochi-marine', date: '2026-09-14', time: '09:00', occ: 'casual', halt: 2 }
+  };
+  wa = '919876543210';
+
+  cities = [
+    { key: 'kochi', name: 'Kochi', state: 'Kerala', mult: 1.0, count: 150 },
+    { key: 'bangalore', name: 'Bangalore', state: 'Karnataka', mult: 1.05, count: 280 },
+    { key: 'mumbai', name: 'Mumbai', state: 'Maharashtra', mult: 1.15, count: 350 },
+    { key: 'delhi', name: 'Delhi', state: 'NCR', mult: 1.1, count: 320 },
+    { key: 'hyderabad', name: 'Hyderabad', state: 'Telangana', mult: 1.0, count: 200 },
+    { key: 'chennai', name: 'Chennai', state: 'Tamil Nadu', mult: 1.0, count: 180 }
+  ];
+
+  locs = [
+    { id: 'kochi-marine', name: 'Marine Drive, Kochi', city: 'kochi', x: 0, y: 0 },
+    { id: 'kochi-airport', name: 'Cochin Intl Airport (COK)', city: 'kochi', x: 18, y: 24 },
+    { id: 'kochi-fort', name: 'Fort Kochi', city: 'kochi', x: -4, y: -8 },
+    { id: 'kochi-kakkanad', name: 'Kakkanad / Infopark', city: 'kochi', x: 8, y: 7 },
+    { id: 'alleppey', name: 'Alleppey houseboat jetty', city: 'kochi', x: -30, y: -45 },
+    { id: 'munnar', name: 'Munnar', city: 'kochi', x: 100, y: 85 },
+    { id: 'thekkady', name: 'Thekkady', city: 'kochi', x: 140, y: -30 },
+    { id: 'guruvayur', name: 'Guruvayur temple', city: 'kochi', x: 0, y: 88 },
+    { id: 'blr-city', name: 'Bangalore city centre', city: 'bangalore', x: 300, y: 460 },
+    { id: 'blr-airport', name: 'Bangalore airport (BLR)', city: 'bangalore', x: 322, y: 492 },
+    { id: 'chennai-central', name: 'Chennai Central', city: 'chennai', x: 560, y: 380 },
+    { id: 'hyd-banjara', name: 'Hyderabad, Banjara Hills', city: 'hyderabad', x: 420, y: 980 },
+    { id: 'mumbai-bandra', name: 'Mumbai, Bandra', city: 'mumbai', x: -180, y: 1250 },
+    { id: 'blr-mysore', name: 'Mysore', city: 'bangalore', x: 215, y: 390 },
+    { id: 'blr-coorg', name: 'Coorg', city: 'bangalore', x: 180, y: 330 },
+    { id: 'chennai-central', name: 'Chennai Central', city: 'chennai', x: 560, y: 380 },
+    { id: 'chennai-airport', name: 'Chennai airport (MAA)', city: 'chennai', x: 545, y: 360 },
+    { id: 'mahabalipuram', name: 'Mahabalipuram', city: 'chennai', x: 585, y: 330 },
+    { id: 'pondicherry', name: 'Pondicherry', city: 'chennai', x: 600, y: 270 },
+    { id: 'tirupati', name: 'Tirupati', city: 'chennai', x: 490, y: 470 },
+    { id: 'hyd-airport', name: 'Hyderabad airport (HYD)', city: 'hyderabad', x: 410, y: 955 },
+    { id: 'ramoji', name: 'Ramoji Film City', city: 'hyderabad', x: 450, y: 965 },
+    { id: 'warangal', name: 'Warangal', city: 'hyderabad', x: 520, y: 1020 },
+    { id: 'vijayawada', name: 'Vijayawada', city: 'hyderabad', x: 600, y: 900 },
+    { id: 'mumbai-airport', name: 'Mumbai airport (BOM)', city: 'mumbai', x: -176, y: 1256 },
+    { id: 'lonavala', name: 'Lonavala', city: 'mumbai', x: -110, y: 1195 },
+    { id: 'pune', name: 'Pune', city: 'mumbai', x: -60, y: 1150 },
+    { id: 'shirdi', name: 'Shirdi', city: 'mumbai', x: -60, y: 1370 },
+    { id: 'delhi-aerocity', name: 'Delhi, Aerocity', city: 'delhi', x: 300, y: 2100 },
+    { id: 'delhi-igi', name: 'Delhi airport (DEL)', city: 'delhi', x: 296, y: 2104 },
+    { id: 'gurgaon', name: 'Gurgaon', city: 'delhi', x: 285, y: 2085 },
+    { id: 'agra', name: 'Agra, Taj Mahal', city: 'delhi', x: 355, y: 1935 },
+    { id: 'jaipur', name: 'Jaipur', city: 'delhi', x: 120, y: 2010 },
+    { id: 'rishikesh', name: 'Rishikesh', city: 'delhi', x: 390, y: 2280 }
+  ];
+
+  packages = [
+    { key: 'p8', label: '8 hrs / 80 km', hrs: 8, km: 80, rate: 'r8', sub: 'Half day in the city', icon: 'ph-clock' },
+    { key: 'p12', label: '12 hrs / 120 km', hrs: 12, km: 120, rate: 'r12', sub: 'Long day, functions', icon: 'ph-clock-clockwise' },
+    { key: 'full', label: 'Full day 24 hrs / 300 km', hrs: 24, km: 300, rate: 'rd', sub: 'Outstation, multi-city', icon: 'ph-road-horizon' }
+  ];
+
+  cars = [
+    { id: 'eclass', name: 'Mercedes-Benz E-Class', year: 2023, type: 'Luxury sedan', seats: 4, trans: 'Automatic', fuel: 'Petrol', city: 'kochi', rating: '4.9', badge: 'Most booked', occ: ['wedding', 'celebrity', 'casual'], r8: 6500, r12: 8900, rd: 12500, extraKm: 34, extraHr: 350, bata: 600, night: 500 },
+    { id: 'innova', name: 'Toyota Innova Crysta', year: 2022, type: 'MUV', seats: 7, trans: 'Manual', fuel: 'Diesel', city: 'bangalore', rating: '4.8', badge: 'Best value', occ: ['casual', 'wedding'], r8: 4000, r12: 5600, rd: 7800, extraKm: 18, extraHr: 200, bata: 500, night: 400 },
+    { id: 'x5', name: 'BMW X5', year: 2023, type: 'Luxury SUV', seats: 5, trans: 'Automatic', fuel: 'Diesel', city: 'mumbai', rating: '4.9', badge: 'Celebrity pick', occ: ['celebrity', 'wedding'], r8: 8500, r12: 11500, rd: 15900, extraKm: 45, extraHr: 450, bata: 700, night: 600 },
+    { id: 'fortuner', name: 'Toyota Fortuner', year: 2022, type: 'SUV', seats: 7, trans: 'Automatic', fuel: 'Diesel', city: 'delhi', rating: '4.7', badge: 'Convoy ready', occ: ['wedding', 'casual'], r8: 5500, r12: 7400, rd: 10200, extraKm: 26, extraHr: 280, bata: 600, night: 500 },
+    { id: 'a6', name: 'Audi A6', year: 2023, type: 'Luxury sedan', seats: 4, trans: 'Automatic', fuel: 'Petrol', city: 'hyderabad', rating: '4.8', badge: 'Bridal car', occ: ['wedding', 'celebrity'], r8: 7200, r12: 9800, rd: 13500, extraKm: 38, extraHr: 380, bata: 650, night: 550 },
+    { id: 'carnival', name: 'Kia Carnival', year: 2023, type: 'Premium MUV', seats: 7, trans: 'Automatic', fuel: 'Diesel', city: 'chennai', rating: '4.8', badge: 'Crew favourite', occ: ['celebrity', 'casual'], r8: 6800, r12: 9200, rd: 12800, extraKm: 32, extraHr: 340, bata: 600, night: 500 },
+    { id: 'vclass', name: 'Mercedes-Benz V-Class', year: 2022, type: 'Premium van', seats: 7, trans: 'Automatic', fuel: 'Diesel', city: 'kochi', rating: '4.9', badge: 'Privacy build', occ: ['celebrity', 'wedding'], r8: 9500, r12: 12800, rd: 17500, extraKm: 48, extraHr: 480, bata: 750, night: 650 },
+    { id: 'urbania', name: 'Force Urbania', year: 2023, type: 'Van / tempo', seats: 13, trans: 'Manual', fuel: 'Diesel', city: 'bangalore', rating: '4.6', badge: 'Guest transfer', occ: ['wedding', 'casual'], r8: 7500, r12: 9800, rd: 13200, extraKm: 34, extraHr: 300, bata: 600, night: 500 },
+    { id: 'ghost', name: 'Rolls-Royce Ghost', year: 2021, type: 'Ultra luxury', seats: 4, trans: 'Automatic', fuel: 'Petrol', city: 'mumbai', rating: '5.0', badge: 'Signature', occ: ['wedding', 'celebrity'], r8: 35000, r12: 45000, rd: 60000, extraKm: 150, extraHr: 1500, bata: 1500, night: 1500 }
+  ];
+
+  occasions = [
+    { key: 'wedding', name: 'Wedding', icon: 'ph-heart', tagline: 'Bridal car, convoy, guest fleet', surcharge: 2500 },
+    { key: 'celebrity', name: 'Celebrity pickup', icon: 'ph-star-four', tagline: 'Discreet, on time, escorted', surcharge: 3500 },
+    { key: 'casual', name: 'Casual & city', icon: 'ph-city', tagline: 'Airport runs, meetings, days out', surcharge: 0 },
+    { key: 'tour', name: 'Outstation & tours', icon: 'ph-mountains', tagline: 'Munnar, Alleppey, temple circuits', surcharge: 0 }
+  ];
+
+  occPages = {
+    wedding: {
+      kicker: 'Wedding fleet', title: 'The car should be the calmest part of the day',
+      blurb: 'A bridal car with decor clearance, a convoy for family, and a guest shuttle that runs on the timeline you give us.',
+      h2: 'What a wedding booking includes', fleetTitle: 'Cars couples book most', ctaTitle: 'Hold a wedding date',
+      note: 'Decor is fitted by your decorator; we allow ribbon, floral and magnetic fixings only — no adhesive or drilling.',
+      includes: [
+        { t: 'Decor-ready bridal car', d: 'Cleared for floral and ribbon work, detailed the morning of' },
+        { t: 'Convoy coordination', d: 'One point of contact for every driver in the fleet' },
+        { t: 'Uniformed chauffeurs', d: 'White shirt, dark trousers, door service for the couple' },
+        { t: 'Timeline held, not metered', d: 'Waiting hours are quoted upfront, not billed as surprises' },
+        { t: 'Standby vehicle on call', d: 'For fleets of four cars or more, within the same city' }
+      ],
+      packages: [
+        { name: 'Bride & groom car', detail: '12 hrs / 120 km · decor ready · E-Class or A6', price: '₹11,400', unit: 'from, per day' },
+        { name: 'Family convoy — 3 cars', detail: 'Fortuner ×2 + Innova · 12 hrs each', price: '₹24,600', unit: 'from, per day' },
+        { name: 'Guest shuttle', detail: 'Urbania 13-seater · station and hotel runs', price: '₹9,800', unit: 'from, per day' }
+      ]
+    },
+    celebrity: {
+      kicker: 'Celebrity & VIP movement', title: 'Airport to venue without a single loose end',
+      blurb: 'Blacked-out cabins, drivers who have done this before, and a route plan shared with your team before the day.',
+      h2: 'How VIP movement is handled', fleetTitle: 'Cars managers ask for', ctaTitle: 'Plan a VIP movement',
+      note: 'Escort vehicles, bouncer seating and airport tarmac access are arranged on request with 48 hours notice.',
+      includes: [
+        { t: 'Privacy-built cabins', d: 'V-Class and X5 with tinted rear glass and partition' },
+        { t: 'Route plan in advance', d: 'Shared on WhatsApp with alternates for crowd risk' },
+        { t: 'NDA-signed drivers', d: 'Same drivers repeat for the whole schedule' },
+        { t: 'Escort and crew cars', d: 'Carnival or Innova following the principal car' },
+        { t: 'Standby at the venue', d: 'Engine on, doors ready, for the exit window' }
+      ],
+      packages: [
+        { name: 'Airport pickup & drop', detail: '8 hrs / 80 km · V-Class · standby included', price: '₹9,500', unit: 'from, per day' },
+        { name: 'Principal + crew car', detail: 'X5 + Carnival · 12 hrs each · same-day schedule', price: '₹20,700', unit: 'from, per day' },
+        { name: 'Full-day escorted', detail: '24 hrs / 300 km · 3-car movement', price: '₹46,200', unit: 'from, per day' }
+      ]
+    },
+    casual: {
+      kicker: 'Casual & city use', title: 'A driver for the day, priced like a package',
+      blurb: 'Airport transfers, client meetings, a day of shopping. Pick 8 or 12 hours and keep the same car and driver.',
+      h2: 'What a city booking includes', fleetTitle: 'Everyday favourites', ctaTitle: 'Book a car for tomorrow',
+      note: 'Extra hours and km are billed at the car\u2019s published rate — the calculator shows both before you confirm.',
+      includes: [
+        { t: 'Fuel and driver in the package', d: 'Nothing extra to settle at the end of the day' },
+        { t: 'Same car, same driver', d: 'No swaps mid-day, no shared rides' },
+        { t: 'Airport pickups tracked', d: 'Driver waits free for 60 minutes on arrivals' },
+        { t: 'Child seat on request', d: 'Free, if asked at booking' },
+        { t: 'Cancel free till 24 hrs', d: 'Advance refunded to the same UPI ID' }
+      ],
+      packages: [
+        { name: 'Airport transfer', detail: 'One-way drop · Innova Crysta', price: '₹1,900', unit: 'from, per transfer' },
+        { name: 'City day', detail: '8 hrs / 80 km · Innova or E-Class', price: '₹4,000', unit: 'from, per day' },
+        { name: 'Corporate week', detail: '5 days × 12 hrs · one driver', price: '₹26,400', unit: 'from, per week' }
+      ]
+    },
+    tour: {
+      kicker: 'Outstation & tours', title: 'Kerala in four days, without changing cars',
+      blurb: 'Hill stations, backwaters and temple circuits on a per-day package with the km you actually drive.',
+      h2: 'How outstation trips are quoted', fleetTitle: 'Built for long roads', ctaTitle: 'Price a tour',
+      note: 'Interstate permits and tolls are at actuals. One-way drops carry a driver-return allowance, shown as its own line.',
+      includes: [
+        { t: 'Per-day package, 300 km', d: 'Extra km billed only past the package' },
+        { t: 'Driver stay handled', d: 'Bata covers his food and lodging' },
+        { t: 'Night driving limits', d: 'No driving past 11pm without a second driver' },
+        { t: 'Route suggestions', d: 'Halts and photo stops your driver knows' },
+        { t: 'One-way drops allowed', d: 'Return allowance shown before you pay' }
+      ],
+      packages: [
+        { name: 'Kochi → Munnar → back', detail: '2 days · 24 hrs / 300 km each', price: '₹18,900', unit: 'from, per trip' },
+        { name: 'Backwater run', detail: 'Kochi → Alleppey → Kochi · 1 day', price: '₹8,400', unit: 'from, per trip' },
+        { name: 'Temple circuit', detail: 'Guruvayur + Thrissur · 12 hrs', price: '₹9,200', unit: 'from, per trip' }
+      ]
+    }
+  };
+
+  inclusions = ['Chauffeur, uniformed and verified', 'Fuel within the package km', 'Vehicle insurance and maintenance', 'GST invoice on request', 'Free waiting: 60 min at airports'];
+  exclusions = ['Tolls, parking and entry fees', 'Interstate permits on outstation', 'Extra km and hours beyond package', 'Driver bata for extra days'];
+  whyItems = [
+    { icon: 'ph-shield-check', title: 'Inspected before every trip', body: 'Tyres, brakes, AC and interior checked and logged the day before pickup.' },
+    { icon: 'ph-user-circle-check', title: 'Drivers you would trust', body: 'Police-verified, 8 years minimum, briefed on your occasion.' },
+    { icon: 'ph-receipt', title: 'One price, itemised', body: 'Package, extra km, hours, bata, night charge. Nothing added later.' },
+    { icon: 'ph-whatsapp-logo', title: 'Booking on WhatsApp', body: 'Quote, confirmation, driver details and invoice in one chat.' },
+    { icon: 'ph-headset', title: 'Someone answers at 2am', body: 'A human on the line for the whole duration of your booking.' }
+  ];
+
+  fmt(n) { return '\u20b9' + Math.round(n).toLocaleString('en-IN'); }
+  car(id) { return this.cars.find(c => c.id === id) || this.cars[0]; }
+  loc(id) { return this.locs.find(l => l.id === id); }
+  pkg(key) { return this.packages.find(p => p.key === key) || this.packages[0]; }
+  cityOf(key) { return this.cities.find(c => c.key === key) || this.cities[0]; }
+  occOf(key) { return this.occasions.find(o => o.key === key) || this.occasions[0]; }
+  dist(a, b) {
+    const A = this.loc(a), B = this.loc(b);
+    if (!A || !B || A === B) return 0;
+    return Math.max(6, Math.round(Math.hypot(A.x - B.x, A.y - B.y)));
+  }
+  set(k, v) { this.setState({ [k]: v }); }
+  setQ(k, v) { this.setState(s => ({ q: Object.assign({}, s.q, { [k]: v }) })); }
+  setF(k, v) { this.setState(s => ({ f: Object.assign({}, s.f, { [k]: v }) })); }
+
+  calc() {
+    const q = this.state.q, car = this.car(q.carId), pkg = this.pkg(q.pkg), city = this.cityOf(car.city);
+    const legs = [];
+    if (q.from && q.to) legs.push({ from: q.from, to: q.to, km: this.dist(q.from, q.to) });
+    if (q.to && q.ret) legs.push({ from: q.to, to: q.ret, km: this.dist(q.to, q.ret) });
+    let km = legs.reduce((s, l) => s + l.km, 0);
+    if (q.trip === 'round' && !q.ret) km *= 2;
+    if (km < 1) km = 1;
+    const outstation = q.trip !== 'local';
+    const drive = km / (outstation ? 52 : 32);
+    const hours = Math.max(1, Math.ceil((drive + Number(q.halt || 0)) * 2) / 2);
+    const days = Math.max(1, Math.ceil(hours / pkg.hrs));
+    const base = car[pkg.rate] * city.mult * days;
+    const incKm = pkg.km * days, incHr = pkg.hrs * days;
+    const exKm = Math.max(0, km - incKm), exHr = Math.max(0, hours - incHr);
+    const nightStart = parseInt(q.time, 10) >= 22 || parseInt(q.time, 10) < 6;
+    const nights = Math.max(0, days - 1) + (nightStart ? 1 : 0);
+    const occ = this.occOf(q.occ);
+    const dropCharge = q.trip === 'oneway' ? Math.round(km * car.extraKm * 0.35) : 0;
+    const lines = [{
+      label: pkg.label + ' package' + (days > 1 ? ' \u00d7 ' + days + ' days' : ''),
+      note: car.name + ' \u00b7 ' + city.name + ' rate \u00d7' + city.mult.toFixed(2),
+      raw: base
+    }];
+    if (exKm > 0) lines.push({ label: 'Extra distance \u00b7 ' + exKm + ' km', note: this.fmt(car.extraKm) + '/km past ' + incKm + ' km included', raw: exKm * car.extraKm });
+    if (exHr > 0) lines.push({ label: 'Extra hours \u00b7 ' + exHr + ' hr', note: this.fmt(car.extraHr) + '/hr past ' + incHr + ' hr included', raw: exHr * car.extraHr });
+    lines.push({ label: 'Driver allowance (bata)' + (days > 1 ? ' \u00d7 ' + days : ''), note: 'Food and stay for the chauffeur', raw: car.bata * days });
+    if (nights > 0) lines.push({ label: 'Night charge \u00d7 ' + nights, note: nightStart ? 'Pickup between 10pm and 6am' : 'Overnight halt on a multi-day trip', raw: car.night * nights });
+    if (dropCharge > 0) lines.push({ label: 'One-way driver return', note: '35% of ' + km + ' km at ' + this.fmt(car.extraKm) + '/km', raw: dropCharge });
+    if (occ.surcharge > 0) lines.push({ label: occ.name + ' handling', note: occ.key === 'wedding' ? 'Decor clearance, morning detailing, convoy contact' : 'Privacy fit-out, route plan, standby at venue', raw: occ.surcharge });
+    const subtotal = lines.reduce((s, l) => s + l.raw, 0);
+    const gst = subtotal * 0.05;
+    const total = subtotal + gst;
+    const advance = Math.round(total * 0.25 / 100) * 100;
+    return { q, car, pkg, city, occ, legs, km, hours, days, incKm, incHr, lines, subtotal, gst, total, advance, outstation, nightStart };
+  }
+
+  tripLabel(t) { return t === 'local' ? 'Local, in city' : t === 'oneway' ? 'Outstation one-way' : 'Outstation round trip'; }
+
+  waText(c) {
+    const L = ['Hi Xotic, I would like to book this trip.', '', 'Car: ' + c.car.name + ' (' + c.car.year + ', ' + c.car.type + ')', 'Package: ' + c.pkg.label + (c.days > 1 ? ' \u00d7 ' + c.days + ' days' : ''), 'Occasion: ' + c.occ.name, 'Pickup: ' + this.loc(c.q.from).name + ' on ' + c.q.date + ' at ' + c.q.time, 'Drop: ' + this.loc(c.q.to).name];
+    if (c.q.ret) L.push('Return drop: ' + this.loc(c.q.ret).name);
+    L.push('Trip: ' + this.tripLabel(c.q.trip) + ' \u00b7 ' + c.km + ' km \u00b7 ' + c.hours + ' hr', '');
+    c.lines.forEach(l => L.push('\u2022 ' + l.label + ' \u2014 ' + this.fmt(l.raw)));
+    L.push('\u2022 GST 5% \u2014 ' + this.fmt(c.gst), '', 'Total: ' + this.fmt(c.total), 'Advance to confirm: ' + this.fmt(c.advance), '', 'Tolls, parking and permits at actuals. Please confirm availability.');
+    return L.join('\n');
+  }
+  waLink(text) { return 'https://wa.me/' + this.wa + '?text=' + encodeURIComponent(text); }
+
+  chip(active) {
+    return active
+      ? { bg: 'var(--color-accent-800)', fg: 'var(--color-accent-100)', bd: 'var(--color-accent)' }
+      : { bg: 'transparent', fg: 'var(--color-neutral-300)', bd: 'var(--color-divider)' };
+  }
+
+  prep(car, compact) {
+    const pkg = this.pkg(this.state.q.pkg), city = this.cityOf(car.city);
+    const price = car[pkg.rate] * city.mult;
+    return {
+      id: car.id, name: car.name, year: car.year, type: car.type, seats: car.seats,
+      trans: car.trans, fuel: car.fuel, rating: car.rating, badge: car.badge,
+      cityLabel: city.name + ', ' + city.state,
+      priceLabel: this.fmt(price), pkgLabel: '/ ' + pkg.label,
+      extraKmLabel: this.fmt(car.extraKm), bataLabel: this.fmt(car.bata) + '/day',
+      compact: !!compact, full: !compact,
+      onView: () => this.setState({ carId: car.id, screen: 'detail' }),
+      waHref: this.waLink('Hi Xotic, I am interested in the ' + car.name + ' (' + city.name + ') on the ' + pkg.label + ' package. Is it available?')
+    };
+  }
+
+  filtered() {
+    const f = this.state.f;
+    let out = this.cars.filter(c =>
+      (f.city === 'all' || c.city === f.city) &&
+      (f.type === 'all' || c.type === f.type) &&
+      (f.occ === 'all' || c.occ.indexOf(f.occ) > -1) &&
+      (f.seats === 'all' || (f.seats === '4' ? c.seats <= 4 : f.seats === '7' ? c.seats >= 5 && c.seats <= 7 : c.seats > 7))
+    );
+    const rate = this.pkg(this.state.q.pkg).rate;
+    if (f.sort === 'low') out = out.slice().sort((a, b) => a[rate] - b[rate]);
+    if (f.sort === 'high') out = out.slice().sort((a, b) => b[rate] - a[rate]);
+    return out;
+  }
+
+  mapData(c) {
+    const ids = [c.q.from, c.q.to, c.q.ret].filter(Boolean);
+    const pts = ids.map(id => this.loc(id)).filter(Boolean);
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
+    const minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    const spanX = Math.max(20, maxX - minX), spanY = Math.max(20, maxY - minY);
+    const sx = v => 46 + ((v - minX) / spanX) * 228;
+    const sy = v => 158 - ((v - minY) / spanY) * 116;
+    const roles = ['Pickup', 'Drop', 'Return'];
+    const seen = {};
+    const marks = pts.map((p, i) => {
+      const x = sx(p.x), y = sy(p.y), key = Math.round(x) + ',' + Math.round(y);
+      const dup = seen[key] || 0;
+      seen[key] = dup + 1;
+      return {
+        x: x, y: y,
+        lx: Number(((x / 320) * 100).toFixed(2)),
+        ly: Math.max(3, Number((((y - 16 - dup * 16) / 200) * 100).toFixed(2))),
+        tf: x > 190 ? 'translate(-100%, -50%)' : 'translate(-6px, -50%)',
+        label: roles[i] + ' \u00b7 ' + p.name.split(',')[0].split(' (')[0]
+      };
+    });
+    return { pts: marks.map(m => m.x + ',' + m.y).join(' '), marks: marks };
+  }
+
+  cityRoutes() {
+    const city = this.cityOf(this.state.city);
+    const homeCars = this.cars.filter(c => c.city === city.key);
+    const cheap = homeCars.length ? homeCars.slice().sort((a, b) => a.r8 - b.r8)[0] : this.cars[1];
+    const anchor = this.locs.find(l => l.city === city.key) || this.loc('kochi-marine');
+    const targets = this.locs.filter(l => l.city === city.key && l.id !== anchor.id).slice(0, 6);
+    return targets.map(t => {
+      const km = Math.max(8, Math.round(Math.hypot(anchor.x - t.x, anchor.y - t.y)));
+      const usePkg = km > 130 ? this.pkg('full') : km > 60 ? this.pkg('p12') : this.pkg('p8');
+      const base = cheap[usePkg.rate] * city.mult;
+      const extra = Math.max(0, km * 2 - usePkg.km) * cheap.extraKm;
+      return { name: anchor.name.split(',')[0] + ' \u2192 ' + t.name.split(',')[0], km: km, pkg: usePkg.label, price: this.fmt((base + extra + cheap.bata) * 1.05) };
+    });
+  }
+
+  renderVals() {
+    const s = this.state, c = this.calc(), q = s.q;
+    const nav = [['home', 'Home'], ['browse', 'Browse cars'], ['detail', 'Car detail'], ['quote', 'Price calculator'], ['summary', 'Booking summary'], ['occ', 'Occasion page'], ['city', 'City page']];
+    const cityPage = this.cityOf(s.city), occPage = Object.assign({ key: s.occ, name: this.occOf(s.occ).name }, this.occPages[s.occ]);
+    const detailCar = this.car(s.carId), detailCity = this.cityOf(detailCar.city);
+    const dPkg = this.pkg(q.pkg);
+    const waText = this.waText(c);
+
+    return {
+      navItems: nav.map(n => Object.assign({ label: n[1], on: () => this.set('screen', n[0]) }, this.chip(s.screen === n[0]))),
+      isHome: s.screen === 'home', isBrowse: s.screen === 'browse', isDetail: s.screen === 'detail',
+      isQuote: s.screen === 'quote', isSummary: s.screen === 'summary', isOcc: s.screen === 'occ', isCity: s.screen === 'city',
+      goHome: () => this.set('screen', 'home'), goBrowse: () => this.set('screen', 'browse'),
+      goQuote: () => this.set('screen', 'quote'), goSummary: () => this.set('screen', 'summary'),
+      goOcc: () => this.set('screen', 'occ'), goCity: () => this.set('screen', 'city'),
+      goQuoteCar: () => this.setState(st => ({ screen: 'quote', q: Object.assign({}, st.q, { carId: st.carId }) })),
+
+      q: q, packages: this.packages, occasions: this.occasions,
+      locOptions: this.locs, carOptions: this.cars.map(c2 => ({ id: c2.id, label: c2.name + ' \u2014 ' + this.cityOf(c2.city).name })),
+      onFrom: e => this.setQ('from', e.target.value), onTo: e => this.setQ('to', e.target.value),
+      onRet: e => this.setQ('ret', e.target.value), onDate: e => this.setQ('date', e.target.value),
+      onTime: e => this.setQ('time', e.target.value), onOcc: e => this.setQ('occ', e.target.value),
+      onHalt: e => this.setQ('halt', e.target.value), onQCar: e => this.setQ('carId', e.target.value),
+      onPkg: e => this.setQ('pkg', e.target.value),
+      tripOpts: ['local', 'oneway', 'round'].map(t => ({ key: t, label: t === 'local' ? 'Local' : t === 'oneway' ? 'One-way' : 'Round trip', on2: q.trip === t, on: () => this.setQ('trip', t) })),
+      pkgCards: this.packages.map(p => ({
+        label: p.label, sub: p.sub, icon: p.icon, price: this.fmt(this.car(q.carId)[p.rate] * this.cityOf(this.car(q.carId).city).mult),
+        on: () => this.setQ('pkg', p.key),
+        bg: q.pkg === p.key ? 'var(--color-accent-900)' : 'var(--color-bg)',
+        bd: q.pkg === p.key ? 'var(--color-accent)' : 'var(--color-divider)',
+        priceColor: q.pkg === p.key ? 'var(--color-accent-300)' : 'var(--color-neutral-300)'
+      })),
+
+      occTabs: this.occasions.map(o => Object.assign({
+        label: o.name, icon: o.icon, on: () => this.setState({ occ: o.key, screen: 'occ' }),
+        bg: s.occ === o.key ? 'var(--color-accent-900)' : 'transparent',
+        bd: s.occ === o.key ? 'var(--color-accent)' : 'transparent',
+        fg: s.occ === o.key ? 'var(--color-accent-200)' : 'var(--color-neutral-300)'
+      }, { bg2: s.occ === o.key ? 'var(--color-accent-800)' : 'transparent', bd2: s.occ === o.key ? 'var(--color-accent)' : 'var(--color-divider)' })),
+      occCards: this.occasions.map(o => ({ key: o.key, name: o.name, icon: o.icon, tagline: o.tagline, on: () => this.setState({ occ: o.key, screen: 'occ' }) })),
+      occLine: this.occOf(s.occ).name + ' selected \u00b7 ' + this.occasions.length + ' occasion types',
+      cityCards: this.cities.map(ct => ({ key: ct.key, name: ct.name, count: ct.count, on: () => this.setState({ city: ct.key, screen: 'city' }) })),
+      cityTabs: this.cities.map(ct => Object.assign({ key: ct.key, name: ct.name, on: () => this.set('city', ct.key) }, this.chip(s.city === ct.key))),
+      fleetCount: this.cars.length * 18,
+      featured: this.cars.slice(0, 4).map(x => this.prep(x)),
+      featuredM: this.cars.slice(0, 4).map(x => this.prep(x, true)),
+      whyItems: this.whyItems, inclusions: this.inclusions, exclusions: this.exclusions,
+
+      browseTitle: s.f.city === 'all' ? 'Cars with drivers, all cities' : 'Cars with drivers in ' + this.cityOf(s.f.city).name,
+      pkgLabel: dPkg.label,
+      filterGroups: [
+        { label: 'City', opts: [{ key: 'all', label: 'All cities' }].concat(this.cities.map(ct => ({ key: ct.key, label: ct.name }))).map(o => Object.assign({ label: o.label, on: () => this.setF('city', o.key) }, this.chip(s.f.city === o.key))) },
+        { label: 'Car type', opts: [{ key: 'all', label: 'All types' }].concat(this.cars.map(x => x.type).filter((t, i, a) => a.indexOf(t) === i).map(t => ({ key: t, label: t }))).map(o => Object.assign({ label: o.label, on: () => this.setF('type', o.key) }, this.chip(s.f.type === o.key))) },
+        { label: 'Occasion', opts: [{ key: 'all', label: 'Any' }].concat(this.occasions.filter(o => o.key !== 'tour').map(o => ({ key: o.key, label: o.name }))).map(o => Object.assign({ label: o.label, on: () => this.setF('occ', o.key) }, this.chip(s.f.occ === o.key))) },
+        { label: 'Seats', opts: [{ key: 'all', label: 'Any' }, { key: '4', label: 'Up to 4' }, { key: '7', label: '5\u20137' }, { key: '8', label: '8+' }].map(o => Object.assign({ label: o.label, on: () => this.setF('seats', o.key) }, this.chip(s.f.seats === o.key))) }
+      ],
+      sortOpts: [{ k: 'popular', l: 'Popular' }, { k: 'low', l: 'Price low' }, { k: 'high', l: 'Price high' }].map(o => ({ key: o.k, label: o.l, on2: s.f.sort === o.k, on: () => this.setF('sort', o.k) })),
+      clearFilters: () => this.setState({ f: { city: 'all', type: 'all', occ: 'all', seats: 'all', sort: 'popular' } }),
+      browseCars: this.filtered().map(x => this.prep(x)),
+      browseCarsM: this.filtered().map(x => this.prep(x, true)),
+      resultCount: this.filtered().length,
+      noResults: this.filtered().length === 0,
+      filterSummary: s.f.occ === 'all' ? '' : ' for ' + this.occOf(s.f.occ).name.toLowerCase(),
+
+      car: Object.assign(this.prep(detailCar), {
+        extraHrLabel: this.fmt(detailCar.extraHr),
+        occTags: detailCar.occ.map(k => this.occOf(k).name),
+        specs: [
+          { icon: 'ph-users-three', label: 'Seating', value: detailCar.seats + ' + driver' },
+          { icon: 'ph-gear-six', label: 'Transmission', value: detailCar.trans },
+          { icon: 'ph-gas-pump', label: 'Fuel', value: detailCar.fuel },
+          { icon: 'ph-suitcase-rolling', label: 'Luggage', value: detailCar.seats > 7 ? '8 bags' : detailCar.seats > 4 ? '4 bags' : '2 bags' }
+        ],
+        rateRows: [
+          { k: '8 hrs / 80 km package', v: this.fmt(detailCar.r8 * detailCity.mult), note: 'Half-day city use' },
+          { k: '12 hrs / 120 km package', v: this.fmt(detailCar.r12 * detailCity.mult), note: 'Functions and long days' },
+          { k: 'Full day 24 hrs / 300 km', v: this.fmt(detailCar.rd * detailCity.mult), note: 'Outstation, per day' },
+          { k: 'Extra distance', v: this.fmt(detailCar.extraKm) + ' / km', note: 'Beyond package km' },
+          { k: 'Extra time', v: this.fmt(detailCar.extraHr) + ' / hr', note: 'Beyond package hours' },
+          { k: 'Driver bata', v: this.fmt(detailCar.bata) + ' / day', note: 'Food and stay' },
+          { k: 'Night charge', v: this.fmt(detailCar.night), note: 'Pickup 10pm\u20136am, or overnight halt' },
+          { k: 'Wedding handling', v: this.fmt(2500), note: 'Decor clearance and detailing' },
+          { k: 'City multiplier', v: '\u00d7' + detailCity.mult.toFixed(2), note: detailCity.name + ' base rate' }
+        ]
+      }),
+      similar: this.cars.filter(x => x.id !== detailCar.id && (x.type === detailCar.type || x.occ.some(o => detailCar.occ.indexOf(o) > -1))).slice(0, 3).map(x => this.prep(x)),
+
+      qc: {
+        carId: c.car.id, carName: c.car.name, carMeta: c.car.year + ' \u00b7 ' + c.car.type + ' \u00b7 ' + c.car.seats + ' seats \u00b7 ' + c.city.name,
+        pkgLabel: c.pkg.label, occName: c.occ.name, tripLabel: this.tripLabel(q.trip),
+        km: c.km, hours: c.hours, days: c.days,
+        kmLine: c.km + ' km on route', hourLine: c.hours + ' hr with halts',
+        incLine: c.incKm + ' km / ' + c.incHr + ' hr',
+        routeLine: this.loc(q.from).name.split(',')[0] + ' \u2192 ' + this.loc(q.to).name.split(',')[0] + (q.ret ? ' \u2192 ' + this.loc(q.ret).name.split(',')[0] : ''),
+        whenLine: q.date + ' at ' + q.time,
+        nightNote: c.nightStart ? 'Night charge applies \u2014 pickup is between 10pm and 6am.' : 'No night charge at this pickup time.',
+        lines: c.lines.map(l => ({ label: l.label, note: l.note, amt: this.fmt(l.raw) })),
+        subtotal: this.fmt(c.subtotal), gst: this.fmt(c.gst), total: this.fmt(c.total), advance: this.fmt(c.advance),
+        stops: [
+          { role: 'Pickup', icon: 'ph-map-pin-line', name: this.loc(q.from).name, leg: q.date + ' \u00b7 ' + q.time },
+          { role: 'Drop', icon: 'ph-flag', name: this.loc(q.to).name, leg: this.dist(q.from, q.to) + ' km' }
+        ].concat(q.ret ? [{ role: 'Return drop', icon: 'ph-arrow-u-down-left', name: this.loc(q.ret).name, leg: this.dist(q.to, q.ret) + ' km' }] : [])
+      },
+      map: this.mapData(c),
+      waHref: this.waLink(waText), waPreview: waText,
+      waGeneral: this.waLink('Hi Xotic, I would like to enquire about a car with driver.'),
+
+      occPage: occPage,
+      occCars: this.cars.filter(x => x.occ.indexOf(s.occ) > -1 || s.occ === 'tour').slice(0, 4).map(x => this.prep(x)),
+      occCarsM: this.cars.filter(x => x.occ.indexOf(s.occ) > -1 || s.occ === 'tour').slice(0, 3).map(x => this.prep(x, true)),
+      cityPage: Object.assign({}, cityPage, { multLabel: cityPage.mult.toFixed(2) }),
+      cityRoutes: this.cityRoutes(),
+      cityCars: this.cars.filter(x => x.city === s.city).concat(this.cars.filter(x => x.city !== s.city)).slice(0, 4).map(x => this.prep(x)),
+      cityCarsM: this.cars.filter(x => x.city === s.city).concat(this.cars.filter(x => x.city !== s.city)).slice(0, 3).map(x => this.prep(x, true))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

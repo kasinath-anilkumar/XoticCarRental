@@ -1,0 +1,14 @@
+@layer theme, base, vendor, app, components, utilities;
+
+/*
+ * Leaflet's stylesheet, in the vendor layer.
+ *
+ * Imported straight from the package it is unlayered, and unlayered CSS beats
+ * every layer — so the moment our own styles moved into @layer components,
+ * Leaflet's defaults started winning: its zoom control came back with its own
+ * border and radius over the ones RouteMap.module.css sets.
+ *
+ * A layer below ours restores the intent. It also means overriding a Leaflet
+ * default never needs a specificity fight again.
+ */
+@import "leaflet/dist/leaflet.css" layer(vendor);

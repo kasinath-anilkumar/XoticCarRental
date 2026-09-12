@@ -1,0 +1,870 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Nocturne — design-system tokens and component classes.
+
+   Ported verbatim from the Claude Design handoff:
+     design/project/_ds/nocturne-5e251597-41bc-49b9-9aa7-52559f0e28c5/styles.css
+
+   Do not re-derive these values. Every color, space, radius and shadow in the
+   app reads from the variables below. The one change from the source sheet is
+   the font: the original @imports Inter from Google Fonts, we load it through
+   next/font (app/layout.tsx) and map --font-heading / --font-body onto it.
+
+   Below the component layer sit the page-level helpers the prototype declared
+   inline in its <style> block (.sec, .kick, .h2, .navlink, .wa, .scroll-x …).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * Tailwind v4, in three deliberate pieces.
+ *
+ * The layer order is declared first so our own rules — written before any of
+ * this existed, in no layer at all — keep beating Tailwind's utilities where
+ * they overlap. Unlayered CSS wins over layered CSS, which is exactly the
+ * behaviour a half-migrated stylesheet needs: a component still carrying its
+ * module CSS is unaffected by a utility class landing next to it.
+ *
+ * PREFLIGHT IS NOT IMPORTED. Tailwind's reset would fight the one this sheet
+ * already carries — its own heading margins, list styles and form
+ * normalisation — and the first thing a migration must not do is change how
+ * anything looks. The two rules preflight is genuinely needed for are restated
+ * in the base layer below.
+ */
+/*
+ *   theme       the tokens
+ *   base        the two rules preflight is needed for
+ *   app         this file: element defaults and the shared primitives
+ *   components  every *.module.css — a component beats a site-wide default
+ *   utilities   Tailwind — the last word, which is what a utility is for
+ *
+ * The middle two are the ones that matter. A module used to sit unlayered and
+ * therefore beat everything, including utilities: converting a component to
+ * `absolute inset-0` had no effect if another component's module said
+ * `position: relative`. And before that, an unlayered global `.btn` beat a
+ * module's `display: none` on nothing but injection order, which is how the
+ * header came to render its desktop and mobile variants at the same time.
+ */
+@layer theme, base, vendor, app, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@layer base {
+  /*
+   * The one piece of preflight that cannot be skipped: Tailwind's `border`
+   * utility sets a WIDTH and assumes preflight has already set the style. With
+   * no style, `border` draws nothing at all — a silent no-op that would waste
+   * somebody's afternoon. Width 0 keeps every element exactly as it renders
+   * now; only an explicit utility or rule turns a border on.
+   */
+  *,
+  ::before,
+  ::after {
+    border-width: 0;
+    border-style: solid;
+  }
+}
+
+/*
+ * The design tokens ARE the Tailwind theme.
+ *
+ * `@theme` declares these on :root exactly as before and generates a utility
+ * for each — `bg-surface`, `text-accent-text`, `rounded-md`, `shadow-lg`. The
+ * names did not have to change because the sheet already followed Tailwind's
+ * namespaces (--color-*, --radius-*, --shadow-*, --font-*), which is the whole
+ * reason this migration is cheap.
+ *
+ * It also means the two zones keep working untouched: `.on-dark` re-declares
+ * the same variables, and a utility compiles to `var(--color-surface)` rather
+ * than to a literal, so `bg-surface` inside a black band resolves dark by
+ * itself. No `dark:` variants, no duplicated palette.
+ *
+ * `static` because half of these tokens are read by hand-written CSS rather
+ * than by a utility, and Tailwind would otherwise drop the ones no utility
+ * mentions.
+ */
+@theme static {
+  /* Tailwind's own palette and font stacks are dropped: a design system with
+     two greys and one orange should not also ship `bg-fuchsia-400`. */
+  --color-*: initial;
+  --font-*: initial;
+
+  /* The design rhythm is 2.8px, and its `--space-N` names are already the
+     multiples Tailwind counts in: --space-4 is 11.2px and so is `p-4`. One
+     line therefore maps the whole spacing scale onto the utilities without
+     renaming a thing. */
+  --spacing: 2.8px;
+  /* ── brand ────────────────────────────────────────────────────────────────
+     The palette is the logo's: a white page, black ink, orange accent — with
+     the header, heroes, feature bands and photo captions dropping to the logo's
+     own black plate via the .on-dark zone below.
+
+     The greys carry no hue at all. They used to hold a whisper of the accent,
+     which put a beige cast over every white on the site; the orange does all
+     the warming now, and only where it is actually used.
+
+     The ramps are GENERATED. Run `node scripts/palette.mjs` to reproduce this
+     block and `--report` for the OKLCH working and the full WCAG table. Retune
+     BRAND_ORANGE there and re-run; never hand-edit a ramp step. */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #0f0f0f;
+
+  /* The brand orange is #ff7a00 and runs at full brightness on the black
+     bands. On a white page it is 2.5:1 — too faint to draw an icon with — so
+     the light zone takes the same hue down to exactly 3:1, the floor for a
+     non-text mark. Running text uses --color-accent-text, which clears 4.5:1;
+     a 14px label in either of the others is a bug. */
+  --color-accent: #ed7100;
+  /* The brand orange at full strength, for the one solid fill the system
+     allows. Too bright to draw a 1px icon with on white, and exactly right
+     under black ink — a filled button is where a brand colour can be loud. */
+  --color-accent-solid: #ff7a00;
+  --color-accent-text: #b15300;
+  /* Ink that sits ON a solid orange fill: black, at 7.6:1. White on this
+     orange would be 2.6:1 — the brighter the fill, the darker its ink. */
+  --color-accent-ink: #0a0a0a;
+  --color-accent-2: var(--color-accent);
+
+  /* The ground as channels, so translucent scrims build from the token rather
+     than a re-typed hex. Keep in step with --color-bg. */
+  --color-bg-rgb: 255 255 255;
+
+  /* Tonal ramps.
+     100-600 are TEXT steps — every one clears 4.5:1 on white.
+     700-900 are FILL steps — borders, chips, tag grounds, status pills.
+     The same step means the same thing in both zones: 300 is secondary text,
+     800 is a subtle fill, 900 is the faintest ground. */
+  --color-neutral-100: #0f0f0f;
+  --color-neutral-200: #242424;
+  --color-neutral-300: #3a3a3a;
+  --color-neutral-400: #525252;
+  --color-neutral-500: #636363;
+  --color-neutral-600: #717171;
+  --color-neutral-700: #bebebe;
+  --color-neutral-800: #dedede;
+  --color-neutral-900: #f3f3f3;
+
+  --color-accent-100: #1e0800;
+  --color-accent-200: #3d1800;
+  --color-accent-300: #5f2900;
+  --color-accent-400: #833b00;
+  --color-accent-500: #9c4800;
+  --color-accent-600: #b15300;
+  --color-accent-700: #f1ab83;
+  --color-accent-800: #fbd5c0;
+  --color-accent-900: #fff0e8;
+
+  --color-accent-2-100: var(--color-accent-100);
+  --color-accent-2-200: var(--color-accent-200);
+  --color-accent-2-300: var(--color-accent-300);
+  --color-accent-2-400: var(--color-accent-400);
+  --color-accent-2-500: var(--color-accent-500);
+  --color-accent-2-600: var(--color-accent-600);
+  --color-accent-2-700: var(--color-accent-700);
+  --color-accent-2-800: var(--color-accent-800);
+  --color-accent-2-900: var(--color-accent-900);
+
+  --font-heading: var(--font-inter), "Inter", system-ui, sans-serif;
+  --font-heading-weight: 500;
+  --font-body: var(--font-inter), "Inter", system-ui, sans-serif;
+
+  --space-1: 2.8px;
+  --space-2: 5.6px;
+  --space-3: 8.4px;
+  --space-4: 11.2px;
+  --space-6: 16.8px;
+  --space-8: 22.4px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  /* Elevation, light idiom: a soft cast shadow plus a hairline. A ring alone
+     barely reads on white — that is a dark-ground technique, and .on-dark
+     keeps it. */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05), 0 0 0 1px rgb(0 0 0 / 0.07);
+  --shadow-md: 0 4px 14px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 18px 44px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.09);
+
+  /* Grounds beside the ramps. `slot` is an empty image well, `well` a recess. */
+  --color-slot: #e8e8e8;
+  --color-well: #f0f0f0;
+  --color-band-from: #f6f6f6;
+  --color-band-to: #fdfdfd;
+  --color-map-grid: #ebebeb;
+  --color-map-road: #dcdcdc;
+
+  /* Translucent grounds. `bar` is the sticky header and the mobile action
+     bars; `chip` is a label floated over a photograph; `scrim` dims the page
+     behind a dialog and is always black, in both zones. */
+  /* Opaque enough to read against anything scrolling under it. It used to
+     be 0.88 with an 8px backdrop blur behind it; the blur cost a compositor
+     pass per frame and bought 12% of a view of the page underneath. */
+  --color-bar: rgb(255 255 255 / 0.96);
+  --color-bar-solid: rgb(255 255 255 / 0.97);
+  --color-chip: rgb(1 1 1 / 0.72);
+  /* Always light: a chip over a photograph is dark in both zones. */
+  --color-chip-ink: #f5f5f5;
+  --color-scrim: rgb(0 0 0 / 0.55);
+
+  /* Status colours for the admin. Deliberately outside the brand ramp: a
+     confirmed booking and a failed save must not both read as orange, and
+     neither is a brand statement. */
+  --color-positive: #14603a;
+  --color-positive-bg: #dff3e7;
+  --color-negative: #8c1d2b;
+  --color-negative-bg: #fbe3e6;
+
+  /* WhatsApp's own brand colours. Exempt from the palette by design — the
+     green IS the affordance. Do not fold these into the ramps. */
+  --color-whatsapp: #25d366;
+  --color-whatsapp-hover: #1fbb59;
+  --color-whatsapp-ink: #0c1a11;
+  --color-whatsapp-ink-hover: #08120c;
+  --color-whatsapp-tint: #eaf7ee;
+  --color-whatsapp-bubble: #1d2a22;
+
+  /* The prototype's two frame widths become the responsive gutters. */
+  --gutter-desktop: 80px;
+  --gutter-mobile: 20px;
+
+  /* The sticky header's height. Anything else that pins itself — the browse
+     filter rail, the results bar — offsets by this, so the number lives in one
+     place and the header enforces it rather than merely happening to match. */
+  --header-height: 70px;
+
+  /* Computed from another token rather than being a literal. It stays in the
+     theme so `border-divider` exists as a utility; because a plain @theme
+     compiles to var(--color-divider), it still resolves against whichever
+     --color-text is in scope, which is what the two zones need. */
+  --color-divider: color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   .on-dark — the black zone.
+
+   The logo is white and orange on black, so the header, the heroes, the
+   footer, the feature bands and any caption sitting on a photograph drop to
+   that plate. This re-declares the same token names, and because custom
+   properties inherit, every component inside a marked subtree works unchanged:
+   a card reading var(--color-surface) simply resolves to the dark surface.
+
+   The ramps run the other way here. On a dark ground a low step number means
+   "lighter, more prominent"; on a light one it has to mean "darker" for the
+   same rule to keep its meaning.
+
+   An element marked .on-dark must paint its own background — this sets tokens
+   and ink only, so that the header can stay translucent and a hero can show a
+   photograph through.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.on-dark {
+  /* Full brightness here: on black the brand orange is 8:1, and holding it
+     back would be holding it back from nothing. */
+  --color-accent: #ff7a00;
+  --color-accent-solid: #ff7a00;
+  --color-bg: #010101;
+  --color-surface: #161616;
+  --color-text: #f5f5f5;
+  --color-accent-text: #be5900;
+  --color-bg-rgb: 1 1 1;
+
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e8e8e8;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #b7b7b7;
+  --color-neutral-500: #989898;
+  --color-neutral-600: #7a7a7a;
+  --color-neutral-700: #5e5e5e;
+  --color-neutral-800: #424242;
+  --color-neutral-900: #2b2b2b;
+
+  --color-accent-100: #fff3ec;
+  --color-accent-200: #ffe1d1;
+  --color-accent-300: #ffc6a6;
+  --color-accent-400: #ff9a5d;
+  --color-accent-500: #eb7000;
+  --color-accent-600: #be5900;
+  --color-accent-700: #934300;
+  --color-accent-800: #6a2f00;
+  --color-accent-900: #461f03;
+
+  --color-slot: #090909;
+  --color-well: #000000;
+  --color-band-from: #020202;
+  --color-band-to: #0f0f0f;
+  --color-map-grid: #161616;
+  --color-map-road: #222222;
+  --color-section: #512200;
+  --color-section-glow: #6d3000;
+  --color-section-ghost: #8f4200;
+
+  /* Redeclared, not inherited: a custom property resolves its var()s where it
+     is DECLARED, so the :root versions would still carry the light channels. */
+  --color-bar: rgb(1 1 1 / 0.96);
+  --color-bar-solid: rgb(1 1 1 / 0.97);
+  --color-chip: rgb(1 1 1 / 0.85);
+
+  /* Elevation, dark idiom: black on black casts nothing, so the hairline does
+     the work and the ambient half is kept only for cards floating over a
+     photograph or a band. */
+  --shadow-sm: 0 0 0 1px var(--color-neutral-800);
+  --shadow-md: 0 0 0 1px var(--color-neutral-700), 0 6px 18px rgb(0 0 0 / 0.55);
+  --shadow-lg: 0 0 0 1px var(--color-neutral-500), 0 16px 40px rgb(0 0 0 / 0.65);
+
+  --color-positive: #b7e6c9;
+  --color-positive-bg: #16301f;
+  --color-negative: #f3c9cf;
+  --color-negative-bg: #3a2126;
+
+  color: var(--color-text);
+}
+
+/*
+ * Everything below is the component layer.
+ *
+ * Two reasons it is declared as one, rather than left unlayered:
+ *
+ *   Utilities win. Unlayered CSS beats layered CSS, so an unlayered `.btn`
+ *   would quietly outrank `px-3` and every converted component would need an
+ *   `!` to say what it meant. In the layer, a utility does what it says.
+ *
+ *   A module beats a primitive. This is the cascade that produced a real bug:
+ *   the header's `.mobileOnly { display: none }` and the global
+ *   `.btn { display: inline-flex }` had equal specificity, so the one that
+ *   happened to be injected later won — and both the desktop and the mobile
+ *   header rendered on every screen. A component's own stylesheet should beat
+ *   a site-wide default, and now it does.
+ *
+ * Relative order inside the layer is unchanged, so nothing here has moved
+ * against anything else here.
+ */
+@layer app {
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--space-2);
+}
+h1 { font-size: 42px; }
+h2 { font-size: 32px; }
+h3 { font-size: 25px; }
+h4 { font-size: 20px; }
+h5 { font-size: 16px; }
+h6 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+p { margin: 0 0 var(--space-3); }
+a { color: var(--color-accent-text); text-underline-offset: 3px; }
+img { display: block; max-width: 100%; }
+figure { margin: 0; }
+figcaption {
+  font-size: 11px;
+  margin-top: var(--space-1);
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 9999;
+  transform: translateY(-200%);
+  padding: 12px 20px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+}
+.skip-link:focus { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+
+/* The image wrapper — every content photograph goes through it. Anything
+   darker than the page ground falls away. */
+.lighten {
+  mix-blend-mode: lighten;
+  background-color: transparent;
+}
+
+/* — rules —
+   Rules fade to transparent at both ends instead of stopping cleanly. */
+.hr {
+  height: 1px;
+  border: 0;
+  margin: var(--space-4) 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-divider) 48px,
+    var(--color-divider) calc(100% - 48px),
+    transparent
+  );
+}
+
+/* — buttons — */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: var(--radius-md);
+}
+.btn svg { display: block; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { color: var(--color-accent-text); border-color: var(--color-accent); }
+.btn-primary:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+.btn-primary:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.btn-secondary { border-color: var(--color-divider); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.btn-ghost { color: var(--color-accent-text); padding-inline: var(--space-1); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+/* The one solid orange fill the system allows: the primary conversion action
+   on a page. The brand orange at full brightness under black ink is 7.6:1 —
+   white on it would be 2.6:1, which is the whole reason the ink is dark. */
+.btn-solid {
+  background: var(--color-accent-solid);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent-solid);
+}
+.btn-solid:hover { background: var(--color-accent-500); border-color: var(--color-accent-500); }
+.btn-solid:active { background: var(--color-accent-400); border-color: var(--color-accent-400); }
+
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+.btn-block { width: 100%; margin-top: var(--space-2); }
+
+/* Room for the sticky action bar (§22): without it the bar covers the footer's
+   last row, and on a phone that row is the phone number. */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+}
+
+/* — forms — */
+/* Two ways to write a field, both of which have to look the same: a wrapper
+   with a label inside, and a label wrapping its own caption in a span. */
+.field > label,
+.field > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+textarea.input { min-height: 90px; resize: vertical; }
+/* Native date/time pickers render a black glyph on a dark ground otherwise. */
+.input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.55); cursor: pointer; }
+
+.radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.radio input,
+.seg-opt input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.radio .dot {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-divider);
+}
+.radio:hover .dot { border-color: var(--color-accent); }
+.radio input:checked + .dot {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  /* Knocked out with the ground the control sits ON — radios live on
+     cards, and punching the page ground through leaves a dark ring. */
+  box-shadow: inset 0 0 0 4px var(--color-surface);
+}
+.radio input:focus-visible + .dot { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.seg {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+.seg-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+.seg-opt:has(input:checked) { color: var(--color-accent-text); box-shadow: inset 0 0 0 1px var(--color-accent); }
+.seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+
+/* — cards — */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.card-kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-text); }
+.card-title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 17px;
+  line-height: 1.2;
+}
+.card-body { margin: 0; font-size: 13px; opacity: 0.8; flex: 1; }
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.elev-lg { box-shadow: var(--shadow-lg); }
+
+/* — tags — */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: calc(var(--radius-md) * 0.75);
+}
+.tag-accent { background: var(--color-accent-800); color: var(--color-accent-100); }
+.tag-accent-2 { background: var(--color-accent-2-800); color: var(--color-accent-2-100); }
+.tag-neutral { background: var(--color-neutral-800); color: var(--color-neutral-100); }
+.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent-text); }
+
+/* — tables — */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  padding: var(--space-2);
+  border-bottom: 1px solid transparent;
+}
+.table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid transparent;
+}
+/* Row rules as row-level strips so the end-fade spans the row, not each cell. */
+.table thead tr {
+  background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-divider) 48px,
+      var(--color-divider) calc(100% - 48px),
+      transparent
+    )
+    no-repeat bottom / 100% 1px;
+}
+.table tbody tr {
+  background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, var(--color-text) 8%, transparent) 48px,
+      color-mix(in srgb, var(--color-text) 8%, transparent) calc(100% - 48px),
+      transparent
+    )
+    no-repeat bottom / 100% 1px;
+}
+.table tbody tr:hover {
+  background:
+    linear-gradient(
+        color-mix(in srgb, var(--color-text) 4%, transparent),
+        color-mix(in srgb, var(--color-text) 4%, transparent)
+      )
+      no-repeat 0 0 / 100% 100%,
+    linear-gradient(
+        to right,
+        transparent,
+        color-mix(in srgb, var(--color-text) 8%, transparent) 48px,
+        color-mix(in srgb, var(--color-text) 8%, transparent) calc(100% - 48px),
+        transparent
+      )
+      no-repeat bottom / 100% 1px;
+}
+
+/* — dialog — */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--color-scrim);
+  z-index: 100;
+}
+.dialog {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+.dialog-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 20px; }
+.dialog-body { font-size: 14px; opacity: 0.85; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Page layer — the helpers the prototype declared inline in its <style>.
+   The desktop values are the 1440 frame; the mobile overrides at the bottom
+   are the 390 frame.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Section rhythm. `.sec` is the prototype's 56px/80px block. */
+.sec { padding: 56px var(--gutter-desktop); }
+.sec-tight { padding-top: 0; }
+
+/* The horizontal page gutter on its own, for full-bleed bands. */
+.gutter { padding-inline: var(--gutter-desktop); }
+
+.kick {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent-400);
+  margin-bottom: 8px;
+}
+
+.h2 {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.navlink {
+  color: var(--color-neutral-300);
+  text-decoration: none;
+  font-size: 14px;
+}
+.navlink:hover,
+.navlink[aria-current="page"] { color: var(--color-accent-300); }
+
+/* The WhatsApp button — the one saturated fill the system allows here,
+   because the brand green is the point of the affordance. */
+.wa {
+  background: var(--color-whatsapp);
+  color: var(--color-whatsapp-ink);
+  border: 1px solid var(--color-whatsapp);
+}
+.wa:hover { background: var(--color-whatsapp-hover); border-color: var(--color-whatsapp-hover); }
+
+/* Ink on the WhatsApp green. The green is bright enough to need dark ink —
+   the same constraint the brand orange has if it is ever used as a fill. */
+.wa-ink { background: var(--color-whatsapp-ink); color: var(--color-whatsapp-tint); border-color: var(--color-whatsapp-ink); }
+.wa-ink:hover { background: var(--color-whatsapp-ink-hover); border-color: var(--color-whatsapp-ink-hover); }
+
+/* Horizontal scroll rows — occasion chips, city chips, mobile card rails. */
+.scroll-x {
+  display: flex;
+  gap: 11.2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  /* The UA thumb is invisible against a near-black track without this. */
+  scrollbar-color: var(--color-neutral-700) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-x > * { flex: none; }
+
+/* The sticky bottom action bar the mobile frame puts on detail / quote /
+   summary / occasion / city. Hidden above the mobile breakpoint. */
+.stickybar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 11.2px;
+  padding: 11.2px var(--gutter-mobile);
+  background: var(--color-bar-solid);
+  border-top: 1px solid var(--color-divider);
+}
+
+/* Section heading + "see all" link, repeated on home / occasion / city. */
+.sec-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16.8px;
+  margin-bottom: 22.4px;
+}
+
+/* Grids. The column counts collapse at the breakpoints below. */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16.8px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16.8px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16.8px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 22.4px; }
+.grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 11.2px; }
+
+/* Car cards. They reflow to the compact horizontal form below 768px, which
+   needs the full row — a 163px column crushes the name and the two actions. */
+.grid-cars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16.8px; }
+.grid-cars-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16.8px; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Tablet ─────────────────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  :root { --gutter-desktop: 40px; }
+  .sec { padding-block: 40px; }
+  .h2 { font-size: 26px; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-5 { grid-template-columns: repeat(3, 1fr); }
+  .grid-6 { grid-template-columns: repeat(3, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cars { grid-template-columns: repeat(2, 1fr); }
+  .grid-cars-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Mobile — the 390 frame ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  :root {
+    --gutter-desktop: var(--gutter-mobile);
+    --header-height: 58px;
+  }
+
+  /* `.msec` in the prototype: 28px block, 20px inline. */
+  .sec { padding: 28px var(--gutter-mobile); }
+
+  h1 { font-size: 30px; }
+  .h2 { font-size: 21px; letter-spacing: -0.01em; }
+
+  .sec-head { margin-bottom: 11.2px; }
+
+  .grid-2,
+  .grid-3,
+  .grid-4 { grid-template-columns: repeat(2, 1fr); gap: 8.4px; }
+  .grid-5 { grid-template-columns: 1fr; gap: 16.8px; }
+  .grid-6 { grid-template-columns: repeat(2, 1fr); gap: 8.4px; }
+  .grid-cars,
+  .grid-cars-3 { grid-template-columns: 1fr; gap: 8.4px; }
+
+  .table { font-size: 13px; }
+
+  /*
+   * Touch targets.
+   *
+   * Everything interactive gets 44px of height on a phone. The buttons were
+   * sized for a cursor — 28 to 38px depending on the variant — which is fine
+   * for a pointer that lands where it is aimed and wrong for a thumb, and it
+   * was every button on the site: card CTAs, filter chips, segmented controls,
+   * the header's own icons.
+   *
+   * 44 is Apple's number and close enough to Android's 48; WCAG 2.5.8 asks for
+   * 24 as a floor and 44 for AAA. Padding does the work rather than font size,
+   * so nothing about the type scale moves.
+   */
+  .btn { min-height: 44px; }
+  .btn-icon { width: 44px; height: 44px; }
+  .input,
+  select.input,
+  input.input { min-height: 44px; }
+  .seg-opt { min-height: 44px; padding-inline: 14px; }
+  .radio { min-height: 44px; }
+}
+
+} /* @layer app */
+
+/*
+ * A dark hero runs under the header.
+ *
+ * The header is sticky, so it occupies the first 70px of the page — and a
+ * transparent bar over that strip would show the page ground, not the
+ * photograph. Pulling the main column up by exactly the header's height puts
+ * the hero behind it, and each of those heroes grows by the same amount so
+ * that nothing below them moves. `:has()` asks which pages qualify rather
+ * than making every page carry a flag.
+ */
+@layer app {
+  body:has(main > section:first-of-type.on-dark) main {
+    margin-top: calc(var(--header-height) * -1);
+  }
+}

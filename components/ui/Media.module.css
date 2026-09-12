@@ -1,0 +1,24 @@
+@layer theme, base, vendor, app, components, utilities; /* the order is set by whichever file loads first — app/globals.css
+   explains the stack */
+/* In the components layer so a Tailwind utility can override it — see the
+   layer order in app/globals.css. */
+@layer components {
+
+/* The one rule in this component that is NOT a utility, and cannot be.
+ *
+ * Callers pass their own classes onto the frame — the service hero sends
+ * `absolute inset-0 -z-10 size-full object-cover`, a card sends `rounded-md`.
+ * That only works because a layered class loses to a utility. Written as
+ * utilities, the base and the override sit in the same layer at the same
+ * specificity, and which one wins is decided by their order in Tailwind's
+ * generated sheet rather than by the caller — the hero went from `absolute` to
+ * `relative` and dropped out of its own hero.
+ *
+ * The rest of the component moved to utilities; nothing overrides those. */
+.frame {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-slot);
+}
+
+}

@@ -1,0 +1,189 @@
+@layer theme, base, vendor, app, components, utilities; /* the order is set by whichever file loads first — app/globals.css
+   explains the stack */
+/* In the components layer so a Tailwind utility can override it — see the
+   layer order in app/globals.css. */
+@layer components {
+
+/*
+ * This component stays CSS, deliberately.
+ *
+ * The header's behaviour is a set of questions about the page around it —
+ * "has the document scrolled", "is the first section a dark band" — asked with
+ * `:has()` and ancestor state from the html element down. As utilities each
+ * one becomes an arbitrary variant carrying the whole selector, repeated on
+ * every element it affects, and the reasoning below would have nowhere to
+ * live. The site's own components are on utilities; see CarCard for the rules
+ * and <Media>, DateField and RouteMap for the other exceptions.
+ */
+
+/* The header bar. Desktop is the prototype's 1440 frame (logo, five links, a
+   divider, the phone number, the WhatsApp button); below 768px it collapses to
+   logo + two icon buttons + the drawer trigger, as the 390 frame does. */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 22.4px;
+  /* Fixed rather than content-derived, so --header-height is a fact other
+     sticky elements can offset against. */
+  height: var(--header-height);
+  padding: 0 var(--gutter-desktop);
+  background: var(--color-bar);
+  border-bottom: 1px solid var(--color-divider);
+  /* Both states are painted, so the change is a fade rather than a flick.
+     backdrop-filter transitions in Chromium and snaps elsewhere, which is an
+     acceptable difference for an effect nobody sees twice. */
+  transition:
+    background-color 0.28s ease,
+    backdrop-filter 0.28s ease,
+    border-color 0.28s ease;
+}
+
+/*
+ * Scrolled: frosted glass.
+ *
+ * The iOS bar, and the three parts that make it read as glass rather than as
+ * a dark panel: a background translucent enough to see movement through, a
+ * blur wide enough to abstract what is behind it, and a saturation boost —
+ * without that last one the blur greys everything it passes over and the
+ * effect looks like fog instead of glass.
+ *
+ * This is the one place the site pays for a backdrop filter, and it pays
+ * deliberately: the same blur used to sit on the header at ALL times behind a
+ * 96%-opaque background, costing a compositor pass a frame to be invisible.
+ * Here it is only on once the page has moved, and it is the entire point.
+ */
+:global(html[data-scrolled]) .header {
+  /* 0.72, not the 0.55 that looked best over the hero: the bar is white type
+     on a dark plate, and over a white page a thinner tint left it at 4:1. This
+     is still plainly glass — shapes move through it — and it holds ~8:1 on
+     either ground. */
+  background: rgb(var(--color-bg-rgb) / 0.72);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border-bottom-color: rgb(255 255 255 / 0.1);
+}
+
+/*
+ * At rest over a dark hero: nothing at all.
+ *
+ * Only over a dark hero. The bar's ink is white — that is the brand's black
+ * plate — so on a page that opens white a transparent header would be white
+ * type on a white ground. `:has()` asks the markup directly whether the first
+ * thing under the header is one of the dark bands, which is a question it can
+ * answer without a prop, a flag or a hook.
+ */
+:global(html:not([data-scrolled]) body:has(main > section:first-of-type.on-dark)) .header {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+
+/* Over a photograph the bar has to carry its own type, exactly as the hero
+   copy below it does: a tight dark halo on the text, and a drop shadow for the
+   mark, which is an SVG and takes no text-shadow. Neither is visible where the
+   picture is already dark. */
+:global(html:not([data-scrolled]) body:has(main > section:first-of-type.on-dark)) .header :is(.brand, .links, .phone) {
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.6),
+    0 1px 10px rgb(0 0 0 / 0.55);
+}
+
+/* And to full white while it is over a photograph. The muted step is tuned for
+   a flat black plate; over a sunset there is no such thing as a secondary grey
+   that still reads. */
+:global(html:not([data-scrolled]) body:has(main > section:first-of-type.on-dark)) .header :is(:global(.navlink), .phone) {
+  color: var(--color-text);
+}
+
+:global(html:not([data-scrolled]) body:has(main > section:first-of-type.on-dark)) .header .brand svg {
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.5));
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8.4px;
+  margin-right: auto;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brandMark {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: 0.16em;
+  line-height: 1.1;
+}
+
+.brandSub {
+  font-size: 8px;
+  letter-spacing: 0.34em;
+  color: var(--color-neutral-500);
+}
+
+.links {
+  display: contents;
+}
+
+.divider {
+  width: 1px;
+  height: 22px;
+  background: var(--color-divider);
+}
+
+.phone {
+  display: flex;
+  align-items: center;
+  gap: 5.6px;
+  font-size: 13px;
+  color: var(--color-neutral-300);
+  text-decoration: none;
+}
+.phone:hover { color: var(--color-accent-300); }
+
+/* Mobile-only controls */
+.iconButton {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  flex: none;
+}
+
+/*
+ * Scoped to .header on purpose.
+ *
+ * Every one of these is also a `.btn`, and the global `.btn { display:
+ * inline-flex }` is injected after this file — same specificity, later in the
+ * cascade, so a bare `.mobileOnly { display: none }` lost. Both sets rendered
+ * at once: a phone icon and a WhatsApp icon crowding the desktop bar, and on a
+ * phone the full "Book on WhatsApp" button wrapping onto two lines beside the
+ * icons meant to replace it. One more class settles it.
+ */
+.header .mobileOnly { display: none; }
+
+@media (max-width: 1023px) {
+  .header { gap: 16.8px; }
+  .phone span { display: none; }
+}
+
+@media (max-width: 767px) {
+  .header {
+    gap: 11.2px;
+    padding: 0 var(--gutter-mobile);
+  }
+  .brandMark { font-size: 15px; }
+  .brandSub { font-size: 7px; letter-spacing: 0.3em; }
+  .links { display: none; }
+  .divider { display: none; }
+  .header .desktopOnly { display: none; }
+  .header .mobileOnly { display: inline-flex; }
+  /* The bar is 58px on a phone; 44px icons fit inside it with room to spare,
+     and they are the only way to call or message from the top of the page. */
+  .header .iconButton { width: 44px; height: 44px; }
+}
+
+}

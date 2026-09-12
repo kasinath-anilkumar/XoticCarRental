@@ -1,0 +1,46 @@
+{
+  "name": "xotic-car-rental",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Xotic Car Rental — chauffeur-driven luxury car rental across India. Next.js App Router site with Supabase backend and admin panel.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:db": "node --test backend/scripts/test-db.cjs backend/scripts/test-migrations.cjs",
+    "migrate": "npm --prefix backend run migrate",
+    "seed": "npm --prefix backend run seed"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.51.0",
+    "downshift": "^9.4.0",
+    "geolib": "^3.3.14",
+    "leaflet": "^1.9.4",
+    "next": "16.3.5",
+    "node-geocoder": "^4.4.1",
+    "react": "19.2.8",
+    "react-day-picker": "^10.0.1",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^20",
+    "@types/node-geocoder": "^4.2.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "oxlint": "^1.71.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5",
+    "vitest": "^4.1.11"
+  }
+}

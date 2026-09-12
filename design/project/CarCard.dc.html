@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/nocturne-5e251597-41bc-49b9-9aa7-52559f0e28c5/styles.css">
+<script src="_ds/nocturne-5e251597-41bc-49b9-9aa7-52559f0e28c5/_ds_bundle.js"></script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<script src="./image-slot.js"></script>
+</helmet>
+<sc-if value="{{ car.compact }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;gap:11.2px;padding:8.4px;background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)">
+    <div style="position:relative;width:112px;height:88px;flex:none;border-radius:var(--radius-sm);overflow:hidden;background:#1b1d29">
+      <image-slot id="car-{{ car.id }}" shape="rect" placeholder="{{ car.name }}"></image-slot>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2.8px;min-width:0;flex:1">
+      <div style="font-family:var(--font-heading);font-weight:500;font-size:15px;line-height:1.2">{{ car.name }}</div>
+      <div style="font-size:11px;color:var(--color-neutral-500)">{{ car.year }} · {{ car.type }} · {{ car.seats }} seats · With driver</div>
+      <div style="display:flex;align-items:baseline;gap:5.6px;margin-top:2.8px">
+        <span style="font-family:var(--font-heading);font-size:17px;color:var(--color-accent-300)">{{ car.priceLabel }}</span>
+        <span style="font-size:10px;color:var(--color-neutral-500)">{{ car.pkgLabel }}</span>
+      </div>
+      <div style="display:flex;gap:5.6px;margin-top:5.6px">
+        <button type="button" class="btn btn-primary" style="flex:1;font-size:12px;padding:6px 8px" onClick="{{ car.onView }}">Price &amp; details</button>
+        <a class="btn" style="background:#25d366;color:#0c1a11;font-size:12px;padding:6px 10px" href="{{ car.waHref }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:15px"></i></a>
+      </div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{ car.full }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);overflow:hidden">
+    <div style="position:relative;height:172px;background:#1b1d29">
+      <image-slot id="car-{{ car.id }}" shape="rect" placeholder="Drop {{ car.name }} photo"></image-slot>
+      <div style="position:absolute;top:8.4px;left:8.4px;display:flex;gap:5.6px;pointer-events:none">
+        <span class="tag tag-accent">{{ car.badge }}</span>
+      </div>
+      <div style="position:absolute;top:8.4px;right:8.4px;display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--radius-sm);background:rgba(22,24,38,0.8);font-size:11px;pointer-events:none">
+        <i class="ph-fill ph-star" style="font-size:12px;color:var(--color-accent-400)"></i>{{ car.rating }}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8.4px;padding:11.2px">
+      <div>
+        <div style="font-family:var(--font-heading);font-weight:500;font-size:18px;line-height:1.2">{{ car.name }}</div>
+        <div style="font-size:12px;color:var(--color-neutral-500);margin-top:2px">{{ car.year }} · {{ car.type }}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5.6px;padding:8.4px 0;border-top:1px solid var(--color-divider);border-bottom:1px solid var(--color-divider)">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--color-neutral-400);text-align:center">
+          <i class="ph ph-users-three" style="font-size:17px;color:var(--color-neutral-300)"></i>{{ car.seats }} seats</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--color-neutral-400);text-align:center">
+          <i class="ph ph-gear-six" style="font-size:17px;color:var(--color-neutral-300)"></i>{{ car.trans }}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--color-neutral-400);text-align:center">
+          <i class="ph ph-gas-pump" style="font-size:17px;color:var(--color-neutral-300)"></i>{{ car.fuel }}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--color-neutral-400);text-align:center">
+          <i class="ph ph-steering-wheel" style="font-size:17px;color:var(--color-neutral-300)"></i>With driver</div>
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8.4px">
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--color-neutral-500)">
+          <i class="ph ph-map-pin" style="font-size:13px"></i>{{ car.cityLabel }}</div>
+        <div style="text-align:right">
+          <div style="font-family:var(--font-heading);font-size:21px;line-height:1.1;color:var(--color-accent-300)">{{ car.priceLabel }}</div>
+          <div style="font-size:10px;color:var(--color-neutral-500)">{{ car.pkgLabel }}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--color-neutral-500);display:flex;gap:11.2px">
+        <span>+{{ car.extraKmLabel }}/km after</span><span>Driver bata {{ car.bataLabel }}</span>
+      </div>
+      <div style="display:flex;gap:5.6px;margin-top:2.8px">
+        <button type="button" class="btn btn-primary" style="flex:1" onClick="{{ car.onView }}">Price &amp; details</button>
+        <a class="btn" style="background:#25d366;color:#0c1a11;padding-inline:11.2px" href="{{ car.waHref }}" target="_blank"><i class="ph ph-whatsapp-logo" style="font-size:17px"></i>Enquire</a>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:340,&quot;height&quot;:420},&quot;car&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}"></script>
+</body>
+</html>

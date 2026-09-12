@@ -1,0 +1,198 @@
+/**
+ * The quote engine.
+ *
+ * A direct port of the prototype's `calc()` (design/project/Xotic Car Rental.dc.html).
+ * The arithmetic is deliberately unchanged — these are the numbers the business
+ * quotes customers, and lib/pricing.test.ts pins every branch of it. If a rule
+ * needs to change, change it here and update the fixtures in the same commit,
+ * so a quote never moves by accident.
+ *
+ * Pure: no database, no network, no clock. Callers resolve the car, package,
+ * city and occasion first and pass distance in from lib/distance.ts.
+ */
+
+import { formatINR } from "./format";
+import { seasonFor } from "./seasons";
+import type { Car, PricingInput, Quote, QuoteLine, RateKey } from "./types";
+
+/** Average km/h assumed for billable drive time. */
+const SPEED_LOCAL = 32;
+const SPEED_OUTSTATION = 52;
+
+/** A one-way drop bills the driver's empty return at this share of the fare. */
+const ONE_WAY_RETURN_SHARE = 0.35;
+
+/** Pickups from this hour, or before NIGHT_END, carry the night charge. */
+const NIGHT_START_HOUR = 22;
+const NIGHT_END_HOUR = 6;
+
+export function rateFor(car: Car, rateKey: RateKey): number {
+  switch (rateKey) {
+    case "rate_8h":
+      return car.rate8h;
+    case "rate_12h":
+      return car.rate12h;
+    case "rate_full":
+      return car.rateFull;
+  }
+}
+
+/** True when a pickup at HH:MM falls in the 22:00–05:59 night window. */
+export function isNightPickup(time: string): boolean {
+  const hour = Number.parseInt(time, 10);
+  if (Number.isNaN(hour)) return false;
+  return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
+}
+
+export function computeQuote(input: PricingInput): Quote {
+  const {
+    car,
+    pkg,
+    city,
+    occasion,
+    tripType,
+    km,
+    haltHours,
+    time,
+    gstPercent,
+    advancePercent,
+    date = "",
+    seasons = [],
+    charges = [],
+    interstate = false,
+  } = input;
+
+  const outstation = tripType !== "local";
+
+  // Drive time from distance, plus whatever the customer is holding the car
+  // for, rounded up to the next half hour.
+  const driveHours = km / (outstation ? SPEED_OUTSTATION : SPEED_LOCAL);
+  const hours = Math.max(1, Math.ceil((driveHours + Number(haltHours || 0)) * 2) / 2);
+  const days = Math.max(1, Math.ceil(hours / pkg.hours));
+
+  const base = rateFor(car, pkg.rateKey) * city.multiplier * days;
+  const includedKm = pkg.km * days;
+  const includedHours = pkg.hours * days;
+  const extraKm = Math.max(0, km - includedKm);
+  const extraHours = Math.max(0, hours - includedHours);
+
+  const nightStart = isNightPickup(time);
+  // Every night away is charged, plus the pickup itself when it starts at night.
+  const nights = Math.max(0, days - 1) + (nightStart ? 1 : 0);
+
+  // The season multiplies the package base only — see lib/seasons.ts for why.
+  const season = seasonFor(seasons, date);
+  const seasonSurcharge = season ? Math.round(base * (season.multiplier - 1)) : 0;
+
+  const oneWayReturn =
+    tripType === "oneway"
+      ? Math.round(km * car.extraKmRate * ONE_WAY_RETURN_SHARE)
+      : 0;
+
+  const lines: QuoteLine[] = [
+    {
+      label: `${pkg.label} package${days > 1 ? ` × ${days} days` : ""}`,
+      note: `${car.name} · ${city.name} rate ×${city.multiplier.toFixed(2)}`,
+      amount: base,
+    },
+  ];
+
+  if (extraKm > 0) {
+    lines.push({
+      label: `Extra distance · ${extraKm} km`,
+      note: `${formatINR(car.extraKmRate)}/km past ${includedKm} km included`,
+      amount: extraKm * car.extraKmRate,
+    });
+  }
+
+  if (extraHours > 0) {
+    lines.push({
+      label: `Extra hours · ${extraHours} hr`,
+      note: `${formatINR(car.extraHrRate)}/hr past ${includedHours} hr included`,
+      amount: extraHours * car.extraHrRate,
+    });
+  }
+
+  lines.push({
+    label: `Driver allowance (bata)${days > 1 ? ` × ${days}` : ""}`,
+    note: "Food and stay for the chauffeur",
+    amount: car.bata * days,
+  });
+
+  if (nights > 0) {
+    lines.push({
+      label: `Night charge × ${nights}`,
+      note: nightStart
+        ? "Pickup between 10pm and 6am"
+        : "Overnight halt on a multi-day trip",
+      amount: car.nightCharge * nights,
+    });
+  }
+
+  if (oneWayReturn > 0) {
+    lines.push({
+      label: "One-way driver return",
+      note: `35% of ${km} km at ${formatINR(car.extraKmRate)}/km`,
+      amount: oneWayReturn,
+    });
+  }
+
+  if (seasonSurcharge > 0 && season) {
+    lines.push({
+      label: `${season.name} rate`,
+      note:
+        season.note ||
+        `+${Math.round((season.multiplier - 1) * 100)}% on the package`,
+      amount: seasonSurcharge,
+    });
+  }
+
+  if (occasion.surcharge > 0) {
+    lines.push({
+      label: `${occasion.name} handling`,
+      note: occasion.handlingNote,
+      amount: occasion.surcharge,
+    });
+  }
+
+  // Permits, parking and tolls last, so the trip's own costs read together
+  // above them and a customer can see what is ours and what is the road's.
+  for (const charge of charges) {
+    if (!charge.isActive || charge.amount <= 0) continue;
+    if (charge.appliesTo === "outstation" && !outstation) continue;
+    if (charge.appliesTo === "interstate" && !interstate) continue;
+    lines.push({ label: charge.label, note: charge.note, amount: charge.amount });
+  }
+
+  const subtotal = lines.reduce((sum, line) => sum + line.amount, 0);
+  const gst = subtotal * (gstPercent / 100);
+  const total = subtotal + gst;
+  // The advance is quoted as a round figure — nobody transfers ₹4,287.
+  const advance = Math.round((total * (advancePercent / 100)) / 100) * 100;
+
+  return {
+    km,
+    hours,
+    days,
+    includedKm,
+    includedHours,
+    lines,
+    subtotal,
+    gst,
+    total,
+    advance,
+    outstation,
+    nightStart,
+  };
+}
+
+export function tripTypeLabel(tripType: PricingInput["tripType"]): string {
+  switch (tripType) {
+    case "local":
+      return "Local, in city";
+    case "oneway":
+      return "Outstation one-way";
+    case "round":
+      return "Outstation round trip";
+  }
+}

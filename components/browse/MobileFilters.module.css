@@ -1,0 +1,557 @@
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-900);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Full-screen fixed overlay covering everything */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+/* Backdrop scrim with blur */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.18s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* The slide-up sheet */
+.sheet {
+  position: relative;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 580px;
+  max-height: min(85dvh, 740px);
+  margin-top: auto;
+  margin-inline: auto;
+  border: 1px solid var(--color-divider);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--color-surface);
+  box-shadow: 0 -20px 60px rgb(0 0 0 / 0.4);
+  animation: sheetSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.handle {
+  width: 38px;
+  height: 4px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: var(--color-neutral-700);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px 14px;
+  border-bottom: 1px solid var(--color-divider);
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--color-neutral-500);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header h2 {
+  margin: 2px 0 0;
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clearBtn {
+  background: transparent;
+  border: 0;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--color-neutral-400);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease;
+}
+
+.clearBtn:hover {
+  color: var(--color-accent);
+}
+
+.close {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-neutral-300);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.close:hover,
+.close:active {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+/* ==========================================================================
+   Category Tab Bar (UI/UX Layers)
+   ========================================================================== */
+
+.tabNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-surface) 95%, var(--color-neutral-900));
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex-shrink: 0;
+}
+
+.tabNav::-webkit-scrollbar {
+  display: none;
+}
+
+.tabButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-neutral-400);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tabButton:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+
+.tabButtonActive {
+  background: var(--color-surface);
+  border-color: var(--color-divider);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.tabDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* ==========================================================================
+   Content Body
+   ========================================================================== */
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  margin: 0 0 2px;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.sectionSubtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-neutral-500);
+}
+
+.resetSectionBtn {
+  background: transparent;
+  border: 0;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--color-neutral-500);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.resetSectionBtn:hover {
+  color: var(--color-accent);
+}
+
+/* ==========================================================================
+   Rich Visual Cards Grid
+   ========================================================================== */
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cardGridCompact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 440px) {
+  .cardGridCompact {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.optionCard {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.optionCard:hover {
+  border-color: var(--color-neutral-600);
+  background: color-mix(in srgb, var(--color-text) 3%, var(--color-surface));
+}
+
+.optionCardActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-900);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.cardIconBox {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-well);
+  color: var(--color-neutral-300);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.optionCardActive .cardIconBox {
+  background: var(--color-accent-800);
+  color: var(--color-accent-100);
+}
+
+.cardContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.optionCardActive .cardTitle {
+  color: var(--color-accent-100);
+}
+
+.cardSubtitle {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--color-neutral-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.optionCardActive .cardSubtitle {
+  color: var(--color-accent-300);
+}
+
+.checkBadge {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-900);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   State & Location Selector
+   ========================================================================== */
+
+.statePills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--color-divider);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.statePills::-webkit-scrollbar {
+  display: none;
+}
+
+.statePill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-divider);
+  background: transparent;
+  color: var(--color-neutral-400);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.statePill:hover {
+  border-color: var(--color-neutral-600);
+  color: var(--color-text);
+}
+
+.statePillActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-800);
+  color: var(--color-accent-100);
+}
+
+/* ==========================================================================
+   Date Presets
+   ========================================================================== */
+
+.datePresets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 440px) {
+  .datePresets {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.datePresetBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-neutral-300);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.datePresetBtn:hover {
+  border-color: var(--color-neutral-600);
+  color: var(--color-text);
+}
+
+.datePresetBtnActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-800);
+  color: var(--color-accent-100);
+}
+
+.datePresetTitle {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.datePresetSub {
+  font-size: 10px;
+  color: var(--color-neutral-500);
+}
+
+.datePresetBtnActive .datePresetSub {
+  color: var(--color-accent-300);
+}
+
+.customDateBlock {
+  padding: 14px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 95%, var(--color-neutral-900));
+}
+
+.customDateLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.dateInputRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ==========================================================================
+   Footer Action Bar
+   ========================================================================== */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.footerSummary {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.footerSummaryLabel {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-neutral-500);
+}
+
+.footerSummaryPills {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.applyBtn {
+  min-width: 144px;
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .overlay {
+    display: none;
+  }
+}

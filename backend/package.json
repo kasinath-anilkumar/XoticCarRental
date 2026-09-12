@@ -1,0 +1,18 @@
+{
+  "name": "xotic-backend",
+  "private": true,
+  "description": "Supabase schema, migrations and seed for Xotic Car Rental. Hosted project — there is no local stack. The Supabase CLI is blocked on this machine (Windows Smart App Control rejects its unsigned binary), so migrations are applied over a direct Postgres connection.",
+  "scripts": {
+    "migrate": "node scripts/migrate.js",
+    "test:migrations": "node --test scripts/test-migrations.cjs",
+    "seed": "node scripts/seed.js",
+    "geocode": "node scripts/geocode.js"
+  },
+  "dependencies": {
+    "all-the-cities": "^3.1.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
+}
