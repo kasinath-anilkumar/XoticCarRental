@@ -10,7 +10,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "About Xotic",
   description:
-    "Who Xotic is, where we operate across Kerala, Karnataka and Tamil Nadu, and how a chauffeur-driven booking actually works from enquiry to invoice.",
+    "Who Xotic is, where we operate, and how a chauffeur-driven booking actually works from enquiry to invoice.",
   alternates: { canonical: "/about" },
   openGraph: { url: `${siteUrl()}/about` },
 };
@@ -30,15 +30,15 @@ const PRINCIPLES = [
   },
   {
     icon: "ph-user-focus",
-    title: "The same chauffeurs, not a marketplace",
+    title: "Chauffeur arrangements confirmed",
     detail:
-      "The drivers are ours. They are briefed on the job, they know the route, and for monthly hire you keep the same one — with a named backup for the days they cannot come.",
+      "Tell us your timings and requirements. Our team confirms the chauffeur arrangements and any special requests with your booking.",
   },
   {
     icon: "ph-clock-countdown",
-    title: "Answered the same day",
+    title: "An enquiry you can track",
     detail:
-      "Every enquiry gets a reference and a callback the day it arrives. The reason the whole site is built around lead references is that a message lost in a WhatsApp thread is a customer lost with it.",
+      "Every saved enquiry gets a reference for follow-up. The reason the whole site is built around lead references is that a message lost in a WhatsApp thread is a customer lost with it.",
   },
 ];
 
@@ -55,9 +55,8 @@ export default async function AboutPage() {
         </h1>
         <p className="max-w-[68ch] text-[15px] text-[var(--color-neutral-400)]">
           Xotic runs chauffeur-driven luxury cars for weddings, shoots, corporate travel, airport
-          runs and long tours. We are not a booking marketplace and not a wedding-car specialist that
-          takes other work on the side — the fleet is ours, the drivers are ours, and the rates come
-          off one card whatever the occasion is called.
+          runs and long tours. Browse the published fleet and service locations, compare package
+          rates, and share your itinerary for a confirmed quote.
         </p>
       </section>
 

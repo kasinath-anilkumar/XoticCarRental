@@ -27,6 +27,7 @@ export interface QuoteMessageInput {
   /** Where the customer is, if they said. Staff route the nearest car by it. */
   customer: ResolvedPlace | null;
   date: string;
+  returnDate?: string;
   time: string;
   gstPercent: number;
   /** The reference the operator and the dashboard share (§14). */
@@ -57,6 +58,7 @@ export function quoteMessage(input: QuoteMessageInput): string {
     const when = index === 0 ? ` on ${date} at ${time}` : "";
     lines.push(`${role}: ${stop.name}${when}`);
   });
+  if (input.returnDate) lines.push(`Return date: ${input.returnDate}`);
 
   lines.push(`Trip: ${tripTypeLabel(tripType)} · ${quote.km} km · ${quote.hours} hr`, "");
 

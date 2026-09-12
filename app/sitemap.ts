@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
 
 import { getCatalog } from "@/lib/content";
-import { SERVICES } from "@/lib/services";
+import { getServices } from "@/lib/service-content";
 import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const catalog = await getCatalog();
+  const [catalog, services] = await Promise.all([getCatalog(), getServices()]);
   const base = siteUrl();
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -31,14 +31,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })),
-    ...SERVICES.map((service) => ({
+    ...services.map((service) => ({
       url: `${base}/services/${service.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
     // Service × city (§24): "wedding car rental in Kochi" is a different
     // search from either half of it, and these are the pages that answer it.
-    ...SERVICES.flatMap((service) =>
+    ...services.flatMap((service) =>
       catalog.cities.map((city) => ({
         url: `${base}/services/${service.slug}/${city.slug}`,
         changeFrequency: "monthly" as const,

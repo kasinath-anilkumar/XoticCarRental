@@ -20,17 +20,6 @@ import type { Coords, GeoPlace, GeoProvider, SearchOptions } from "./types";
 
 const DEFAULT_ENDPOINT = "https://photon.komoot.io";
 
-/**
- * Country boxes bias a search without confining it.
- *
- * Photon has no country filter — `bbox` only weights results, so Nepal still
- * turns up on "airport". The hard filter is on `countrycode` below; this just
- * puts Indian answers first for a site that only drives in India.
- */
-const COUNTRY_BBOX: Record<string, string> = {
-  in: "68.1,6.5,97.4,35.7",
-};
-
 interface PhotonFeature {
   geometry: { coordinates: [number, number] };
   properties: {
@@ -48,6 +37,7 @@ interface PhotonFeature {
     country?: string;
     countrycode?: string;
     postcode?: string;
+    type?: string;
   };
 }
 
@@ -56,13 +46,14 @@ interface PhotonResponse {
 }
 
 function toPlace(feature: PhotonFeature): GeoPlace | null {
-  const p = feature.properties;
+  const p = feature?.properties;
+  if (!p) return null;
   const [lng, lat] = feature.geometry?.coordinates ?? [];
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat!) > 90 || Math.abs(lng!) > 180) return null;
 
   // An unnamed row is a house number or a bare postcode — nothing a customer
   // could pick out of a list.
-  const name = p.name?.trim() || p.street?.trim();
+  const name = (p.name?.trim() || [p.housenumber, p.street].filter(Boolean).join(" ").trim()).slice(0, 160);
   if (!name) return null;
 
   return {
@@ -72,17 +63,20 @@ function toPlace(feature: PhotonFeature): GeoPlace | null {
     lng,
     detail: detailLine([p.street, p.district, p.city, p.county, p.state], name),
     state: p.state ?? "",
-    kind: kindFromOsm(p.osm_key, p.osm_value),
+    city: p.city,
+    locality: p.district,
+    country: p.country,
+    countryCode: p.countrycode?.toUpperCase(),
+    kind: p.type === "state" || p.type === "country" ? p.type : kindFromOsm(p.osm_key, p.osm_value),
   };
 }
 
 export function createPhotonProvider(country: string): GeoProvider {
   const endpoint = (process.env.PHOTON_URL ?? DEFAULT_ENDPOINT).replace(/\/$/, "");
   const code = country.toLowerCase();
-  const bbox = COUNTRY_BBOX[code];
 
   const inCountry = (feature: PhotonFeature) =>
-    !code || (feature.properties.countrycode ?? "").toLowerCase() === code;
+    !code || (feature?.properties?.countrycode ?? "").toLowerCase() === code;
 
   return {
     name: "photon",
@@ -98,7 +92,8 @@ export function createPhotonProvider(country: string): GeoProvider {
         limit: String(Math.min(30, (options.limit ?? 8) * 3)),
         lang: "en",
       });
-      if (bbox) params.set("bbox", bbox);
+      // Photon restricts by ISO country code; no manually maintained borders.
+      if (code) params.set("countrycode", code.toUpperCase());
       if (options.near) {
         params.set("lat", String(options.near.lat));
         params.set("lon", String(options.near.lng));
@@ -108,7 +103,8 @@ export function createPhotonProvider(country: string): GeoProvider {
         signal: options.signal,
       });
 
-      return (data.features ?? [])
+      if (!Array.isArray(data.features)) throw new Error("Invalid Photon response");
+      return data.features.slice(0, 30)
         .filter(inCountry)
         .map(toPlace)
         .filter((place): place is GeoPlace => place !== null);
@@ -126,7 +122,8 @@ export function createPhotonProvider(country: string): GeoProvider {
         signal: options.signal,
       });
 
-      const feature = data.features?.[0];
+      if (!Array.isArray(data.features)) throw new Error("Invalid Photon response");
+      const feature = data.features.find(inCountry);
       return feature ? toPlace(feature) : null;
     },
   };

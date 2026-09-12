@@ -1,16 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Icon } from "@/components/ui/Icon";
 import { formatINR } from "@/lib/format";
-import { rateFor } from "@/lib/pricing";
-import type { Car, City, Package, SiteSettings } from "@/lib/types";
-import {
-  saveCustomerLocation,
-  useCustomerLocation,
-} from "@/lib/userLocation";
-import { filterByZone, ZONES, type IndiaZone } from "@/lib/geo/zones";
+import { nightWindowLabel, rateFor } from "@/lib/pricing";
+import type { Car, City, Occasion, Package, SiteSettings } from "@/lib/types";
+import { filterServiceCities, serviceStates } from "@/lib/service-areas";
 
 export interface RateCardProps {
   car: Car;
@@ -19,7 +16,7 @@ export interface RateCardProps {
   settings: SiteSettings;
   /** The car's home city — where the switcher starts if nothing else is selected. */
   homeCitySlug: string;
-  weddingSurcharge: number;
+  occasions: Occasion[];
 }
 
 /**
@@ -36,49 +33,22 @@ export function RateCard({
   packages,
   settings,
   homeCitySlug,
-  weddingSurcharge,
+  occasions,
 }: RateCardProps) {
-  const { location: customerLocation } = useCustomerLocation();
-
-  // Check URL query param ?city= as initial override if present
-  const [overrideCitySlug, setOverrideCitySlug] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      const urlCity = new URLSearchParams(window.location.search).get("city");
-      if (urlCity && cities.some((c) => c.slug === urlCity)) {
-        return urlCity;
-      }
-    }
-    return null;
-  });
+  const [overrideCitySlug, setOverrideCitySlug] = useState<string | null>(null);
 
   // Determine current active city: manual override -> customer location from home -> home garage base
   const effectiveCitySlug = useMemo(() => {
     if (overrideCitySlug && cities.some((c) => c.slug === overrideCitySlug)) {
       return overrideCitySlug;
     }
-    if (customerLocation?.citySlug && cities.some((c) => c.slug === customerLocation.citySlug)) {
-      return customerLocation.citySlug;
-    }
     return homeCitySlug;
-  }, [overrideCitySlug, customerLocation, cities, homeCitySlug]);
+  }, [overrideCitySlug, cities, homeCitySlug]);
 
-  const isFromHome = Boolean(
-    customerLocation?.citySlug &&
-    effectiveCitySlug === customerLocation.citySlug &&
-    customerLocation.isFromHome
-  );
-
-  // If no customer location was chosen from home, show search module initially
-  const [isSearching, setIsSearching] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const urlCity = new URLSearchParams(window.location.search).get("city");
-      if (urlCity) return false;
-    }
-    return !customerLocation?.citySlug;
-  });
+  const [isSearching, setIsSearching] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [activeZone, setActiveZone] = useState<IndiaZone>("all");
+  const [visibleCityCount, setVisibleCityCount] = useState(24);
   const [selectedState, setSelectedState] = useState<string>("all");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,47 +57,19 @@ export function RateCard({
     [cities, effectiveCitySlug]
   );
 
-  const availableStates = useMemo(() => {
-    const zoneCities = filterByZone(cities, activeZone);
-    return [...new Set(zoneCities.map((c) => c.state))];
-  }, [cities, activeZone]);
-
-  const filteredCities = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    let result = cities;
-    if (!q && activeZone !== "all") {
-      result = filterByZone(result, activeZone);
-    }
-    if (!q && selectedState !== "all") {
-      result = result.filter((c) => c.state === selectedState);
-    }
-    if (q) {
-      result = cities.filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          c.state.toLowerCase().includes(q) ||
-          c.slug.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [cities, activeZone, selectedState, searchQuery]);
+  const availableStates = useMemo(() => serviceStates(cities), [cities]);
+  const filteredCities = useMemo(() => filterServiceCities(cities, selectedState, searchQuery), [cities, selectedState, searchQuery]);
 
   const handleSelectCity = (selected: City) => {
     setOverrideCitySlug(selected.slug);
     setIsSearching(false);
     setSearchQuery("");
 
-    // Persist choice so other pages and calculators stay in sync
-    saveCustomerLocation({
-      citySlug: selected.slug,
-      cityName: selected.name,
-      state: selected.state,
-      isFromHome: true,
-    });
   };
 
   return (
     <div className="space-y-4">
+      <Suspense fallback={null}><RateCityFromQuery cities={cities} onSelect={setOverrideCitySlug} /></Suspense>
       {/* Header and Active Location Status */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -149,9 +91,9 @@ export function RateCard({
                   <span className="text-[10px] uppercase tracking-wider text-[var(--color-neutral-400)]">
                     Rates for
                   </span>
-                  {isFromHome ? (
+                  {overrideCitySlug ? (
                     <span className="rounded bg-[var(--color-accent-900)] px-1.5 py-0.5 text-[9.5px] font-semibold uppercase text-[var(--color-accent-300)] border border-[var(--color-accent-800)]">
-                      Selected from trip
+                      Selected service area
                     </span>
                   ) : (
                     <span className="rounded bg-[var(--color-neutral-800)] px-1.5 py-0.5 text-[9.5px] text-[var(--color-neutral-300)]">
@@ -193,9 +135,7 @@ export function RateCard({
                 <Icon name="ph-magnifying-glass" size={13} />
               </span>
               <span className="text-[13px] font-semibold text-text">
-                {isFromHome
-                  ? "Change rate card city"
-                  : "Search & select your destination city for exact local rates"}
+                Choose a published service area for package rates
               </span>
             </div>
             {/* Allow collapsing if already has an active selection */}
@@ -220,8 +160,9 @@ export function RateCard({
               ref={searchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search city (e.g. Kochi, Bengaluru, Madurai, Coimbatore...)"
+              onChange={(e) => { setSearchQuery(e.target.value); setVisibleCityCount(24); }}
+              placeholder="Search published service cities"
+              aria-label="Search service cities"
               className="input w-full pl-9 pr-8 text-[13px] min-h-[40px]"
             />
             {searchQuery && (
@@ -236,64 +177,17 @@ export function RateCard({
             )}
           </div>
 
-          {/* Zone & State Filter Controls */}
-          {!searchQuery && (
-            <div className="mb-3 space-y-2">
-              {/* Zone Pills */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] text-[var(--color-neutral-500)] mr-1">Zone:</span>
-                {ZONES.map((z) => {
-                  const active = activeZone === z.key;
-                  return (
-                    <button
-                      key={z.key}
-                      type="button"
-                      onClick={() => {
-                        setActiveZone(z.key);
-                        setSelectedState("all");
-                      }}
-                      className={`cursor-pointer rounded-full px-2.5 py-0.5 text-[11px] transition-all ${
-                        active
-                          ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] font-semibold shadow-xs"
-                          : "bg-well text-[var(--color-neutral-400)] hover:text-text border border-[var(--color-divider)]"
-                      }`}
-                    >
-                      {z.shortLabel}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Sub-State Pills (if zone has states) */}
-              {availableStates.length > 1 && (
-                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[11px] text-[var(--color-neutral-500)] mr-1">State:</span>
-                  {["all", ...availableStates].map((s) => {
-                    const active = selectedState === s;
-                    const label = s === "all" ? "All in Zone" : s;
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSelectedState(s)}
-                        className={`cursor-pointer rounded-full px-2.5 py-0.5 text-[11px] transition-all ${
-                          active
-                            ? "bg-[var(--color-accent-900)] text-[var(--color-accent-300)] font-semibold border border-[var(--color-accent)]"
-                            : "bg-well text-[var(--color-neutral-400)] hover:text-text border border-[var(--color-divider)]"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+          <label className="field mb-3">
+            <span>State or territory</span>
+            <select className="input min-h-[44px]" value={selectedState} onChange={(event) => { setSelectedState(event.target.value); setVisibleCityCount(24); }}>
+              <option value="all">All states</option>
+              {availableStates.map((state) => <option key={state.name} value={state.name}>{state.name} ({state.count})</option>)}
+            </select>
+          </label>
 
           {/* Filtered Cities Grid */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 max-h-[220px] overflow-y-auto pr-1">
-            {filteredCities.map((c) => {
+            {filteredCities.slice(0, visibleCityCount).map((c) => {
               const active = c.slug === effectiveCitySlug;
               return (
                 <button
@@ -326,6 +220,8 @@ export function RateCard({
               </div>
             )}
           </div>
+          <output className="mt-3 block text-[12px] text-[var(--color-neutral-400)]">Showing {Math.min(visibleCityCount, filteredCities.length)} of {filteredCities.length} service cities</output>
+          {filteredCities.length > visibleCityCount && <button type="button" className="btn btn-secondary mt-3 min-h-[44px] text-[12px]" onClick={() => setVisibleCityCount((count) => count + 24)}>Show more service cities</button>}
         </div>
       )}
 
@@ -376,13 +272,15 @@ export function RateCard({
             <tr>
               <td>Night charge</td>
               <td className="whitespace-nowrap tabular-nums text-accent-text">{formatINR(car.nightCharge)}</td>
-              <td className="text-right text-[12px] text-[var(--color-neutral-500)]">Pickup 10pm–6am, or an overnight halt</td>
+              <td className="text-right text-[12px] text-[var(--color-neutral-500)]">Pickup {nightWindowLabel(settings.pricingRules)}, or an overnight halt</td>
             </tr>
-            <tr>
-              <td>Wedding handling</td>
-              <td className="whitespace-nowrap tabular-nums text-accent-text">{formatINR(weddingSurcharge)}</td>
-              <td className="text-right text-[12px] text-[var(--color-neutral-500)]">Decor clearance and morning detailing</td>
-            </tr>
+            {occasions.filter((occasion) => occasion.surcharge > 0).map((occasion) => (
+              <tr key={occasion.slug}>
+                <td>{occasion.name} handling</td>
+                <td className="whitespace-nowrap tabular-nums text-accent-text">{formatINR(occasion.surcharge)}</td>
+                <td className="text-right text-[12px] text-[var(--color-neutral-500)]">{occasion.handlingNote}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -395,4 +293,13 @@ export function RateCard({
       </p>
     </div>
   );
+}
+
+function RateCityFromQuery({ cities, onSelect }: { cities: City[]; onSelect: (slug: string) => void }) {
+  const params = useSearchParams();
+  const slug = params.get("city");
+  useEffect(() => {
+    if (slug && cities.some((city) => city.slug === slug)) onSelect(slug);
+  }, [slug, cities, onSelect]);
+  return null;
 }

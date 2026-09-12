@@ -10,7 +10,7 @@ const defaults: TripRequest = {
 describe("shareable trip parameters", () => {
   it("retains missing stops instead of changing the meaning of a partial itinerary", () => {
     const trip = { ...defaults, stops: ["", "kochi-airport", ""] };
-    expect(tripFromParams(Object.fromEntries(tripToParams(trip)), defaults)).toEqual(trip);
+    expect(tripFromParams(Object.fromEntries(tripToParams(trip)), defaults)).toEqual({ ...trip, returnDate: "" });
     expect(tripFromParams({ to: "kochi-airport" }, defaults).stops).toEqual(["", "kochi-airport"]);
   });
 

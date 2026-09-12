@@ -19,7 +19,7 @@ import {
 } from "@/lib/catalog";
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
-import { OCCASION_TO_SERVICE } from "@/lib/services";
+import { getServices } from "@/lib/service-content";
 import { cityFaq } from "@/lib/faq";
 import { formatINR } from "@/lib/format";
 import { rateFor } from "@/lib/pricing";
@@ -30,7 +30,7 @@ export const revalidate = 3600;
 
 export async function generateStaticParams() {
   const catalog = await getCatalog();
-  return catalog.cities.map((city) => ({ slug: city.slug }));
+  return catalog.cities.slice(0, 100).map((city) => ({ slug: city.slug }));
 }
 
 type Params = Promise<{ slug: string }>;
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: city.seoTitle ?? `Car rental with driver in ${city.name}`,
     description:
       city.seoDescription ??
-      `Chauffeur-driven cars in ${city.name}, ${city.state}${from ? ` from ${formatINR(from)} for 8 hrs / 80 km` : ""} — airport pickups, wedding and temple runs, hill-station trips. Published fares, itemised before you book.`,
+      `Chauffeur-driven cars in ${city.name}, ${city.state}${from ? ` from ${formatINR(from)} for ${catalog.packages[0].label}` : ""}. Published fares, itemised before you book.`,
     alternates: { canonical: `/cities/${city.slug}` },
   };
 }
@@ -69,6 +69,7 @@ export default async function CityPage({ params }: { params: Params }) {
   const fromPrice = cityFromPrice(catalog, city);
   const faq = cityFaq(catalog, city);
   const defaultPackage = catalog.packages[0];
+  const services = await getServices();
 
   const waHref = whatsappLink(
     catalog.settings.whatsappNumber,
@@ -293,10 +294,10 @@ export default async function CityPage({ params }: { params: Params }) {
               <p className="mb-6 max-w-[60ch] text-[14px] text-[var(--color-neutral-400)] [text-wrap:pretty]">
                 Set {airport.name} as your pickup point in the calculator and the fare is worked out
                 from there like any other route. A one-way drop from the airport carries the
-                driver&rsquo;s return allowance — 35% of the distance at the car&rsquo;s extra-km
+                driver&rsquo;s return allowance — {catalog.settings.pricingRules.oneWayReturnPercent}% of the distance at the car&rsquo;s extra-km
                 rate — shown as its own line before you send anything.
               </p>
-              <Link href="/price-calculator" className="btn btn-primary">
+              <Link href={`/price-calculator?from=${encodeURIComponent(airport.slug)}&trip=oneway`} className="btn btn-primary">
                 <Icon name="ph-airplane-tilt" size={16} />
                 Price an airport transfer
               </Link>
@@ -333,14 +334,14 @@ export default async function CityPage({ params }: { params: Params }) {
           {catalog.occasions.map((occasion) => (
             <Link
               key={occasion.slug}
-              href={`/services/${OCCASION_TO_SERVICE[occasion.slug] ?? "leisure"}/${city.slug}`}
+              href={services.some((service) => service.occasionSlug === occasion.slug)
+                ? `/services/${services.find((service) => service.occasionSlug === occasion.slug)!.slug}/${city.slug}`
+                : "/services"}
               className="block rounded-md bg-surface p-6 text-text no-underline shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]"
             >
               <Icon name={occasion.icon} size={22} color="var(--color-accent)" />
               <p className="mt-4 mb-[4px] font-[family-name:var(--font-heading)] text-[16px]">
-                {occasion.slug === "tour"
-                  ? `Outstation tours from ${city.name}`
-                  : `${occasion.name} in ${city.name}`}
+                {occasion.name} in {city.name}
               </p>
               <p className="m-0 text-[12px] text-[var(--color-neutral-500)]">{occasion.tagline}</p>
               {occasion.surcharge > 0 && (

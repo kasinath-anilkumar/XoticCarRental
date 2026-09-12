@@ -1,4 +1,10 @@
+import { ListFilters } from "@/components/admin/ListFilters";
+import { Pagination } from "@/components/ui/Pagination";
+import { adminListRequest, checkAdminPage, type AdminSearchParams } from "@/lib/admin/list";
+import { searchPattern } from "@/lib/admin/references";
+import { ADMIN_PAGE_SIZE } from "@/lib/pagination";
 import { requireAdmin } from "@/lib/admin/auth";
+import { businessDate } from "@/lib/dates";
 import { seasonCovers } from "@/lib/seasons";
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -19,7 +25,7 @@ export const dynamic = "force-dynamic";
  * and a customer who can see the reason argues with it far less than one who
  * finds the same trip cost more in December than a friend paid in June.
  */
-export default async function AdminSeasonsPage() {
+export default async function AdminSeasonsPage({ searchParams }: { searchParams: AdminSearchParams }) {
   const admin = await requireAdmin();
   if (!isSupabaseConfigured()) {
     return (
@@ -33,9 +39,14 @@ export default async function AdminSeasonsPage() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const seasons = await supabase.from("seasons").select("*").order("starts_on");
+  const request = adminListRequest(await searchParams);
+  let builder = supabase.from("seasons").select("*", { count: "exact" }).order("starts_on").order("id");
+  if (request.q) builder = builder.ilike("name", searchPattern(request.q));
+  const result = await builder.range(request.offset, request.end);
+  const total = checkAdminPage(result, request, "/admin/seasons");
+  const seasons = result;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = businessDate();
   const rows = (seasons.data ?? []).map((row) => ({
     id: row.id as string,
     slug: row.slug as string,
@@ -75,7 +86,7 @@ export default async function AdminSeasonsPage() {
           <div>
             <p className={styles.bannerTitle}>
               {live.map((row) => row.name).join(" and ")} {live.length === 1 ? "is" : "are"} in force
-              today
+              today among these results
             </p>
             Quotes priced right now carry{" "}
             {live.length === 1
@@ -88,8 +99,9 @@ export default async function AdminSeasonsPage() {
 
       <NewSeasonForm />
 
+      <ListFilters path="/admin/seasons" q={request.q} />
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>{rows.length} seasons</h2>
+        <h2 className={styles.cardTitle}>{total} matching seasons</h2>
         <p className={styles.cardHint}>
           The multiplier applies to the package base only. Extra kilometres, the driver&rsquo;s bata
           and the night charge are costs rather than scarcity, and raising them in season would be
@@ -98,12 +110,13 @@ export default async function AdminSeasonsPage() {
 
         {rows.length === 0 ? (
           <p className={styles.cardHint}>
-            No seasons. Every date is priced at the standard rate.
+            No seasons match these filters.
           </p>
         ) : (
           rows.map((row) => <SeasonRow key={row.id} {...row} />)
         )}
       </section>
+      <Pagination total={total} page={request.page} pageSize={ADMIN_PAGE_SIZE} path="/admin/seasons" query={request.query} label="seasons" />
     </AdminShell>
   );
 }

@@ -5,14 +5,14 @@ import { useEffect } from "react";
 /**
  * Tells the page whether it has been scrolled, as `data-scrolled` on <html>.
  *
- * The header reads it to decide between transparent and frosted. Everything
+ * The header reads it to decide between transparent and opaque. Everything
  * else about that transition is CSS.
  *
  * No scroll listener. A one-pixel sentinel sits at the very top of the document
  * and an IntersectionObserver reports when it leaves the viewport — the browser
  * does the work off the main thread and calls back twice per page visit rather
  * than sixty times a second. A scroll handler here would be the one thing
- * guaranteed to make a frosted header feel slow.
+ * that would add unnecessary work while the page moves.
  *
  * The sentinel is absolutely positioned and zero-width in flow, so it changes
  * no layout.

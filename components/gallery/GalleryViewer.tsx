@@ -11,9 +11,10 @@ import type { GalleryCategory } from "@/lib/gallery";
 export interface GalleryItem {
   id: string;
   src: string;
+  alt: string;
   categorySlug: string;
   categoryName: string;
-  serviceSlug: string;
+  carHref: string;
   blurb: string;
   index: number;
 }
@@ -21,20 +22,8 @@ export interface GalleryItem {
 export interface GalleryViewerProps {
   categories: GalleryCategory[];
   initialCategorySlug?: string;
-  whatsappNumber?: string;
+  whatsappNumber: string;
 }
-
-const CATEGORY_ICONS: Record<string, string> = {
-  all: "ph-squares-four",
-  weddings: "ph-sparkle",
-  "bride-groom": "ph-heart",
-  photoshoots: "ph-camera",
-  corporate: "ph-briefcase",
-  "vip-transfers": "ph-crown",
-  "luxury-cars": "ph-car-profile",
-  chauffeur: "ph-steering-wheel",
-  tours: "ph-mountains",
-};
 
 const PAGE_SIZE = 12;
 const GalleryLightbox = dynamic(
@@ -50,7 +39,7 @@ const GalleryLightbox = dynamic(
 export function GalleryViewer({
   categories,
   initialCategorySlug,
-  whatsappNumber = "+919847000000",
+  whatsappNumber,
 }: GalleryViewerProps) {
   const [activeCategory, setActiveCategory] = useState<string>(
     initialCategorySlug && categories.some((c) => c.slug === initialCategorySlug)
@@ -64,12 +53,10 @@ export function GalleryViewer({
   // Flatten all frames into a list of gallery items
   const allItems: GalleryItem[] = useMemo(() => {
     return categories.flatMap((category) =>
-      Array.from({ length: category.frames }, (_, i) => ({
-        id: `${category.slug}-${i + 1}`,
-        src: `/media/gallery/${category.slug}-${i + 1}.png`,
+      category.frames.map((frame, i) => ({
+        ...frame,
         categorySlug: category.slug,
         categoryName: category.name,
-        serviceSlug: category.serviceSlug,
         blurb: category.blurb,
         index: i + 1,
       })),
@@ -110,8 +97,8 @@ export function GalleryViewer({
                 : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
             }`}
           >
-            <Icon name={CATEGORY_ICONS.all} size={15} />
-            <span>All Work</span>
+            <Icon name="ph-squares-four" size={15} />
+            <span>All vehicles</span>
             <span className="text-[11px]">
               ({allItems.length})
             </span>
@@ -119,7 +106,6 @@ export function GalleryViewer({
 
           {categories.map((category) => {
             const isActive = activeCategory === category.slug;
-            const icon = CATEGORY_ICONS[category.slug] ?? "ph-camera";
             return (
               <button
                 key={category.slug}
@@ -132,10 +118,10 @@ export function GalleryViewer({
                     : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
                 }`}
               >
-                <Icon name={icon} size={15} />
+                <Icon name="ph-car-profile" size={15} />
                 <span>{category.name}</span>
                 <span className="text-[11px]">
-                  ({category.frames})
+                  ({category.frames.length})
                 </span>
               </button>
             );
@@ -155,10 +141,10 @@ export function GalleryViewer({
             </p>
           </div>
           <Link
-            href={`/services/${activeCategoryObj.serviceSlug}`}
+            href={activeCategoryObj.browseHref}
             className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--color-accent-300)] hover:text-[var(--color-accent-200)]"
           >
-            <span>Book this service</span>
+            <span>Browse these vehicles</span>
             <Icon name="ph-arrow-right" size={13} />
           </Link>
         </div>
@@ -177,7 +163,7 @@ export function GalleryViewer({
           >
             <Image
               src={item.src}
-              alt={`${item.categoryName} — frame ${item.index}`}
+              alt={item.alt}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"

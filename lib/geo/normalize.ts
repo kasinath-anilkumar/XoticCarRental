@@ -12,6 +12,7 @@
  */
 
 import { fold } from "../places";
+import { getDistance } from "geolib";
 
 import type { Coords, GeoKind, GeoPlace } from "./types";
 
@@ -24,6 +25,8 @@ import type { Coords, GeoKind, GeoPlace } from "./types";
  * simply should not outrank the town it sits in.
  */
 const KIND_BY_VALUE: Record<string, GeoKind> = {
+  state: "state",
+  country: "country",
   city: "city",
   town: "town",
   village: "village",
@@ -53,9 +56,9 @@ const KIND_BY_KEY: Record<string, GeoKind> = {
 };
 
 export function kindFromOsm(key: string | undefined, value: string | undefined): GeoKind {
-  const byValue = value ? KIND_BY_VALUE[value] : undefined;
+  const byValue = value && Object.hasOwn(KIND_BY_VALUE, value) ? KIND_BY_VALUE[value] : undefined;
   if (byValue) return byValue;
-  const byKey = key ? KIND_BY_KEY[key] : undefined;
+  const byKey = key && Object.hasOwn(KIND_BY_KEY, key) ? KIND_BY_KEY[key] : undefined;
   if (byKey) return byKey;
   return "landmark";
 }
@@ -68,6 +71,8 @@ export function kindFromOsm(key: string | undefined, value: string | undefined):
  * the single most common pickup we take.
  */
 const KIND_RANK: Record<GeoKind, number> = {
+  state: 0,
+  country: 0,
   city: 0,
   airport: 0,
   town: 1,
@@ -98,6 +103,8 @@ export function iconForKind(kind: GeoKind | undefined): string {
     case "address":
       return "ph-road-horizon";
     case "landmark":
+    case "state":
+    case "country":
       return "ph-map-trifold";
     default:
       return "ph-map-pin";
@@ -129,22 +136,6 @@ export function detailLine(parts: Array<string | undefined | null>, name: string
 }
 
 /**
- * Groups coordinates into ~11 km cells.
- *
- * Used for dedupe: Photon's town / local_authority / political rows for one
- * place land within metres of each other, and two genuinely different villages
- * of the same name in the same state that close together is a case we will take
- * the loss on.
- */
-function cell(value: number): string {
-  return value.toFixed(1);
-}
-
-function dedupeKey(place: GeoPlace): string {
-  return `${fold(place.name)}|${cell(place.lat)},${cell(place.lng)}`;
-}
-
-/**
  * Collapses duplicate rows, keeping the best-ranked of each group.
  *
  * "Best" is the kind rank, so the `place=town` row survives and its two
@@ -152,32 +143,28 @@ function dedupeKey(place: GeoPlace): string {
  * loud, and usually the richer detail line.
  */
 export function dedupe(places: GeoPlace[]): GeoPlace[] {
-  const best = new Map<string, GeoPlace>();
+  const best: GeoPlace[] = [];
 
   for (const place of places) {
-    const key = dedupeKey(place);
-    const current = best.get(key);
+    const index = best.findIndex((current) => fold(current.name) === fold(place.name)
+      && fold(current.state) === fold(place.state)
+      && getDistance(current, place) <= 500);
+    const current = best[index];
     if (!current) {
-      best.set(key, place);
+      best.push(place);
       continue;
     }
-    if (kindRank(place.kind) < kindRank(current.kind)) best.set(key, place);
+    if (kindRank(place.kind) < kindRank(current.kind)) best[index] = place;
     // Same rank, but one of them knows where it is: keep the fuller line.
     else if (kindRank(place.kind) === kindRank(current.kind) && place.detail.length > current.detail.length) {
-      best.set(key, place);
+      best[index] = place;
     }
   }
 
-  return [...best.values()];
+  return best;
 }
 
 /** Rough kilometres between two points. Only ever used to compare candidates. */
-function roughKm(a: Coords, b: Coords): number {
-  const latKm = (a.lat - b.lat) * 111;
-  const lngKm = (a.lng - b.lng) * 111 * Math.cos((a.lat * Math.PI) / 180);
-  return Math.sqrt(latKm * latKm + lngKm * lngKm);
-}
-
 /**
  * Orders suggestions for a query.
  *
@@ -195,7 +182,7 @@ export function rankPlaces(places: GeoPlace[], query: string, near?: Coords | nu
     .map((place, index) => {
       const name = fold(place.name);
       const match = name === needle ? 0 : name.startsWith(needle) ? 1 : 2;
-      const distance = near ? roughKm(place, near) : 0;
+      const distance = near ? Math.floor(getDistance(place, near) / 30_000) : 0;
       return { place, index, match, distance };
     })
     .sort((a, b) => {
@@ -205,7 +192,7 @@ export function rankPlaces(places: GeoPlace[], query: string, near?: Coords | nu
       // Within 30 km is "the same place as far as the visitor cares"; past
       // that, nearer wins so a Kerala search does not open with Karnataka.
       const gap = a.distance - b.distance;
-      if (Math.abs(gap) > 30) return gap;
+      if (gap !== 0) return gap;
       return a.index - b.index;
     })
     .map((entry) => entry.place);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 
 import type { ActionResult } from "./actions";
 import { styles } from "./styles";
@@ -76,7 +76,7 @@ export function Field({
   hint?: string;
   required?: boolean;
 }) {
-  const id = `field-${name}`;
+  const id = useId();
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
@@ -113,7 +113,7 @@ export function TextArea({
   rows?: number;
   hint?: string;
 }) {
-  const id = `field-${name}`;
+  const id = useId();
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
@@ -146,7 +146,7 @@ export function Select({
   options: Array<{ value: string; label: string }>;
   hint?: string;
 }) {
-  const id = `field-${name}`;
+  const id = useId();
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>

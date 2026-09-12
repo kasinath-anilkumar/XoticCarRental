@@ -5,7 +5,9 @@ import { Icon } from "@/components/ui/Icon";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
-import { SERVICES } from "@/lib/services";
+import { getServicePage } from "@/lib/service-content";
+import { Pagination } from "@/components/ui/Pagination";
+import { parsePage } from "@/lib/pagination";
 import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -26,8 +28,10 @@ export const metadata: Metadata = {
  * before deciding which conversation to have. The prices are starting points,
  * and saying so once at the top is more honest than an asterisk on each card.
  */
-export default async function PackagesPage() {
-  const catalog = await getCatalog();
+export default async function PackagesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const [catalog, servicePage] = await Promise.all([getCatalog(), getServicePage(parsePage(params.page))]);
+  const services = servicePage.data;
   if (!isPricingAvailable(catalog)) {
     return <section className="sec"><h1 className="mb-6">Packages for your journey</h1><PricingUnavailable /></section>;
   }
@@ -50,7 +54,7 @@ export default async function PackagesPage() {
       </p>
 
       <nav aria-label="Jump to a service" className="mb-9 flex flex-wrap gap-2">
-        {SERVICES.map((service) => (
+        {services.map((service) => (
           <a
             key={service.slug}
             href={`#${service.slug}`}
@@ -61,7 +65,7 @@ export default async function PackagesPage() {
         ))}
       </nav>
 
-      {SERVICES.map((service) => (
+      {services.map((service) => (
         <div
           key={service.slug}
           id={service.slug}
@@ -113,6 +117,7 @@ export default async function PackagesPage() {
           Ask for something custom
         </Link>
       </div>
+      <div className="sec sec-tight"><Pagination total={servicePage.total} page={servicePage.page} pageSize={24} path="/packages" label="services" /></div>
     </section>
   );
 }

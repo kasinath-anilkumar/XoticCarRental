@@ -94,6 +94,21 @@ describe('database migrations and access control', { concurrency: false }, () =>
   });
   after(async () => { await db?.close(); });
 
+  test('preserves pricing assumptions and rejects incomplete or unsafe operational rules', async () => {
+    const original = { minimumLegKm: 6, localSpeedKph: 32, outstationSpeedKph: 52, oneWayReturnPercent: 35, nightStartHour: 22, nightEndHour: 6 };
+    const inserted = await db.query("insert into public.site_settings (whatsapp_number, phone_display, email) values ('910000000000', 'test', 'test@example.com') returning pricing_rules");
+    assert.deepEqual(inserted.rows[0].pricing_rules, original);
+    for (const invalid of [{}, [], null, { ...original, minimumLegKm: -1 }, { ...original, minimumLegKm: 101 }, { ...original, localSpeedKph: 0 }, { ...original, outstationSpeedKph: '52' }, { ...original, oneWayReturnPercent: 101 }, { ...original, nightStartHour: 22.5 }, { ...original, nightEndHour: 22 }]) {
+      await assert.rejects(() => db.query('update public.site_settings set pricing_rules=$1::jsonb', [JSON.stringify(invalid)]), (error) => error.code === '23514');
+    }
+    const updated = { ...original, localSpeedKph: 25, oneWayReturnPercent: 20, nightStartHour: 21 };
+    await asRole('authenticated', adminId, () => db.query('update public.site_settings set pricing_rules=$1::jsonb', [JSON.stringify(updated)]));
+    assert.deepEqual((await db.query('select pricing_rules from public.site_settings')).rows[0].pricing_rules, updated);
+    await asRole('authenticated', otherId, async () => {
+      assert.equal((await db.query('update public.site_settings set pricing_rules=$1::jsonb returning id', [JSON.stringify(original)])).rows.length, 0);
+    });
+  });
+
   test('accepts the 1957 vintage car while enforcing the 1900 and 2100 year bounds', async () => {
     const insertYear = (year) => db.query(`
       insert into public.cars
@@ -176,6 +191,39 @@ describe('database migrations and access control', { concurrency: false }, () =>
     });
   });
 
+  test('keeps draft services private and restricts business-content edits to admins', async () => {
+    const definition = { ...require('../service-seed-data.json')[0], slug: 'private-service', name: 'Private service' };
+    await asRole('authenticated', otherId, async () => {
+      await assert.rejects(() => db.query('insert into public.services(slug,definition) values ($1,$2::jsonb)', [definition.slug, JSON.stringify(definition)]), /row-level security/);
+    });
+    await asRole('authenticated', adminId, () => db.query('insert into public.services(slug,definition) values ($1,$2::jsonb)', [definition.slug, JSON.stringify(definition)]));
+    assert.equal((await asRole('anon', null, () => db.query("select id from public.services where slug='private-service'"))).rows.length, 0);
+    await asRole('authenticated', adminId, () => db.exec("update public.services set is_active=true where slug='private-service'"));
+    assert.equal((await asRole('anon', null, () => db.query("select name from public.services where slug='private-service'"))).rows[0].name, 'Private service');
+    await asRole('authenticated', otherId, () => db.exec("update public.services set is_active=false where slug='private-service'"));
+    assert.equal((await db.query("select is_active from public.services where slug='private-service'")).rows[0].is_active, true);
+  });
+
+  test('imports services repeatedly without overwriting edited names or prices', async () => {
+    const services = require('../service-seed-data.json');
+    const source = readFileSync(join(__dirname, 'seed-services.js'), 'utf8');
+    for (let run = 0; run < 2; run++) {
+      const errors = [];
+      await runInNewContext(source, {
+        require: (name) => {
+          if (name === './db') return { connect: async () => ({ query: (sql, values) => db.query(sql, values), end: async () => {} }) };
+          if (name === '../service-seed-data.json') return services;
+          throw new Error(`Unexpected dependency: ${name}`);
+        },
+        console: { log() {}, error: (value) => errors.push(value) }, process: { exitCode: 0 },
+      });
+      assert.deepEqual(errors, []);
+      if (run === 0) await db.exec("update public.services set definition=jsonb_set(definition,'{name}','\"Edited offering\"') where slug='wedding'");
+    }
+    assert.equal((await db.query("select name from public.services where slug='wedding'")).rows[0].name, 'Edited offering');
+    assert.equal((await db.query('select count(*)::int as count from public.services')).rows[0].count, services.length + 1);
+  });
+
   test('runs the actual sample seed twice without schema errors or duplicate vehicles', async () => {
     const seedData = require('../seed-data');
     const seedSource = readFileSync(join(__dirname, 'seed.js'), 'utf8');
@@ -195,6 +243,7 @@ describe('database migrations and access control', { concurrency: false }, () =>
         require: (name) => {
           if (name === './db') return { connect: async () => client };
           if (name === '../seed-data') return seedData;
+          if (name === '../service-seed-data.json') return require('../service-seed-data.json');
           throw new Error(`Unexpected seed dependency: ${name}`);
         },
         console: { log() {}, error: (...args) => errors.push(args.join(' ')) },

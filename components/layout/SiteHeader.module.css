@@ -33,37 +33,16 @@
   padding: 0 var(--gutter-desktop);
   background: var(--color-bar);
   border-bottom: 1px solid var(--color-divider);
-  /* Both states are painted, so the change is a fade rather than a flick.
-     backdrop-filter transitions in Chromium and snaps elsewhere, which is an
-     acceptable difference for an effect nobody sees twice. */
+  /* Fade the top-of-page treatment without filtering content during scroll. */
   transition:
     background-color 0.28s ease,
-    backdrop-filter 0.28s ease,
     border-color 0.28s ease;
 }
 
-/*
- * Scrolled: frosted glass.
- *
- * The iOS bar, and the three parts that make it read as glass rather than as
- * a dark panel: a background translucent enough to see movement through, a
- * blur wide enough to abstract what is behind it, and a saturation boost —
- * without that last one the blur greys everything it passes over and the
- * effect looks like fog instead of glass.
- *
- * This is the one place the site pays for a backdrop filter, and it pays
- * deliberately: the same blur used to sit on the header at ALL times behind a
- * 96%-opaque background, costing a compositor pass a frame to be invisible.
- * Here it is only on once the page has moved, and it is the entire point.
- */
+/* An opaque dark ground keeps contrast stable over every section and avoids
+   filtering the moving page beneath this full-width sticky surface. */
 :global(html[data-scrolled]) .header {
-  /* 0.72, not the 0.55 that looked best over the hero: the bar is white type
-     on a dark plate, and over a white page a thinner tint left it at 4:1. This
-     is still plainly glass — shapes move through it — and it holds ~8:1 on
-     either ground. */
-  background: rgb(var(--color-bg-rgb) / 0.72);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  background: var(--color-bg);
   border-bottom-color: rgb(255 255 255 / 0.1);
 }
 

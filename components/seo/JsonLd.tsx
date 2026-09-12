@@ -15,7 +15,7 @@ function JsonLdScript({ data }: { data: object }) {
     <script
       type="application/ld+json"
       // The payload is our own catalog data, not user input.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
     />
   );
 }
@@ -34,7 +34,7 @@ export function LocalBusinessJsonLd({
         "@type": "AutoRental",
         name: "Xotic Car Rental",
         description:
-          "Chauffeur-driven luxury car rental across Kerala, Karnataka and Tamil Nadu — weddings, shoots, corporate travel, VIP transfers and tours.",
+          "Chauffeur-driven luxury car rental in our published service cities — weddings, shoots, corporate travel, VIP transfers and tours.",
         url: siteUrl(),
         telephone: settings.phoneDisplay,
         email: settings.email,

@@ -10,7 +10,7 @@ import { resolveRoutedQuote } from "@/lib/quote-server";
 import { getStore } from "@/lib/store";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { canRecordEnquiries } from "@/lib/supabase/admin";
-import { MAX_TRIP_STOPS } from "@/lib/trip-limits";
+import { MAX_TRIP_DAYS, MAX_TRIP_STOPS } from "@/lib/trip-limits";
 import { quoteMessage, whatsappLink } from "@/lib/whatsapp";
 import type { TripRequest } from "@/lib/types";
 
@@ -23,6 +23,11 @@ export async function POST(request: Request) {
       throw new EnquiryInputError("Choose a valid trip type.");
     }
     const date = inputDate(inputText(raw.date, "Date") ?? "");
+    const returnValue = inputText(raw.returnDate, "Return date");
+    const returnDate = returnValue ? inputDate(returnValue, "Return date") : undefined;
+    if (returnDate && (returnDate < date || returnDate > addDays(date, MAX_TRIP_DAYS - 1))) {
+      throw new EnquiryInputError("Return date must be on or after pickup and within a 30-day rental.");
+    }
     const time = inputTime(inputText(raw.time, "Time") ?? "");
     const customerName = inputText(raw.customerName, "Name");
     const customerPhone = inputPhone(raw.customerPhone);
@@ -43,7 +48,7 @@ export async function POST(request: Request) {
       return token;
     });
     const trip: TripRequest = {
-      tripType, date, time, stops, haltHours,
+      tripType, date, returnDate, time, stops, haltHours,
       carSlug: inputText(raw.carSlug, "Vehicle") ?? "",
       packageSlug: inputText(raw.packageSlug, "Package") ?? "",
       occasionSlug: inputText(raw.occasionSlug, "Occasion") ?? "",
@@ -64,7 +69,7 @@ export async function POST(request: Request) {
     if (!resolved.from || !resolved.to || resolved.stops.length !== stops.length) {
       throw new EnquiryInputError("Choose a pickup and a drop before sending the quote.");
     }
-    if (!Number.isSafeInteger(resolved.quote.days) || resolved.quote.days < 1 || resolved.quote.days > 30) {
+    if (!Number.isSafeInteger(resolved.quote.days) || resolved.quote.days < 1 || resolved.quote.days > MAX_TRIP_DAYS) {
       throw new EnquiryInputError("Please use a service enquiry for trips longer than 30 days.");
     }
 
@@ -107,7 +112,7 @@ export async function POST(request: Request) {
         followUpOn: addDays(businessDate(), 1),
         notes: null,
         source,
-        details: [],
+        details: returnDate ? [{ label: "Return date", value: returnDate }] : [],
       });
       leadId = lead.leadId;
       recorded = true;
@@ -125,6 +130,7 @@ export async function POST(request: Request) {
       stops: resolved.stops,
       customer: resolved.customer,
       date,
+      returnDate,
       time,
       gstPercent: catalog.settings.gstPercent,
       leadId,

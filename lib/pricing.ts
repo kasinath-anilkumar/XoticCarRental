@@ -11,20 +11,11 @@
  * city and occasion first and pass distance in from lib/distance.ts.
  */
 
-import { formatINR } from "./format";
+import { formatINR, formatTime } from "./format";
+import { isISODate, isTime } from "./dates";
+import { parsePricingRules } from "./pricing-rules";
 import { seasonFor } from "./seasons";
-import type { Car, PricingInput, Quote, QuoteLine, RateKey } from "./types";
-
-/** Average km/h assumed for billable drive time. */
-const SPEED_LOCAL = 32;
-const SPEED_OUTSTATION = 52;
-
-/** A one-way drop bills the driver's empty return at this share of the fare. */
-const ONE_WAY_RETURN_SHARE = 0.35;
-
-/** Pickups from this hour, or before NIGHT_END, carry the night charge. */
-const NIGHT_START_HOUR = 22;
-const NIGHT_END_HOUR = 6;
+import type { Car, PricingInput, PricingRules, Quote, QuoteLine, RateKey } from "./types";
 
 export function rateFor(car: Car, rateKey: RateKey): number {
   switch (rateKey) {
@@ -38,13 +29,22 @@ export function rateFor(car: Car, rateKey: RateKey): number {
 }
 
 /** True when a pickup at HH:MM falls in the 22:00–05:59 night window. */
-export function isNightPickup(time: string): boolean {
+export function isNightPickup(time: string, rules: PricingRules): boolean {
+  if (!isTime(time)) return false;
   const hour = Number.parseInt(time, 10);
   if (Number.isNaN(hour)) return false;
-  return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR;
+  return rules.nightStartHour > rules.nightEndHour
+    ? hour >= rules.nightStartHour || hour < rules.nightEndHour
+    : hour >= rules.nightStartHour && hour < rules.nightEndHour;
+}
+
+export function nightWindowLabel(rules: PricingRules): string {
+  const time = (hour: number) => formatTime(`${String(hour).padStart(2, "0")}:00`);
+  return `${time(rules.nightStartHour)} and ${time(rules.nightEndHour)}`;
 }
 
 export function computeQuote(input: PricingInput): Quote {
+  const rules = parsePricingRules(input.pricingRules);
   const {
     car,
     pkg,
@@ -57,6 +57,7 @@ export function computeQuote(input: PricingInput): Quote {
     gstPercent,
     advancePercent,
     date = "",
+    returnDate = "",
     seasons = [],
     charges = [],
     interstate = false,
@@ -66,9 +67,11 @@ export function computeQuote(input: PricingInput): Quote {
 
   // Drive time from distance, plus whatever the customer is holding the car
   // for, rounded up to the next half hour.
-  const driveHours = km / (outstation ? SPEED_OUTSTATION : SPEED_LOCAL);
+  const driveHours = km / (outstation ? rules.outstationSpeedKph : rules.localSpeedKph);
   const hours = Math.max(1, Math.ceil((driveHours + Number(haltHours || 0)) * 2) / 2);
-  const days = Math.max(1, Math.ceil(hours / pkg.hours));
+  const rentalDays = isISODate(date) && isISODate(returnDate) && returnDate >= date
+    ? Math.round((Date.parse(`${returnDate}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`)) / 86_400_000) + 1 : 1;
+  const days = Math.max(rentalDays, Math.ceil(hours / pkg.hours));
 
   const base = rateFor(car, pkg.rateKey) * city.multiplier * days;
   const includedKm = pkg.km * days;
@@ -76,7 +79,7 @@ export function computeQuote(input: PricingInput): Quote {
   const extraKm = Math.max(0, km - includedKm);
   const extraHours = Math.max(0, hours - includedHours);
 
-  const nightStart = isNightPickup(time);
+  const nightStart = isNightPickup(time, rules);
   // Every night away is charged, plus the pickup itself when it starts at night.
   const nights = Math.max(0, days - 1) + (nightStart ? 1 : 0);
 
@@ -86,7 +89,7 @@ export function computeQuote(input: PricingInput): Quote {
 
   const oneWayReturn =
     tripType === "oneway"
-      ? Math.round(km * car.extraKmRate * ONE_WAY_RETURN_SHARE)
+      ? Math.round(km * car.extraKmRate * rules.oneWayReturnPercent / 100)
       : 0;
 
   const lines: QuoteLine[] = [
@@ -123,7 +126,7 @@ export function computeQuote(input: PricingInput): Quote {
     lines.push({
       label: `Night charge × ${nights}`,
       note: nightStart
-        ? "Pickup between 10pm and 6am"
+        ? `Pickup between ${nightWindowLabel(rules)}`
         : "Overnight halt on a multi-day trip",
       amount: car.nightCharge * nights,
     });
@@ -132,7 +135,7 @@ export function computeQuote(input: PricingInput): Quote {
   if (oneWayReturn > 0) {
     lines.push({
       label: "One-way driver return",
-      note: `35% of ${km} km at ${formatINR(car.extraKmRate)}/km`,
+      note: `${rules.oneWayReturnPercent}% of ${km} km at ${formatINR(car.extraKmRate)}/km`,
       amount: oneWayReturn,
     });
   }

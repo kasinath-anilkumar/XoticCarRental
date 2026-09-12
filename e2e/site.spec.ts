@@ -39,8 +39,9 @@ test("gallery loads additional photos and supports modal keyboard navigation", a
   await expect(photos).toHaveCount(24);
   await photos.first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  const initialImage = await page.getByRole("dialog").getByRole("img").getAttribute("src");
   await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("dialog").getByRole("img")).toHaveAttribute("alt", /2/);
+  await expect(page.getByRole("dialog").getByRole("img")).not.toHaveAttribute("src", initialImage!);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(photos.first()).toBeFocused();
@@ -48,6 +49,9 @@ test("gallery loads additional photos and supports modal keyboard navigation", a
 
 test("service enquiry distinguishes saved and unsaved requests without sending messages", async ({ page }) => {
   await page.addInitScript(() => { window.open = () => null; });
+  await page.route("**/api/places?*", (route) => route.fulfill({ json: {
+    results: [{ token: "@10,76,Chosen service area", name: "Chosen service area", detail: "Search result", served: false, isAirport: false }],
+  } }));
   await page.route("**/api/enquiries/service", (route) => route.fulfill({
     json: { recorded: false, whatsappHref: "https://wa.me/919876543210?text=test" },
   }));
@@ -56,7 +60,8 @@ test("service enquiry distinguishes saved and unsaved requests without sending m
   await page.locator('[name="customerPhone"]').fill("9876543210");
   const date = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   await page.locator('[name="date"]').fill(date);
-  await page.locator('[name="city"]').fill("Kochi");
+  await page.locator('input[role="combobox"][id$="-city"]').fill("Chosen service area");
+  await page.getByRole("option", { name: /Chosen service area/ }).click();
   await page.locator('form button[type="submit"]').click();
   await expect(page.getByText("One more step: send your WhatsApp message")).toBeVisible();
   await expect(page.getByText("We could not save your enquiry.", { exact: false })).toBeVisible();
@@ -123,11 +128,15 @@ test("every generated public route responds successfully", async ({ request }, t
   }
 });
 
-test("admin demo worklists and configuration pages render", async ({ request }, testInfo) => {
+test("admin worklists and reference searches require authentication", async ({ request, page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop");
-  for (const path of ["/admin", "/admin/enquiries", "/admin/availability", "/admin/fleet", "/admin/cities", "/admin/garages", "/admin/locations", "/admin/packages", "/admin/settings", "/admin/seasons", "/admin/routes"]) {
-    const response = await request.get(path);
-    expect(response.status(), path).toBe(200);
-    expect(await response.text(), path).not.toContain("We could not load this page");
+  const options = await request.get("/api/admin/options?kind=cities");
+  test.skip(options.status() === 503, "Reference controls are tested separately in explicit no-database demo mode.");
+  expect(options.status()).toBe(401);
+  for (const path of ["/admin", "/admin/enquiries", "/admin/availability", "/admin/fleet", "/admin/cities", "/admin/garages", "/admin/locations", "/admin/packages", "/admin/settings", "/admin/seasons", "/admin/routes", "/admin/services", "/admin/services/new"]) {
+    await page.goto(path);
+    // Streaming redirects are completed by the browser, not APIRequestContext.
+    await expect(page, path).toHaveURL(/\/admin\/login$/);
+    await expect(page.locator("body"), path).not.toContainText("We could not load this page");
   }
 });

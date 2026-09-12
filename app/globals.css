@@ -402,6 +402,9 @@ figcaption {
   border-radius: var(--radius-md);
 }
 .skip-link:focus { transform: translateY(0); }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

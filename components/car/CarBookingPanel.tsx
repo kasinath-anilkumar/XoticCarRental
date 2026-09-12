@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { Icon } from "@/components/ui/Icon";
 import { Media } from "@/components/ui/Media";
 import { formatINR } from "@/lib/format";
@@ -10,6 +8,7 @@ import type { Car, City, Package } from "@/lib/types";
 import { carEnquiryMessage, whatsappLink } from "@/lib/whatsapp";
 
 import { CheckAvailability } from "./CheckAvailability";
+import { JourneyCalculatorLink } from "./JourneyCalculatorLink";
 import { usePackageSelection } from "./PackageSelection";
 
 export interface CarBookingProps {
@@ -25,12 +24,6 @@ export interface CarBookingProps {
 
 function priceFor(car: Car, city: City, pkg: Package): number {
   return rateFor(car, pkg.rateKey) * city.multiplier;
-}
-
-function calculatorHref(params: string, pkgSlug: string): string {
-  const next = new URLSearchParams(params);
-  next.set("pkg", pkgSlug);
-  return `/price-calculator?${next.toString()}`;
 }
 
 export function CarBookingPanel({
@@ -85,14 +78,15 @@ export function CarBookingPanel({
         </div>
       </div>
 
-      <Link
-        href={calculatorHref(calculatorParams, selected.slug)}
+      <JourneyCalculatorLink
+        params={calculatorParams}
+        packageSlug={selected.slug}
         className="btn btn-primary btn-block"
         style={{ minHeight: "44px" }}
       >
         <Icon name="ph-calculator" size={17} />
         Get exact price for my route
-      </Link>
+      </JourneyCalculatorLink>
       <a
         className="btn wa btn-block"
         style={{ minHeight: "44px" }}
@@ -106,7 +100,7 @@ export function CarBookingPanel({
 
       <p className={styles.reply}>
         <Icon name="ph-lightning" size={14} color="var(--color-accent)" />
-        Typical reply in under 10 minutes
+        Contact our team to confirm availability
       </p>
 
       {/* §20 — the question a customer looking at one car actually has. */}
@@ -122,9 +116,9 @@ export function CarBookingPanel({
           sizes="44px"
         />
         <div>
-          <p className={styles.driverTitle}>Your driver: verified &amp; uniformed</p>
+          <p className={styles.driverTitle}>Chauffeur arrangements</p>
           <p className={styles.driverBody}>
-            Police-verified, 8+ years, speaks English, Hindi, Malayalam
+            Share your language, timing and accessibility requirements when enquiring.
           </p>
         </div>
       </div>
@@ -151,13 +145,14 @@ export function CarStickyBar({
         </span>
         <span className={styles.stickyPriceUnit}>/ {selected.label}</span>
       </div>
-      <Link
-        href={calculatorHref(calculatorParams, selected.slug)}
+      <JourneyCalculatorLink
+        params={calculatorParams}
+        packageSlug={selected.slug}
         className="btn btn-primary"
         style={{ minHeight: "44px" }}
       >
         Exact price
-      </Link>
+      </JourneyCalculatorLink>
       <a
         className="btn wa"
         style={{ minHeight: "44px" }}

@@ -532,6 +532,7 @@ const charges = [
 ];
 
 const settings = {
+  pricingRules: { minimumLegKm: 6, localSpeedKph: 32, outstationSpeedKph: 52, oneWayReturnPercent: 35, nightStartHour: 22, nightEndHour: 6 },
   // PLACEHOLDER — the prototype's number. Replace in /admin/settings before
   // the site goes live, or every enquiry goes to a stranger.
   whatsappNumber: '919876543210',

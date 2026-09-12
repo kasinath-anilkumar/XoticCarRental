@@ -15,33 +15,14 @@
  */
 
 /**
- * Service slug → reference prefix. Anything unmapped is a general enquiry.
- *
- * The ten service slugs come first. The four occasion slugs are kept below
- * them because a quote captured from the calculator still files under the
- * occasion it was priced on, and references already in customers' hands must
- * keep meaning what they meant.
+ * A new service needs no code entry to receive references. Prefixes are labels,
+ * not identifiers: services with the same first eight letters share a counter,
+ * and the stored service slug/name identifies the job. Existing references are
+ * read as stored and never regenerated when this derivation changes.
  */
-const PREFIXES: Record<string, string> = {
-  wedding: "WED",
-  photoshoot: "PHO",
-  engagement: "ENG",
-  corporate: "CORP",
-  packages: "PKG",
-  "vip-transfers": "VIP",
-  "south-india-tour": "SIT",
-  leisure: "LEIS",
-  outstation: "OUT",
-  "monthly-chauffeur": "MON",
-  "airport-transfers": "AIR",
-
-  celebrity: "VIP",
-  tour: "TOUR",
-  casual: "XWC",
-};
-
 export function leadPrefix(serviceSlug: string): string {
-  return Object.hasOwn(PREFIXES, serviceSlug) ? PREFIXES[serviceSlug]! : "XWC";
+  const letters = serviceSlug.normalize("NFKD").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 8);
+  return letters ? letters.padEnd(2, "X") : "ENQ";
 }
 
 /** YYMMDD in IST — the business's own day, not the server's timezone. */
@@ -57,10 +38,9 @@ export function leadDateStamp(now: Date): string {
  * The next reference for a service on a day.
  *
  * `taken` is the set of references already issued with the same prefix and
- * date; the sequence is one past the highest. Two enquiries arriving in the
- * same millisecond would compete for a number, which is why the column is
- * unique and the caller retries — a duplicate reference is worse than a
- * retried insert.
+ * date; the sequence is one past the highest, including references issued for
+ * any other service sharing the prefix. The local writer serializes this scan;
+ * production uses the database's atomic prefix/day counter instead.
  */
 export function nextLeadId(serviceSlug: string, now: Date, taken: string[]): string {
   const prefix = leadPrefix(serviceSlug);

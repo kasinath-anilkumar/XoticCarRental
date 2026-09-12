@@ -7,7 +7,10 @@ import { Media } from "@/components/ui/Media";
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { formatINR } from "@/lib/format";
-import { SERVICES, SERVICE_GROUPS, serviceFromPrice } from "@/lib/services";
+import { SERVICE_GROUPS, serviceFromPrice, type Service } from "@/lib/services";
+import { getServicePage } from "@/lib/service-content";
+import { Pagination } from "@/components/ui/Pagination";
+import { parsePage } from "@/lib/pagination";
 import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -26,7 +29,7 @@ const COLUMNS: Record<number, string> = {
 export const metadata: Metadata = {
   title: "What we drive for",
   description:
-    "Weddings, photoshoots, corporate travel, airport transfers, VIP movement, tours and monthly chauffeurs — eleven services across Kerala, Karnataka and Tamil Nadu, each with its own rates and its own preparation.",
+    "Weddings, photoshoots, corporate travel, airport transfers, VIP movement, tours and monthly chauffeurs — services across our published locations, each with its own rates and its own preparation.",
   alternates: { canonical: "/services" },
   openGraph: { url: `${siteUrl()}/services` },
 };
@@ -46,15 +49,17 @@ export const metadata: Metadata = {
  * band there IS a service people ask for most, and a grid that pretends
  * otherwise makes the page harder to read rather than fairer.
  */
-export default async function ServicesPage() {
-  const catalog = await getCatalog();
+export default async function ServicesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const [catalog, servicePage] = await Promise.all([getCatalog(), getServicePage(parsePage(params.page))]);
+  const services = servicePage.data;
   if (!isPricingAvailable(catalog)) {
     return (
       <section className="sec">
         <h1 className="mb-6">Services with a chauffeur</h1>
         <PricingUnavailable />
         <nav aria-label="Services" className="mt-6 flex flex-wrap gap-3">
-          {SERVICES.map((service) => <Link key={service.slug} href={`/services/${service.slug}`} className="btn btn-secondary">{service.short}</Link>)}
+          {services.map((service) => <Link key={service.slug} href={`/services/${service.slug}`} className="btn btn-secondary">{service.short}</Link>)}
         </nav>
       </section>
     );
@@ -70,7 +75,7 @@ export default async function ServicesPage() {
           What is the journey for?
         </h1>
         <p className="max-w-[66ch] text-[15px] text-[var(--color-neutral-400)] [text-wrap:pretty]">
-          Eleven of them, on one rate card and one set of chauffeurs. What changes is the
+          {servicePage.total} services, with published packages and dedicated chauffeurs. What changes is the
           preparation, the questions we ask when you enquire, and — for weddings and VIP movement —
           a handling charge shown on its own line in the quote. Prices below are where each one
           starts; the route decides the rest.
@@ -78,8 +83,8 @@ export default async function ServicesPage() {
       </section>
 
       {SERVICE_GROUPS.map((group) => {
-        const services = SERVICES.filter((service) => service.group === group.key);
-        if (services.length === 0) return null;
+        const grouped = services.filter((service) => service.group === group.key);
+        if (grouped.length === 0) return null;
 
         return (
           <section key={group.key} className="sec sec-tight">
@@ -96,10 +101,10 @@ export default async function ServicesPage() {
                 heading and then reads three or four things, not eleven. */}
             <div
               className={`grid gap-4 max-lg:grid-cols-[repeat(2,1fr)] max-md:grid-cols-1 ${
-                COLUMNS[services.length] ?? "grid-cols-[repeat(3,1fr)]"
+                COLUMNS[grouped.length] ?? "grid-cols-[repeat(3,1fr)]"
               }`}
             >
-              {services.map((service) => (
+              {grouped.map((service) => (
                 <ServiceTile
                   key={service.slug}
                   service={service}
@@ -141,6 +146,7 @@ export default async function ServicesPage() {
           </div>
         </div>
       </section>
+      <div className="sec sec-tight"><Pagination total={servicePage.total} page={servicePage.page} pageSize={24} path="/services" label="services" /></div>
     </>
   );
 }
@@ -156,7 +162,7 @@ function ServiceTile({
   service,
   image,
 }: {
-  service: (typeof SERVICES)[number];
+  service: Service;
   image: string | null;
 }) {
   const from = serviceFromPrice(service);

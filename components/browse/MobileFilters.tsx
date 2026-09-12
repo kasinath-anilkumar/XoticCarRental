@@ -6,14 +6,15 @@ import { useRouter } from "next/navigation";
 
 import { Icon } from "@/components/ui/Icon";
 import {
-  BUDGET_BANDS,
+  MAX_BUDGET_AMOUNT,
+  budgetLabel,
+  parseBudget,
   type CarFilters,
   type BrowseFilterOptions,
 } from "@/lib/catalog";
 
 import styles from "./MobileFilters.module.css";
-import { saveCustomerLocation } from "@/lib/userLocation";
-import { filterByZone, ZONES, type IndiaZone } from "@/lib/geo/zones";
+import { filterServiceCities, serviceStates } from "@/lib/service-areas";
 
 interface MobileFiltersProps {
   catalog: BrowseFilterOptions;
@@ -83,51 +84,32 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
     return value !== "all";
   }).length;
 
-  const [activeZone, setActiveZone] = useState<IndiaZone>("all");
   const [citySearch, setCitySearch] = useState("");
+  const [visibleCityCount, setVisibleCityCount] = useState(24);
 
   const carTypes = useMemo(
     () => catalog.carTypes.map((type) => type.name),
     [catalog.carTypes],
   );
 
-  const states = useMemo(() => {
-    const zoneCities = filterByZone(catalog.cities, activeZone);
-    return [...new Set(zoneCities.map((c) => c.state))];
-  }, [catalog.cities, activeZone]);
-
-  const filteredCities = useMemo(() => {
-    const q = citySearch.toLowerCase().trim();
-    let result = catalog.cities;
-    if (!q && activeZone !== "all") {
-      result = filterByZone(result, activeZone);
-    }
-    if (!q && draft.state !== "all") {
-      result = result.filter((c) => c.state === draft.state);
-    }
-    if (q) {
-      result = catalog.cities.filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          c.state.toLowerCase().includes(q) ||
-          c.slug.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [catalog.cities, activeZone, draft.state, citySearch]);
+  const states = useMemo(() => serviceStates(catalog.cities), [catalog.cities]);
+  const filteredCities = useMemo(() => filterServiceCities(catalog.cities, draft.state, citySearch), [catalog.cities, draft.state, citySearch]);
 
   const choose = (param: keyof CarFilters, value: string) => {
+    if (param === "state") setVisibleCityCount(24);
     setDraft((current) => {
       const next = { ...current, [param]: value };
       if (param === "state" && value !== "all") {
         const city = catalog.cities.find((item) => item.slug === next.city);
-        if (city && city.state !== value) next.city = "all";
+        if (city && city.state.trim() !== value) next.city = "all";
       }
       return next;
     });
   };
 
-  const clear = () =>
+  const clear = () => {
+    setCitySearch("");
+    setVisibleCityCount(24);
     setDraft((current) => ({
       ...current,
       city: "all",
@@ -139,13 +121,20 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
       date: "",
       sort: "popular",
     }));
+  };
+
+  const invalidBudget = draft.budget !== "all" && draft.budget !== "" && parseBudget(draft.budget) === "all";
 
   const apply = () => {
+    if (invalidBudget) {
+      setActiveTab("budget");
+      return;
+    }
     const params = new URLSearchParams(baseQuery);
     params.delete("page");
     if (!draft.date) params.delete("returnDate");
     for (const key of FILTER_KEYS) {
-      const value = draft[key];
+      const value = key === "budget" ? parseBudget(draft.budget) : draft[key];
       if (
         (key === "date" && !value) ||
         (key === "sort" && value === "popular") ||
@@ -155,15 +144,6 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
       } else {
         params.set(key, value);
       }
-    }
-    if (draft.city && draft.city !== "all") {
-      const matched = catalog.cities.find((c) => c.slug === draft.city);
-      saveCustomerLocation({
-        citySlug: draft.city,
-        cityName: matched?.name,
-        state: matched?.state,
-        isFromHome: false,
-      });
     }
     const query = params.toString();
     setOpen(false);
@@ -219,7 +199,7 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
     );
   }
   if (draft.budget !== "all") {
-    summaryTokens.push(`Under ₹${draft.budget}`);
+    summaryTokens.push(invalidBudget ? "Enter a valid budget" : budgetLabel(draft.budget));
   }
   if (draft.date) {
     summaryTokens.push(draft.date);
@@ -386,7 +366,6 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                     onClick={() => {
                       choose("state", "all");
                       choose("city", "all");
-                      setActiveZone("all");
                       setCitySearch("");
                     }}
                   >
@@ -405,14 +384,16 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                 <input
                   type="text"
                   value={citySearch}
-                  onChange={(e) => setCitySearch(e.target.value)}
-                  placeholder="Search city or airport (e.g. Mumbai, Delhi, BLR)..."
+                  onChange={(e) => { setCitySearch(e.target.value); setVisibleCityCount(24); }}
+                  placeholder="Search published service cities"
+                  aria-label="Search service cities"
                   className="input h-[38px] w-full pl-9 pr-8 text-[13px]"
                 />
                 {citySearch && (
                   <button
                     type="button"
                     onClick={() => setCitySearch("")}
+                    aria-label="Clear service city search"
                     className="absolute top-1/2 right-2.5 -translate-y-1/2 text-[var(--color-neutral-400)] hover:text-text cursor-pointer"
                   >
                     <Icon name="ph-x" size={13} />
@@ -420,54 +401,13 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                 )}
               </div>
 
-              {/* Zone Filter Pills (when not searching text) */}
-              {!citySearch && (
-                <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                  {ZONES.map((zone) => {
-                    const active = activeZone === zone.key;
-                    return (
-                      <button
-                        key={zone.key}
-                        type="button"
-                        onClick={() => {
-                          setActiveZone(zone.key);
-                          choose("state", "all");
-                        }}
-                        className={`cursor-pointer rounded-full px-3 py-1 text-[11px] font-medium transition-all ${
-                          active
-                            ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
-                            : "border border-[var(--color-divider)] bg-well text-[var(--color-neutral-400)] hover:text-text"
-                        }`}
-                      >
-                        {zone.shortLabel}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* State Filter Pills */}
-              {!citySearch && (
-                <div className={styles.statePills}>
-                  <button
-                    type="button"
-                    className={`${styles.statePill} ${draft.state === "all" ? styles.statePillActive : ""}`}
-                    onClick={() => choose("state", "all")}
-                  >
-                    All States
-                  </button>
-                  {states.map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      className={`${styles.statePill} ${draft.state === st ? styles.statePillActive : ""}`}
-                      onClick={() => choose("state", st)}
-                    >
-                      {st}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <label className="field mb-3">
+                <span>State or territory</span>
+                <select className="input min-h-[44px]" value={draft.state} onChange={(event) => choose("state", event.target.value)}>
+                  <option value="all">All states</option>
+                  {states.map((state) => <option key={state.name} value={state.name}>{state.name} ({state.count})</option>)}
+                </select>
+              </label>
 
               {/* Cities Grid */}
               <div className={styles.cardGrid}>
@@ -481,7 +421,7 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                   </div>
                   <div className={styles.cardContent}>
                     <p className={styles.cardTitle}>All Cities</p>
-                    <p className={styles.cardSubtitle}>Nationwide fleet</p>
+                    <p className={styles.cardSubtitle}>Published service areas</p>
                   </div>
                   {draft.city === "all" && (
                     <div className={styles.checkBadge}>
@@ -490,7 +430,7 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                   )}
                 </button>
 
-                {filteredCities.map((city) => {
+                {filteredCities.slice(0, visibleCityCount).map((city) => {
                   const active = draft.city === city.slug;
                   const count = city.carCount;
 
@@ -519,6 +459,8 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                   );
                 })}
               </div>
+              <output className="mt-3 block text-[12px] text-[var(--color-neutral-400)]">Showing {Math.min(visibleCityCount, filteredCities.length)} of {filteredCities.length} service cities</output>
+              {filteredCities.length > visibleCityCount && <button type="button" className="btn btn-secondary mt-3 min-h-[44px] text-[12px]" onClick={() => setVisibleCityCount((count) => count + 24)}>Show more service cities</button>}
             </div>
           )}
 
@@ -604,7 +546,7 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                 <div>
                   <h3 className={styles.sectionTitle}>Trip Budget Ceiling</h3>
                   <p className={styles.sectionSubtitle}>
-                    Estimated all-in package rate with chauffeur, fuel &amp; tax
+                    Filter the estimated trip rate, including applicable driver allowance and tax.
                   </p>
                 </div>
                 {draft.budget !== "all" && (
@@ -618,55 +560,16 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                 )}
               </div>
 
-              <div className={styles.cardGrid}>
-                <button
-                  type="button"
-                  className={`${styles.optionCard} ${draft.budget === "all" ? styles.optionCardActive : ""}`}
-                  onClick={() => choose("budget", "all")}
-                >
-                  <div className={styles.cardIconBox}>
-                    <Icon name="ph-wallet" size={20} />
-                  </div>
-                  <div className={styles.cardContent}>
-                    <p className={styles.cardTitle}>Any Budget</p>
-                    <p className={styles.cardSubtitle}>Explore entire luxury fleet</p>
-                  </div>
-                  {draft.budget === "all" && (
-                    <div className={styles.checkBadge}>
-                      <Icon name="ph-check" size={12} />
-                    </div>
-                  )}
-                </button>
-
-                {BUDGET_BANDS.map((band) => {
-                  const active = draft.budget === band.key;
-                  const isUltra = band.key === "30000+";
-
-                  return (
-                    <button
-                      key={band.key}
-                      type="button"
-                      className={`${styles.optionCard} ${active ? styles.optionCardActive : ""}`}
-                      onClick={() => choose("budget", band.key)}
-                    >
-                      <div className={styles.cardIconBox}>
-                        <Icon name={isUltra ? "ph-sparkle" : "ph-currency-inr"} size={19} />
-                      </div>
-                      <div className={styles.cardContent}>
-                        <p className={styles.cardTitle}>{band.label}</p>
-                        <p className={styles.cardSubtitle}>
-                          {isUltra ? "Flagship VIP & exotics" : "All-in package estimate"}
-                        </p>
-                      </div>
-                      {active && (
-                        <div className={styles.checkBadge}>
-                          <Icon name="ph-check" size={12} />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <label className="field">
+                <span>Maximum estimated amount (₹)</span>
+                <input className="input min-h-[44px]" type="number" inputMode="decimal" min="0.01" max={MAX_BUDGET_AMOUNT} step="0.01"
+                  placeholder="Any amount" value={draft.budget === "all" || draft.budget.endsWith("+") ? "" : draft.budget}
+                  aria-invalid={invalidBudget} aria-describedby="mobile-budget-help"
+                  onChange={(event) => choose("budget", event.target.value || "all")} />
+              </label>
+              <p id="mobile-budget-help" className="mt-3 text-[12px] text-[var(--color-neutral-400)]">Leave blank to see cars at any price.</p>
+              {draft.budget.endsWith("+") && <p className="mt-3 text-[12px]">Current link filter: {budgetLabel(draft.budget)}</p>}
+              {invalidBudget && <p className="mt-3 text-[12px]" role="alert">Enter a positive amount up to ₹{MAX_BUDGET_AMOUNT.toLocaleString("en-IN")}, with at most two decimal places.</p>}
             </div>
           )}
 
@@ -847,6 +750,8 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
         className="btn btn-secondary inline-flex min-h-[40px] items-center gap-2 px-3 py-1.5 text-[13px] font-medium"
         onClick={() => {
           setDraft(filters);
+          setCitySearch("");
+          setVisibleCityCount(24);
           setOpen(true);
         }}
       >

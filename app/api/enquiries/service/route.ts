@@ -4,7 +4,10 @@ import { randomUUID } from "node:crypto";
 import { getCatalog } from "@/lib/content";
 import { addDays, businessDate } from "@/lib/dates";
 import { enquiryError, EnquiryInputError, inputDate, inputPhone, inputText, readEnquiryBody } from "@/lib/enquiry-validation";
-import { serviceBySlug, type Service } from "@/lib/services";
+import type { Service } from "@/lib/services";
+import { getService } from "@/lib/service-content";
+import { decodeFreePlace } from "@/lib/places";
+import { siteUrl } from "@/lib/site";
 import { getStore } from "@/lib/store";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { canRecordEnquiries } from "@/lib/supabase/admin";
@@ -15,7 +18,7 @@ import { whatsappLink } from "@/lib/whatsapp";
 export async function POST(request: Request) {
   try {
     const raw = await readEnquiryBody(request);
-    const service = serviceBySlug(inputText(raw.service, "Service") ?? "");
+    const service = await getService(inputText(raw.service, "Service") ?? "");
     if (!service) throw new EnquiryInputError("Unknown service.");
 
     const name = inputText(raw.customerName, "Name");
@@ -29,7 +32,7 @@ export async function POST(request: Request) {
     let city: string | null = null;
 
     for (const field of service.fields) {
-      const value = inputText(answers[field.name], field.label, field.type === "textarea" ? 600 : 120);
+      const value = inputText(answers[field.name], field.label, field.type === "textarea" ? 600 : field.type === "place" ? 500 : 120);
       if (field.required && !value) throw new EnquiryInputError(`${field.label} is needed.`);
       if (!value) continue;
       if (field.type === "date") {
@@ -39,8 +42,15 @@ export async function POST(request: Request) {
       if (field.type === "select" && !field.options?.includes(value)) {
         throw new EnquiryInputError(`Choose one of the options for ${field.label.toLowerCase()}.`);
       }
-      if (field.type === "number" && (!/^\d+(?:\.\d+)?$/.test(value) || !Number.isFinite(Number(value)) || Number(value) > 10_000)) {
-        throw new EnquiryInputError(`${field.label} must be a number between 0 and 10,000.`);
+      if (field.type === "number" && (!/^\d+(?:\.\d+)?$/.test(value) || !Number.isFinite(Number(value)) || Number(value) < (field.min ?? 0) || Number(value) > (field.max ?? 10_000))) {
+        throw new EnquiryInputError(`${field.label} must be a number between ${field.min ?? 0} and ${field.max ?? 10_000}.`);
+      }
+      if (field.type === "place") {
+        const place = decodeFreePlace(value);
+        if (!place) throw new EnquiryInputError(`Choose a search result for ${field.label.toLowerCase()}.`);
+        if (field.name === "city") city = place.name;
+        details.push({ label: field.label, value: place.name, place: { token: value, lat: place.lat, lng: place.lng } });
+        continue;
       }
       if (field.name === "city") city = value;
       details.push({ label: field.label, value });
@@ -68,6 +78,7 @@ export async function POST(request: Request) {
         customerPhone: phone,
         customerPlace: city,
         serviceSlug: service.slug,
+        occasionSlug: service.occasionSlug,
         serviceName: service.name,
         carSlug: null,
         carName: null,
@@ -118,6 +129,6 @@ function message(service: Service, leadId: string, name: string | null, phone: s
     "",
     ...details.map((detail) => `${detail.label}: ${detail.value}`),
     "",
-    "Sent from xoticcarrental.com",
+    `Sent from ${new URL(siteUrl()).host}`,
   ].filter((line) => line !== null).join("\n");
 }

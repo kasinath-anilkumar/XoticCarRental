@@ -3,8 +3,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/Icon";
+import { LocationCombobox } from "@/components/ui/LocationCombobox";
 import { businessDate } from "@/lib/dates";
+import { resolvePlace } from "@/lib/places";
 import type { Service } from "@/lib/services";
+import type { LocationPoint } from "@/lib/types";
+
+const NO_LOCATIONS: LocationPoint[] = [];
 
 /**
  * The enquiry form for one service (§12).
@@ -18,7 +23,7 @@ import type { Service } from "@/lib/services";
  * a customer who never sends the message — which, on a phone, is most of the
  * ones that fail.
  */
-export function ServiceEnquiryForm({ service }: { service: Service }) {
+export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { service: Service; locations?: LocationPoint[] }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [reference, setReference] = useState<string | null>(null);
@@ -26,6 +31,7 @@ export function ServiceEnquiryForm({ service }: { service: Service }) {
   const [recorded, setRecorded] = useState(false);
   const [startDate, setStartDate] = useState<string>("");
   const [returnDate, setReturnDate] = useState<string>("");
+  const [places, setPlaces] = useState<Record<string, string>>({});
   const fieldId = useId();
   const inFlight = useRef(false);
   const [today, setToday] = useState<string>();
@@ -60,6 +66,14 @@ export function ServiceEnquiryForm({ service }: { service: Service }) {
     const answers: Record<string, string> = {};
     for (const field of service.fields) {
       const value = form.get(field.name);
+      if (field.type === "place" && (field.required || value)) {
+        if (typeof value !== "string" || !resolvePlace(value, locations)) {
+          setError(`Select ${field.label.toLowerCase()} from the search results.`);
+          setStatus("error");
+          document.getElementById(`${fieldId}-${field.name}`)?.focus();
+          return;
+        }
+      }
       if (typeof value === "string" && value.trim()) answers[field.name] = value.trim();
     }
     const returnVal = form.get("returnDate");
@@ -183,12 +197,23 @@ export function ServiceEnquiryForm({ service }: { service: Service }) {
         {service.fields.map((field) => (
           <div key={field.name} className="contents">
             <div className={`field ${field.wide ? "sm:col-span-2" : ""}`}>
-              <label id={`${fieldId}-${field.name}-label`} htmlFor={field.type === "select" ? undefined : `${fieldId}-${field.name}`}>
+              {field.type !== "place" && <label id={`${fieldId}-${field.name}-label`} htmlFor={field.type === "select" ? undefined : `${fieldId}-${field.name}`}>
                 {field.label}
                 {field.required && <span className="text-[var(--color-accent)]"> *</span>}
-              </label>
+              </label>}
 
-              {field.type === "date" ? (
+              {field.type === "place" ? (
+                <LocationCombobox
+                  id={`${fieldId}-${field.name}`}
+                  name={field.name}
+                  label={field.label}
+                  required={field.required}
+                  value={places[field.name] ?? null}
+                  onChange={(token) => setPlaces((current) => ({ ...current, [field.name]: token ?? "" }))}
+                  locations={locations}
+                  placeholder={field.placeholder ?? "Search a city, address or landmark"}
+                />
+              ) : field.type === "date" ? (
                 <input
                   name={field.name}
                   id={`${fieldId}-${field.name}`}
@@ -208,9 +233,9 @@ export function ServiceEnquiryForm({ service }: { service: Service }) {
               ) : field.type === "select" ? (
                 <fieldset className="mt-1 min-w-0" aria-labelledby={`${fieldId}-${field.name}-label`}>
                   <div className="flex flex-wrap gap-2">
-                    {(field.options ?? []).map((option, index) => (
+                    {(field.options ?? []).map((option) => (
                       <label key={option} className="cursor-pointer">
-                        <input type="radio" className="peer sr-only" name={field.name} value={option} defaultChecked={index === 0} required={field.required} />
+                        <input type="radio" className="peer sr-only" name={field.name} value={option} required={field.required} />
                         <span className="flex min-h-[40px] items-center rounded-lg border border-[var(--color-divider)] bg-well px-3 py-1.5 text-[12px] text-[var(--color-neutral-300)] transition-colors hover:border-[var(--color-accent)] peer-checked:border-[var(--color-accent)] peer-checked:bg-[var(--color-accent-800)] peer-checked:text-[var(--color-accent-100)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)] sm:text-[13px]">
                           {option}
                         </span>
@@ -237,7 +262,7 @@ export function ServiceEnquiryForm({ service }: { service: Service }) {
                   required={field.required}
                   placeholder={field.placeholder}
                   maxLength={field.type === "number" ? undefined : 120}
-                  {...(field.type === "number" ? { min: 0, inputMode: "numeric" as const } : {})}
+                  {...(field.type === "number" ? { min: field.min, max: field.max, inputMode: "numeric" as const } : {})}
                 />
               )}
 
@@ -300,7 +325,7 @@ export function ServiceEnquiryForm({ service }: { service: Service }) {
       </button>
 
       <p className="mt-2 text-center text-[11px] text-[var(--color-neutral-400)]">
-        We call back the same day. Your number is used for this enquiry and nothing else.
+        Our team will contact you about this enquiry. Availability is confirmed before booking.
       </p>
     </form>
   );

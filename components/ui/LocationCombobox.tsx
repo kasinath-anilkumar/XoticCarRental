@@ -13,6 +13,9 @@ import type { LocationPoint } from "@/lib/types";
 export interface LocationComboboxProps {
   id: string;
   label: string;
+  /** Canonical place token submitted by native forms. */
+  name?: string;
+  required?: boolean;
   /** The current place token: a served slug, or an `@lat,lng,name` place. */
   value: PlaceToken | null;
   onChange: (token: PlaceToken | null) => void;
@@ -84,6 +87,8 @@ function setCachedPlaces(key: string, data: { results: PlaceSuggestion[]; degrad
 export function LocationCombobox({
   id,
   label,
+  name,
+  required = false,
   value,
   onChange,
   locations,
@@ -220,7 +225,13 @@ export function LocationCombobox({
     onInputValueChange: ({ inputValue, type }) => {
       // Only track typing; downshift also fires this when it writes the
       // selection back into the field, which would re-run the search.
-      if (type === useCombobox.stateChangeTypes.InputChange) setQuery(inputValue ?? "");
+      if (type === useCombobox.stateChangeTypes.InputChange) {
+        setQuery(inputValue ?? "");
+        setRemote([]);
+        setUnreachable(false);
+        // Editing the label must not silently submit the previous coordinates.
+        if (value) onChange(null);
+      }
     },
     onSelectedItemChange: ({ selectedItem }) => {
       if (!selectedItem) return;
@@ -272,7 +283,9 @@ export function LocationCombobox({
       <label {...getLabelProps({ htmlFor: id })}>
         <Icon name={icon} size={14} color="var(--color-accent)" />
         {label}
+        {required && <span aria-hidden="true"> *</span>}
       </label>
+      {name && <input type="hidden" name={name} value={value ?? ""} />}
 
       <div className="relative">
         <div className="relative flex items-center">
@@ -283,6 +296,7 @@ export function LocationCombobox({
             {...inputProps}
             className="input pr-[34px] pl-[34px] text-ellipsis max-md:pr-[44px]"
             autoComplete="off"
+            required={required}
             maxLength={120}
           />
           {(selected || (clearable && value === null)) && !disabled && (

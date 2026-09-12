@@ -75,6 +75,9 @@ export function toGeoPlace(place: IndexedPlace): GeoPlace {
     lng: place.lng,
     detail: place.state,
     state: place.state,
+    city: place.name,
+    country: "India",
+    countryCode: "IN",
     kind: kindFor(place.population),
   };
 }
@@ -90,8 +93,11 @@ export interface IndexMatch {
  * Returns the raw rows so the admin form can still show population and aliases.
  */
 export async function searchIndex(query: string, limit = 8): Promise<IndexMatch[]> {
+  // This generated snapshot covers India only; never use it for another country.
+  if ((process.env.GEOCODER_COUNTRY ?? "in").toLowerCase() !== "in") return [];
+  limit = Number.isFinite(limit) ? Math.min(20, Math.max(1, Math.trunc(limit))) : 8;
   const needle = fold(query);
-  if (needle.length < 2) return [];
+  if (needle.length < 2 || needle.length > 200) return [];
 
   const all = await loadIndex();
 

@@ -1,4 +1,5 @@
 import type { Catalog } from "./content";
+import { parsePricingRules } from "./pricing-rules";
 
 /**
  * A public catalog must contain all pricing dimensions and the actual home
@@ -10,6 +11,7 @@ import type { Catalog } from "./content";
  * customers may enter their own stops and vehicles may use their city base.
  */
 export function isPricingAvailable(catalog: Catalog): boolean {
+  try { parsePricingRules(catalog.settings.pricingRules); } catch { return false; }
   if (catalog.cars.length === 0 || catalog.packages.length === 0 || catalog.occasions.length === 0) {
     return false;
   }

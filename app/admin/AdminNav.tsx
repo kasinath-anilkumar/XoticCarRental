@@ -19,6 +19,7 @@ const LINKS = [
   { href: "/admin/locations", label: "Locations", icon: "ph-map-pin" },
   { href: "/admin/routes", label: "Route fares", icon: "ph-road-horizon" },
   { href: "/admin/occasions", label: "Occasions", icon: "ph-star-four" },
+  { href: "/admin/services", label: "Services", icon: "ph-star-four" },
   { href: "/admin/settings", label: "Settings", icon: "ph-sliders-horizontal" },
 ];
 
@@ -33,6 +34,7 @@ export function AdminNav() {
           <Link
             key={link.href}
             href={link.href}
+            prefetch={false}
             className={active ? styles.navLinkActive : styles.navLink}
             aria-current={active ? "page" : undefined}
           >

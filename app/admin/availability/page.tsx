@@ -1,3 +1,5 @@
+import { ReferenceSelect } from "@/components/admin/ReferenceSelect";
+import { createSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -36,7 +38,7 @@ function single(value: string | string[] | undefined): string {
  */
 export default async function AdminAvailabilityPage({ searchParams }: { searchParams: SearchParams }) {
   const admin = await requireAdmin();
-  const catalog = await getCatalog();
+  const localCars = !isSupabaseConfigured() ? (await getCatalog()).cars : undefined;
   const params = await searchParams;
   const today = businessDate();
   const view = VIEWS.find((item) => item.key === single(params.view)) ?? VIEWS[0];
@@ -62,8 +64,17 @@ export default async function AdminAvailabilityPage({ searchParams }: { searchPa
   const lastPage = Math.max(1, Math.ceil(result.total / result.pageSize));
   if (result.page > lastPage) redirect(pageHref("/admin/availability", query.toString(), lastPage));
 
-  const carName = (slug: string) =>
-    catalog.cars.find((car) => car.slug === slug)?.name ?? slug;
+  const names = new Map((localCars ?? []).map((item) => [item.slug, item.name]));
+  if (!localCars) {
+    const slugs = [...new Set([...result.items.map((item) => item.carSlug), ...(car ? [car] : [])])];
+    if (slugs.length) {
+      const supabase = await createSupabaseServerClient();
+      const rows = await supabase.from("cars").select("slug,name").in("slug", slugs);
+      if (rows.error) throw new Error("Could not load vehicle names.");
+      for (const item of rows.data ?? []) names.set(item.slug, item.name);
+    }
+  }
+  const carName = (slug: string) => names.get(slug) ?? slug;
 
   return (
     <AdminShell email={admin.email}>
@@ -78,7 +89,7 @@ export default async function AdminAvailabilityPage({ searchParams }: { searchPa
         </p>
       )}
 
-      <AvailabilityForm today={today} cars={catalog.cars.map((car) => ({ slug: car.slug, name: car.name }))} />
+      <AvailabilityForm today={today} cars={localCars?.map((car) => ({ slug: car.slug, name: car.name }))} />
 
       <section className={styles.card} style={{ marginTop: "16.8px" }}>
         <h2 className={styles.cardTitle}>Vehicle holds</h2>
@@ -97,14 +108,13 @@ export default async function AdminAvailabilityPage({ searchParams }: { searchPa
         <form action="/admin/availability" method="get" className="mb-6">
           <input type="hidden" name="view" value={view.key} />
           <div className={styles.grid3}>
-            <div className="field">
+            {localCars ? <div className="field">
               <label htmlFor="availability-filter-car">Vehicle</label>
               <select id="availability-filter-car" name="car" defaultValue={car} className="input">
                 <option value="">All vehicles</option>
-                {car && !catalog.cars.some((item) => item.slug === car) && <option value={car}>{car}</option>}
-                {catalog.cars.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}
+                {localCars.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}
               </select>
-            </div>
+            </div> : <ReferenceSelect key={car} kind="cars" name="car" label="Filter by vehicle" initial={car ? [{ value: car, label: carName(car) }] : []} />}
             <div className="field">
               <label htmlFor="availability-filter-from">Overlaps from</label>
               <input id="availability-filter-from" type="date" name="from" defaultValue={from} className="input" />

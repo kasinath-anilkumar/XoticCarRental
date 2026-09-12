@@ -55,6 +55,9 @@ describe("detailLine", () => {
 });
 
 describe("dedupe", () => {
+  it("preserves distinct same-name villages only a few kilometres apart", () => {
+    expect(dedupe([place({ name: "Nagar", lat: 11.601 }), place({ name: "Nagar", lat: 11.64 })])).toHaveLength(2);
+  });
   it("collapses one place returned under several tags, keeping the best", () => {
     const results = dedupe([
       place({ name: "Kalpetta", kind: "landmark", lat: 11.607, lng: 76.083, detail: "" }),

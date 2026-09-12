@@ -7,7 +7,9 @@ import { DateField } from "@/components/ui/DateField";
 import { Icon } from "@/components/ui/Icon";
 import { LocationCombobox } from "@/components/ui/LocationCombobox";
 import { useCurrentPlace } from "@/components/ui/useCurrentPlace";
-import { fromServed, resolvePlace, type PlaceToken } from "@/lib/places";
+import { resolvePlace, type PlaceToken } from "@/lib/places";
+import { addDays, isISODate } from "@/lib/dates";
+import { MAX_TRIP_DAYS } from "@/lib/trip-limits";
 import type { LocationPoint, Package } from "@/lib/types";
 
 import { StatePicker, type StateCity } from "./StatePicker";
@@ -64,6 +66,7 @@ export function HomeSearch({
 
   const handleFromChange = (token: PlaceToken | null) => {
     setFrom(token);
+    setLocateNote(null);
     if (!token) {
       clearLocation();
       return;
@@ -142,28 +145,14 @@ export function HomeSearch({
     });
   };
 
-  /**
-   * Picking a city sets the pickup to a real point inside it.
-   *
-   * A city is not somewhere a car can wait — "Kochi" is 95 square kilometres —
-   * so the first published pickup point in it is used, and the visitor sees the
-   * place they will actually be collected from rather than a city name that
-   * quietly means nothing to the route.
-   */
+  /** Coverage browsing does not invent a pickup address for the customer. */
   const pickCity = (citySlug: string) => {
-    const point = locations.find((location) => location.citySlug === citySlug);
-    if (!point) return;
-    setFrom(fromServed(point).key);
-    setLocateNote(`Pickup set to ${point.name}`);
-    const matchedCity = cities.find((c) => c.slug === citySlug);
-    saveCustomerLocation({
-      token: fromServed(point).key,
-      name: point.name,
-      citySlug,
-      cityName: matchedCity?.name,
-      state: matchedCity?.state,
-      isFromHome: true,
-    });
+    if (!cities.some((city) => city.slug === citySlug)) return;
+    const params = new URLSearchParams({ city: citySlug, pkg });
+    if (from) params.set("from", from);
+    if (date) params.set("date", date);
+    if (returnDate) params.set("returnDate", returnDate);
+    router.push(`/cars?${params}`);
   };
 
   const activePackage = packages.find((p) => p.slug === pkg);
@@ -192,7 +181,7 @@ export function HomeSearch({
             value={date}
             onChange={(d) => {
               setDate(d);
-              if (returnDate && d > returnDate) setReturnDate(d);
+              if (returnDate && isISODate(d) && (d > returnDate || returnDate > addDays(d, MAX_TRIP_DAYS - 1))) setReturnDate("");
             }}
             min={minDate}
           />
@@ -205,6 +194,7 @@ export function HomeSearch({
             value={returnDate}
             onChange={setReturnDate}
             min={date || minDate}
+            max={isISODate(date) ? addDays(date, MAX_TRIP_DAYS - 1) : undefined}
             clearable
           />
         </div>
@@ -216,7 +206,7 @@ export function HomeSearch({
           >
             Package
           </span>
-          <div className="grid h-[46px] grid-cols-[repeat(3,1fr)] gap-[4px] rounded-md border border-[var(--color-divider)] bg-well p-[4px]">
+          <div className="grid min-h-[46px] grid-cols-[repeat(auto-fit,minmax(70px,1fr))] gap-[4px] rounded-md border border-[var(--color-divider)] bg-well p-[4px]">
             {packages.map((item) => (
               <label
                 key={item.slug}

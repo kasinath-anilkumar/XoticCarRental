@@ -11,7 +11,6 @@
  * public endpoint on which a lead could be read or forged.
  */
 
-import { serviceBySlug } from "../services";
 import { createSupabaseAdminClient } from "../supabase/admin";
 import { leadPrefix, OPEN_STATUSES, type LeadStatus } from "../leads";
 import { pagination } from "./pagination";
@@ -73,7 +72,7 @@ export function createSupabaseStore(): Store {
 
       // The catalog is keyed by slug and the tables by id, so the ids are
       // looked up rather than carried around the app.
-      const occasionSlug = serviceBySlug(lead.serviceSlug)?.occasionSlug ?? lead.serviceSlug;
+      const occasionSlug = lead.occasionSlug ?? lead.serviceSlug;
       const [car, pkg, occasion, reference] = await Promise.all([
         lead.carSlug ? supabase.from("cars").select("id").eq("slug", lead.carSlug).single() : null,
         lead.packageLabel ? supabase.from("packages").select("id").eq("label", lead.packageLabel).single() : null,

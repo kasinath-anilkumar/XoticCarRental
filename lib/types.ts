@@ -159,6 +159,7 @@ export interface WhyItem {
 }
 
 export interface SiteSettings {
+  pricingRules: PricingRules;
   /** Digits only, country code first — "919876543210". */
   whatsappNumber: string;
   phoneDisplay: string;
@@ -223,6 +224,8 @@ export interface TripRequest {
   stops: string[];
   /** YYYY-MM-DD */
   date: string;
+  /** Last rental date, inclusive. Blank means derive duration from the itinerary. */
+  returnDate?: string;
   /** HH:MM, 24-hour */
   time: string;
   occasionSlug: string;
@@ -271,6 +274,7 @@ export interface ExtraCharge {
 }
 
 export interface PricingInput {
+  pricingRules: PricingRules;
   car: Car;
   pkg: Package;
   city: City;
@@ -285,12 +289,22 @@ export interface PricingInput {
   advancePercent: number;
   /** The pickup date, YYYY-MM-DD — decides the peak-season rate (§10). */
   date?: string;
+  returnDate?: string;
   /** Recurring peak windows. Empty means no seasonal pricing. */
   seasons?: Season[];
   /** Permits, parking and tolls, where Xotic bills them (§10). */
   charges?: ExtraCharge[];
   /** True when the route is known to cross a state line. */
   interstate?: boolean;
+}
+
+export interface PricingRules {
+  minimumLegKm: number;
+  localSpeedKph: number;
+  outstationSpeedKph: number;
+  oneWayReturnPercent: number;
+  nightStartHour: number;
+  nightEndHour: number;
 }
 
 export interface Quote {

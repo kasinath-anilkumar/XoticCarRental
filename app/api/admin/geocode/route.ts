@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/admin/auth";
-import { reversePlace, searchPlaces } from "@/lib/geo";
+import { reverseLookup, searchPlaces } from "@/lib/geo";
+import { clientKey, createRateLimiter } from "@/lib/net/rate-limit";
 import { searchIndex, toGeoPlace } from "@/lib/geo/local-index";
 import type { GeoKind, GeoPlace } from "@/lib/geo/types";
 
@@ -34,11 +35,18 @@ export interface AdminPlace {
   detail: string;
   state: string;
   kind: GeoKind;
+  city?: string;
+  locality?: string;
+  country?: string;
+  countryCode?: string;
+  providerId?: string;
   /** Former names, from the bundled index. */
   aka?: string[];
 }
 
 const MAX_RESULTS = 8;
+const allow = createRateLimiter(120, 60_000);
+const headers = { "Cache-Control": "private, no-store" };
 
 function toAdminPlace(place: GeoPlace, aka?: string[]): AdminPlace {
   return {
@@ -49,6 +57,11 @@ function toAdminPlace(place: GeoPlace, aka?: string[]): AdminPlace {
     detail: place.detail,
     state: place.state,
     kind: place.kind,
+    city: place.city,
+    locality: place.locality,
+    country: place.country,
+    countryCode: place.countryCode,
+    providerId: place.id,
     ...(aka?.length ? { aka } : {}),
   };
 }
@@ -56,6 +69,7 @@ function toAdminPlace(place: GeoPlace, aka?: string[]): AdminPlace {
 export async function GET(request: Request) {
   // Read-only, but it is still an internal tool — staff only.
   await requireAdmin();
+  if (!allow(clientKey(request))) return NextResponse.json({ results: [], degraded: true, error: "Too many lookups. Try again shortly." }, { status: 429, headers: { ...headers, "Retry-After": "60" } });
 
   const params = new URL(request.url).searchParams;
 
@@ -63,24 +77,25 @@ export async function GET(request: Request) {
   const lng = Number(params.get("lng"));
   if (params.has("lat") || params.has("lng")) {
     if (!params.get("lat")?.trim() || !params.get("lng")?.trim() || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-      return NextResponse.json({ results: [], error: "Invalid coordinates." }, { status: 400 });
+      return NextResponse.json({ results: [], error: "Invalid coordinates." }, { status: 400, headers });
     }
-    const place = await reversePlace({ lat, lng }, { signal: request.signal });
+    const { place, ok } = await reverseLookup({ lat, lng }, { signal: request.signal });
     return NextResponse.json({
       results: place ? [toAdminPlace({ ...place, lat, lng })] : [],
-      ...(place ? {} : { error: "Nothing is mapped at that point — name it yourself." }),
-    });
+      degraded: !ok,
+      ...(place ? {} : { error: ok ? "Nothing is mapped at that point. Enter its name and coordinates." : "The place lookup is unavailable. Try again shortly." }),
+    }, { headers });
   }
 
   const query = (params.get("q") ?? "").trim();
-  if (query.length > 200) return NextResponse.json({ results: [], error: "Search must be 200 characters or fewer." }, { status: 400 });
-  if (query.length < 2) return NextResponse.json({ results: [] });
+  if (query.length > 200) return NextResponse.json({ results: [], error: "Search must be 200 characters or fewer." }, { status: 400, headers });
+  if (query.length < 2) return NextResponse.json({ results: [], degraded: false }, { headers });
 
   const live = await searchPlaces(query, { limit: MAX_RESULTS, signal: request.signal });
 
-  const indexed = live.places.length ? [] : await searchIndex(query, MAX_RESULTS);
+  const indexed = live.ok || request.signal.aborted ? [] : await searchIndex(query, MAX_RESULTS);
   const aliases = new Map(indexed.map((match) => [match.place.name, match.place.aka]));
-  const places: GeoPlace[] = live.places.length
+  const places: GeoPlace[] = live.ok || request.signal.aborted
     ? live.places
     : indexed.map((match) => toGeoPlace(match.place));
 
@@ -90,6 +105,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     results,
+    degraded: !live.ok,
     ...(results.length === 0
       ? {
           error: live.ok
@@ -97,5 +113,5 @@ export async function GET(request: Request) {
             : "The place lookup is unreachable right now. Type the name and paste its coordinates below.",
         }
       : {}),
-  });
+  }, { headers });
 }

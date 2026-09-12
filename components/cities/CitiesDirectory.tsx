@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Media } from "@/components/ui/Media";
 import { formatINR } from "@/lib/format";
-import { filterByZone, ZONES, type IndiaZone } from "@/lib/geo/zones";
+import { filterServiceCities, serviceStates } from "@/lib/service-areas";
 
 export interface CityDirectoryItem {
   slug: string;
@@ -40,60 +40,20 @@ export interface CitiesDirectoryProps {
 
 const PAGE_SIZE = 12;
 
-/**
- * Pan-India Luxury Destination Directory & Metropolitan Hubs.
- *
- * Built for national scale with zone-based hierarchy (North, South, West, East & Central),
- * sub-state filtering, instant live search across cities and airports, and
- * chunked progressive rendering for ultra-fast 60fps mobile performance.
- */
+/** Published service-city search with state filters and progressive rendering. */
 export function CitiesDirectory({
   cities,
-  states: _states,
-  totalRoutes: _totalRoutes,
+  states,
+  totalRoutes,
   defaultPackageLabel,
   gstPercent: _gstPercent,
 }: CitiesDirectoryProps) {
-  const [activeZone, setActiveZone] = useState<IndiaZone>("all");
   const [activeState, setActiveState] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
 
-  // Filter cities by Zone -> State -> Text Search
-  const filteredCities = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    let result = cities;
-
-    // 1. Zone filter (when not searching text)
-    if (!q && activeZone !== "all") {
-      result = filterByZone(result, activeZone);
-    }
-
-    // 2. State filter (when not searching text)
-    if (!q && activeState !== "all") {
-      result = result.filter((city) => city.state === activeState);
-    }
-
-    // 3. Text query (fuzzy across city, state, airport, slug)
-    if (q) {
-      result = cities.filter((city) => {
-        return (
-          city.name.toLowerCase().includes(q) ||
-          city.state.toLowerCase().includes(q) ||
-          city.slug.toLowerCase().includes(q) ||
-          (city.airportName && city.airportName.toLowerCase().includes(q))
-        );
-      });
-    }
-
-    return result;
-  }, [cities, activeZone, activeState, searchQuery]);
-
-  // States available within the active zone
-  const availableZoneStates = useMemo(() => {
-    const zoneCities = filterByZone(cities, activeZone);
-    return [...new Set(zoneCities.map((c) => c.state))];
-  }, [cities, activeZone]);
+  const filteredCities = useMemo(() => filterServiceCities(cities, activeState, searchQuery), [cities, activeState, searchQuery]);
+  const availableStates = useMemo(() => serviceStates(cities), [cities]);
 
   const visibleCities = useMemo(() => {
     return filteredCities.slice(0, visibleCount);
@@ -104,68 +64,46 @@ export function CitiesDirectory({
       {/* Pan-India Fleet & Hubs Metrics Strip */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 max-md:mb-5">
         <div className="rounded-lg border border-[var(--color-divider)] bg-surface p-3.5 shadow-xs">
-          <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">National Network</p>
+          <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">Service coverage</p>
           <p className="font-[family-name:var(--font-heading)] text-[22px] font-semibold text-text max-md:text-[18px]">
-            {cities.length} Metros
+            {cities.length} cities
           </p>
-          <p className="text-[10.5px] text-[var(--color-neutral-400)]">Operational airport hubs</p>
+          <p className="text-[10.5px] text-[var(--color-neutral-400)]">Published service areas</p>
         </div>
         <div className="rounded-lg border border-[var(--color-divider)] bg-surface p-3.5 shadow-xs">
           <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">Geographic Reach</p>
           <p className="font-[family-name:var(--font-heading)] text-[22px] font-semibold text-text max-md:text-[18px]">
-            4 Zones
+            {states.length} states
           </p>
-          <p className="text-[10.5px] text-[var(--color-neutral-400)]">North, South, West &amp; East</p>
+          <p className="text-[10.5px] text-[var(--color-neutral-400)]">Across our service cities</p>
         </div>
         <div className="rounded-lg border border-[var(--color-divider)] bg-surface p-3.5 shadow-xs">
-          <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">Pan-India Fleet</p>
+          <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">Published fleet</p>
           <p className="font-[family-name:var(--font-heading)] text-[22px] font-semibold text-[var(--color-accent-300)] max-md:text-[18px]">
-            2,500+ Cars
+            {cities.reduce((total, city) => total + city.basedCount, 0)} cars
           </p>
           <p className="text-[10.5px] text-[var(--color-neutral-400)]">Chauffeur-driven luxury</p>
         </div>
         <div className="rounded-lg border border-[var(--color-divider)] bg-surface p-3.5 shadow-xs">
-          <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">Standard</p>
+          <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">Route fares</p>
           <p className="font-[family-name:var(--font-heading)] text-[22px] font-semibold text-text max-md:text-[18px]">
-            Fixed Rates
+            {totalRoutes} routes
           </p>
-          <p className="text-[10.5px] text-[var(--color-neutral-400)]">No surge or hidden extras</p>
+          <p className="text-[10.5px] text-[var(--color-neutral-400)]">Published journey estimates</p>
         </div>
       </div>
 
-      {/* Zone & Search Control Hub */}
+      {/* Configured state choices and city search */}
       <div className="mb-6 space-y-3.5 border-b border-[var(--color-divider)] pb-6 max-md:mb-4 max-md:pb-4">
-        {/* Row 1: Zone Tabs & Live Search Input */}
+        {/* State and live search controls */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* 4-Zone Primary Switcher */}
-          <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
-            {ZONES.map((zone) => {
-              const isActive = activeZone === zone.key && !searchQuery;
-              const zoneCount = filterByZone(cities, zone.key).length;
-              return (
-                <button
-                  key={zone.key}
-                  type="button"
-                  onClick={() => {
-                    setActiveZone(zone.key);
-                    setActiveState("all");
-                    setSearchQuery("");
-                    setVisibleCount(PAGE_SIZE);
-                  }}
-                  className={`cursor-pointer rounded-full px-4 py-1.5 text-[12.5px] font-medium transition-all whitespace-nowrap ${
-                    isActive
-                      ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
-                      : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
-                  }`}
-                >
-                  <span>{zone.label}</span>
-                  <span className={`ml-1.5 text-[11px] ${isActive ? "opacity-90 font-bold" : "opacity-60"}`}>
-                    ({zoneCount})
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <label className="field min-w-[220px] flex-1">
+            <span>State or territory</span>
+            <select className="input min-h-[44px]" value={activeState} onChange={(event) => { setActiveState(event.target.value); setVisibleCount(PAGE_SIZE); }}>
+              <option value="all">All states</option>
+              {availableStates.map((state) => <option key={state.name} value={state.name}>{state.name} ({state.count})</option>)}
+            </select>
+          </label>
 
           {/* Instant Search Bar */}
           <div className="relative flex min-w-[260px] items-center max-md:w-full">
@@ -179,7 +117,8 @@ export function CitiesDirectory({
                 setSearchQuery(e.target.value);
                 setVisibleCount(PAGE_SIZE);
               }}
-              placeholder="Search city, airport code (DEL, BOM, BLR)..."
+              placeholder="Search service cities or airports"
+              aria-label="Search service cities or airports"
               className="input w-full pl-9 pr-8 text-[13px] min-h-[38px]"
             />
             {searchQuery && (
@@ -195,55 +134,14 @@ export function CitiesDirectory({
           </div>
         </div>
 
-        {/* Row 2: Sub-State Pills (when no search query active) */}
-        {!searchQuery && availableZoneStates.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[11px] text-[var(--color-neutral-500)] mr-1">State filter:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveState("all");
-                setVisibleCount(PAGE_SIZE);
-              }}
-              className={`cursor-pointer rounded-full px-2.5 py-0.5 text-[11.5px] transition-all ${
-                activeState === "all"
-                  ? "bg-well text-text font-semibold border border-[var(--color-accent)]"
-                  : "bg-transparent text-[var(--color-neutral-400)] hover:text-text"
-              }`}
-            >
-              All in Zone
-            </button>
-            {availableZoneStates.map((stateName) => {
-              const isSelected = activeState === stateName;
-              const count = cities.filter((c) => c.state === stateName).length;
-              return (
-                <button
-                  key={stateName}
-                  type="button"
-                  onClick={() => {
-                    setActiveState(isSelected ? "all" : stateName);
-                    setVisibleCount(PAGE_SIZE);
-                  }}
-                  className={`cursor-pointer rounded-full px-2.5 py-0.5 text-[11.5px] transition-all ${
-                    isSelected
-                      ? "bg-[var(--color-accent-900)] text-[var(--color-accent-300)] font-semibold border border-[var(--color-accent)]"
-                      : "bg-well text-[var(--color-neutral-400)] hover:text-text border border-[var(--color-divider)]"
-                  }`}
-                >
-                  {stateName} ({count})
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* City Results Header */}
       <div className="mb-4 flex items-center justify-between text-[12px] text-[var(--color-neutral-500)]">
-        <span>
+        <output>
           Showing {visibleCities.length} of {filteredCities.length} operational hubs
-          {searchQuery ? ` matching "${searchQuery}"` : activeZone !== "all" ? ` in ${ZONES.find((z) => z.key === activeZone)?.label}` : ""}
-        </span>
+          {activeState !== "all" ? ` in ${activeState}` : ""}{searchQuery ? ` matching "${searchQuery}"` : ""}
+        </output>
         <span className="max-md:hidden">Base fares include car, chauffeur &amp; fuel</span>
       </div>
 
@@ -301,7 +199,7 @@ export function CitiesDirectory({
                   <div className="flex items-center justify-between border-b border-[var(--color-divider)] pb-2.5 text-[11px] text-[var(--color-neutral-400)]">
                     <span className="inline-flex items-center gap-1">
                       <Icon name="ph-car" size={13} color="var(--color-accent)" />
-                      {city.carCount} cars based
+                      {city.basedCount} cars based
                     </span>
                     <span className="inline-flex items-center gap-1">
                       <Icon name="ph-map-pin" size={13} />
@@ -360,13 +258,13 @@ export function CitiesDirectory({
             No hubs found matching &quot;{searchQuery}&quot;
           </p>
           <p className="mt-1 text-[13px] text-[var(--color-neutral-400)]">
-            We provide custom chauffeur service across all 28 states. Message our concierge on WhatsApp.
+            Try another published service area, or contact our team to check your destination.
           </p>
           <button
             type="button"
             onClick={() => {
               setSearchQuery("");
-              setActiveZone("all");
+              setVisibleCount(PAGE_SIZE);
               setActiveState("all");
             }}
             className="btn btn-outline mt-4 inline-flex text-[12px]"

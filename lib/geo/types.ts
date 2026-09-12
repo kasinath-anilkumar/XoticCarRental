@@ -13,6 +13,8 @@
  * beside it — pricing treats every place identically.
  */
 export type GeoKind =
+  | "country"
+  | "state"
   | "city"
   | "town"
   | "village"
@@ -37,6 +39,10 @@ export interface GeoPlace {
   detail: string;
   /** Empty when the provider does not say. */
   state: string;
+  city?: string;
+  locality?: string;
+  country?: string;
+  countryCode?: string;
   kind: GeoKind;
 }
 

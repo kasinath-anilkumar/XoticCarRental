@@ -1,87 +1,48 @@
-/**
- * The gallery's categories (§21).
- *
- * The eight the brief names, in the order it names them. Each frame is a file
- * under public/media/gallery — placeholders today, photographs the day Xotic
- * sends them, with no code change: the filenames are the contract.
- */
+import type { Car } from "./types";
+
+export interface GalleryFrame {
+  id: string;
+  src: string;
+  alt: string;
+  carHref: string;
+}
 
 export interface GalleryCategory {
   slug: string;
   name: string;
   blurb: string;
-  /** Where this category's work can be booked. */
-  serviceSlug: string;
-  frames: number;
+  browseHref: string;
+  frames: GalleryFrame[];
 }
 
-export const GALLERY: GalleryCategory[] = [
-  {
-    slug: "weddings",
-    name: "Weddings",
-    blurb: "Ideas for bridal cars, wedding convoys and guest transport.",
-    serviceSlug: "wedding",
-    frames: 3,
-  },
-  {
-    slug: "bride-groom",
-    name: "Bride & groom",
-    blurb: "Arrival ideas for the couple, with space for wedding decor.",
-    serviceSlug: "wedding",
-    frames: 3,
-  },
-  {
-    slug: "photoshoots",
-    name: "Photoshoots",
-    blurb: "Luxury cars for still photography, advertising and film.",
-    serviceSlug: "photoshoot",
-    frames: 3,
-  },
-  {
-    slug: "corporate",
-    name: "Corporate events",
-    blurb: "Conference fleets, client movement and executive day hire.",
-    serviceSlug: "corporate",
-    frames: 3,
-  },
-  {
-    slug: "vip-transfers",
-    name: "VIP transfers",
-    blurb: "Airport pickups, venue transfers and dedicated chauffeur service.",
-    serviceSlug: "vip-transfers",
-    frames: 3,
-  },
-  {
-    slug: "luxury-cars",
-    name: "Luxury cars",
-    blurb: "Luxury sedans and SUVs for leisure, business and special occasions.",
-    serviceSlug: "leisure",
-    frames: 3,
-  },
-  {
-    slug: "chauffeur",
-    name: "Chauffeur services",
-    blurb: "Chauffeur services for daily travel and longer arrangements.",
-    serviceSlug: "monthly-chauffeur",
-    frames: 3,
-  },
-  {
-    slug: "tours",
-    name: "Tours",
-    blurb: "Hill roads, backwaters and the long southern circuits.",
-    serviceSlug: "south-india-tour",
-    frames: 3,
-  },
-];
-
-export function categoryBySlug(slug: string): GalleryCategory | undefined {
-  return GALLERY.find((category) => category.slug === slug);
-}
-
-/** Every frame in a category, as public paths. */
-export function framesFor(category: GalleryCategory): string[] {
-  return Array.from(
-    { length: category.frames },
-    (_, index) => `/media/gallery/${category.slug}-${index + 1}.png`,
-  );
+/** Published fleet imagery only; empty image slots never invent gallery files. */
+export function galleryFromCars(cars: readonly Car[]): GalleryCategory[] {
+  const categories = new Map<string, GalleryCategory>();
+  const seen = new Set<string>();
+  for (const car of cars) {
+    const name = car.type.trim() || "Vehicles";
+    for (const [index, image] of car.images.entries()) {
+      const src = image.url.trim();
+      if (!src || seen.has(src)) continue;
+      seen.add(src);
+      let category = categories.get(name);
+      if (!category) {
+        category = {
+          slug: `type:${name}`,
+          name,
+          blurb: "Explore published vehicle images and open a car for details.",
+          browseHref: `/cars?type=${encodeURIComponent(car.type)}`,
+          frames: [],
+        };
+        categories.set(name, category);
+      }
+      category.frames.push({
+        id: `${car.slug}-${image.kind}-${index}`,
+        src,
+        alt: image.alt?.trim() || `${car.name} — ${image.kind}`,
+        carHref: `/cars/${encodeURIComponent(car.slug)}`,
+      });
+    }
+  }
+  return [...categories.values()];
 }

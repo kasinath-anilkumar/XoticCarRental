@@ -1,5 +1,6 @@
 import { Icon } from "@/components/ui/Icon";
-import { formatINR } from "@/lib/format";
+import { formatChargePolicy, formatINR } from "@/lib/format";
+import { nightWindowLabel } from "@/lib/pricing";
 import type { Car, SiteSettings } from "@/lib/types";
 
 
@@ -28,8 +29,8 @@ export interface ChargesExplainedProps {
 export function ChargesExplained({
   settings,
   car,
-  heading = "Nothing appears on your bill that is not on this page",
-  kicker = "No surprises",
+  heading = "How your estimate is calculated",
+  kicker = "Pricing explained",
 }: ChargesExplainedProps) {
   const charges = [
     {
@@ -43,13 +44,13 @@ export function ChargesExplained({
       icon: "ph-moon-stars",
       title: "Night charge",
       body: car
-        ? `${formatINR(car.nightCharge)}, and only when your pickup falls between 10pm and 6am. A 9pm pickup that runs past midnight does not attract it.`
-        : "Applies only when your pickup falls between 10pm and 6am. A 9pm pickup that runs past midnight does not attract it.",
+        ? `${formatINR(car.nightCharge)} for a pickup between ${nightWindowLabel(settings.pricingRules)}, plus one charge for each overnight rental halt.`
+        : `Applies to pickups between ${nightWindowLabel(settings.pricingRules)}, plus one charge for each overnight rental halt.`,
     },
     {
       icon: "ph-arrow-u-down-left",
       title: "One-way drops",
-      body: "The chauffeur has to bring the car back empty, so a one-way drop adds 35% of the distance at the extra-km rate — not a second full package.",
+      body: `A one-way drop includes a driver return allowance of ${settings.pricingRules.oneWayReturnPercent}% of the trip distance at the car's extra-km rate.`,
     },
     {
       icon: "ph-road-horizon",
@@ -68,7 +69,7 @@ export function ChargesExplained({
     {
       icon: "ph-receipt",
       title: "Tolls, parking, permits",
-      body: "At actuals on the day, with receipts. They are not in the quote because they depend on the exact roads you take.",
+      body: formatChargePolicy(settings),
     },
   ];
 
@@ -99,7 +100,7 @@ export function ChargesExplained({
       </div>
 
       <p className="mt-8 mb-0 text-[13px] text-[var(--color-neutral-300)]">
-        GST at {settings.gstPercent}% applies to the total. There is nothing else.
+        GST at {settings.gstPercent}% applies to the quoted charges. Final pricing and availability require confirmation.
       </p>
     </div>
   );

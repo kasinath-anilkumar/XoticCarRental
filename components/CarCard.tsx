@@ -4,6 +4,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Media } from "@/components/ui/Media";
 import { carPrice, heroImage, homeCity, type Catalog } from "@/lib/catalog";
 import { formatINR } from "@/lib/format";
+import { copyJourneyParams } from "@/lib/journey-params";
 import type { Car, Package } from "@/lib/types";
 import { carEnquiryMessage, whatsappLink } from "@/lib/whatsapp";
 
@@ -15,6 +16,7 @@ export interface CarCardProps {
   variant?: "full" | "compact";
   priority?: boolean;
   citySlug?: string;
+  journeyQuery?: string;
 }
 
 /**
@@ -68,12 +70,16 @@ export function CarCard({
   variant = "full",
   priority = false,
   citySlug,
+  journeyQuery = "",
 }: CarCardProps) {
   const city = citySlug
     ? (catalog.cities.find((c) => c.slug === citySlug) ?? homeCity(catalog, car))
     : homeCity(catalog, car);
   const price = formatINR(carPrice(catalog, car, pkg));
-  const href = citySlug ? `/cars/${car.slug}?city=${encodeURIComponent(citySlug)}` : `/cars/${car.slug}`;
+  const journeyParams = copyJourneyParams(journeyQuery);
+  if (citySlug) journeyParams.set("city", citySlug);
+  const query = journeyParams.toString();
+  const href = `/cars/${car.slug}${query ? `?${query}` : ""}`;
   const waHref = whatsappLink(
     catalog.settings.whatsappNumber,
     carEnquiryMessage(car, city, pkg),
@@ -96,7 +102,7 @@ export function CarCard({
           sizes="112px"
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <Link href={href} className={`${nameLink} text-[15px]`}>
+          <Link href={href} prefetch={false} className={`${nameLink} text-[15px]`}>
             {car.name}
           </Link>
           <p className="text-[11px] text-neutral-500">
@@ -109,6 +115,7 @@ export function CarCard({
           <div className="mt-2 flex gap-2">
             <Link
               href={href}
+              prefetch={false}
               className="btn btn-primary flex-1 px-[8px] py-[6px] text-[12px]"
             >
               Price &amp; details
@@ -147,7 +154,7 @@ export function CarCard({
             </span>
           )}
         </div>
-        <div className="pointer-events-none absolute top-2.5 right-2.5 flex items-center gap-1 rounded-sm bg-neutral-900/85 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-neutral-100 shadow-xs backdrop-blur-xs sm:top-3 sm:right-3">
+        <div className="pointer-events-none absolute top-2.5 right-2.5 flex items-center gap-1 rounded-sm bg-neutral-900 px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-neutral-100 shadow-xs sm:top-3 sm:right-3">
           <Icon name="ph-map-pin" size={11} color="var(--color-accent)" />
           <span>{city.name}</span>
         </div>
@@ -155,7 +162,7 @@ export function CarCard({
 
       <div className="flex flex-1 flex-col p-3.5 sm:p-4">
         <div>
-          <Link href={href} className={`${nameLink} block text-[16px] sm:text-[18px]`}>
+          <Link href={href} prefetch={false} className={`${nameLink} block text-[16px] sm:text-[18px]`}>
             {car.name}
           </Link>
           <p className="mt-[2px] text-[11px] text-neutral-500 sm:text-[12px]">
@@ -188,6 +195,7 @@ export function CarCard({
         <div className="mt-3.5 flex items-center gap-2 pt-1 sm:mt-auto">
           <Link
             href={href}
+            prefetch={false}
             className="btn btn-primary min-h-[42px] flex-1 px-3 py-2 text-[12px] sm:text-[13px] font-medium hover:border-[var(--color-accent)]"
           >
             <span>Price &amp; details</span>

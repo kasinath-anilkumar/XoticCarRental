@@ -30,6 +30,7 @@ function catalog(): Catalog {
     }],
     locations: [], garages: [], carTypes: ["Sedan"], cityRoutes: [], seasons: [],
     settings: {
+      pricingRules: { minimumLegKm: 6, localSpeedKph: 32, outstationSpeedKph: 52, oneWayReturnPercent: 35, nightStartHour: 22, nightEndHour: 6 },
       whatsappNumber: "919876543210", phoneDisplay: "+91 98765 43210", email: "test@example.com",
       gstPercent: 5, advancePercent: 25, circuityFactor: 1.25,
       inclusions: [], exclusions: [], whyItems: [], charges: [],

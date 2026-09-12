@@ -1,5 +1,12 @@
+import { ListFilters } from "@/components/admin/ListFilters";
+import { Pagination } from "@/components/ui/Pagination";
+import { adminListRequest, checkAdminPage, type AdminSearchParams } from "@/lib/admin/list";
+import { searchPattern } from "@/lib/admin/references";
+import { ADMIN_PAGE_SIZE } from "@/lib/pagination";
 import { requireAdmin } from "@/lib/admin/auth";
 import { roadKm } from "@/lib/distance";
+import { fromServed } from "@/lib/places";
+import { parsePricingRules } from "@/lib/pricing-rules";
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 import { AdminPageHead, AdminShell } from "../AdminShell";
@@ -10,7 +17,7 @@ import { styles } from "../styles";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminRoutesPage() {
+export default async function AdminRoutesPage({ searchParams }: { searchParams: AdminSearchParams }) {
   const admin = await requireAdmin();
   if (!isSupabaseConfigured()) {
     return (
@@ -24,17 +31,22 @@ export default async function AdminRoutesPage() {
   }
   const supabase = await createSupabaseServerClient();
 
-  const [routes, cities, locations, settings] = await Promise.all([
-    supabase
-      .from("city_routes")
-      .select("*, cities(slug, name), from_location:locations!city_routes_from_location_id_fkey(slug, name, lat, lng), to_location:locations!city_routes_to_location_id_fkey(slug, name, lat, lng)")
-      .order("sort"),
-    supabase.from("cities").select("id, name").order("sort"),
-    supabase.from("locations").select("id, name, city_id").eq("is_active", true).order("sort"),
-    supabase.from("site_settings").select("circuity_factor").maybeSingle(),
+  const request = adminListRequest(await searchParams);
+  let builder = supabase.from("city_routes")
+    .select("*, cities(slug,name), from_location:locations!city_routes_from_location_id_fkey!inner(slug,name,lat,lng), to_location:locations!city_routes_to_location_id_fkey(slug,name,lat,lng)", { count: "exact" })
+    .order("sort").order("id");
+  if (request.q) builder = builder.ilike("from_location.name", searchPattern(request.q));
+  if (request.city) builder = builder.eq("city_id", request.city);
+  const [routes, settings, selectedCity] = await Promise.all([
+    builder.range(request.offset, request.end),
+    supabase.from("site_settings").select("circuity_factor,pricing_rules").maybeSingle(),
+    request.city ? supabase.from("cities").select("name").eq("id", request.city).maybeSingle() : Promise.resolve(null),
   ]);
+  const total = checkAdminPage(routes, request, "/admin/routes");
 
-  const circuity = Number(settings.data?.circuity_factor ?? 1.25);
+  const circuity = Number(settings.data?.circuity_factor);
+  let minimumLegKm: number | null = null;
+  try { minimumLegKm = parsePricingRules(settings.data?.pricing_rules).minimumLegKm; } catch { /* Settings must be configured before estimating fares. */ }
 
   return (
     <AdminShell email={admin.email}>
@@ -43,14 +55,9 @@ export default async function AdminRoutesPage() {
         lede="The “fares people ask for most” table on each city page. A published distance also overrides the estimate in the price calculator, so the two never disagree."
       />
 
-      <NewRouteForm
-        cities={(cities.data ?? []).map((c) => ({ id: c.id, name: c.name }))}
-        locations={(locations.data ?? []).map((l) => ({
-          id: l.id,
-          name: l.name,
-          cityId: l.city_id,
-        }))}
-      />
+      <NewRouteForm />
+      <ListFilters path="/admin/routes" q={request.q} city={request.city} cityLabel={selectedCity?.data?.name} withCity />
+      <p className={styles.cardHint}>Search matches the route's starting pickup point.</p>
 
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Published routes</h2>
@@ -71,11 +78,13 @@ export default async function AdminRoutesPage() {
             toName={route.to_location?.name ?? ""}
             kmOverride={route.km_override}
             estimatedKm={
-              route.from_location && route.to_location
+              route.from_location && route.to_location && Number.isFinite(circuity) && circuity >= 1 && minimumLegKm !== null
                 ? roadKm(
-                    { ...route.from_location, slug: route.from_location.slug, citySlug: "", isAirport: false },
-                    { ...route.to_location, slug: route.to_location.slug, citySlug: "", isAirport: false },
+                    fromServed({ ...route.from_location, citySlug: "", isAirport: false }),
+                    fromServed({ ...route.to_location, citySlug: "", isAirport: false }),
                     circuity,
+                    undefined,
+                    minimumLegKm,
                   )
                 : null
             }
@@ -83,6 +92,8 @@ export default async function AdminRoutesPage() {
             sort={route.sort}
           />
         ))}
+        {total === 0 && <p>No routes match these filters.</p>}
+        <Pagination total={total} page={request.page} pageSize={ADMIN_PAGE_SIZE} path="/admin/routes" query={request.query} label="routes" />
       </section>
     </AdminShell>
   );

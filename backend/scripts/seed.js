@@ -281,8 +281,8 @@ async function main() {
     await client.query(
       `insert into public.site_settings
          (id, whatsapp_number, phone_display, email, gst_percent, advance_percent,
-          circuity_factor, inclusions, exclusions, why_items, charges)
-       values (true, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          circuity_factor, inclusions, exclusions, why_items, charges, pricing_rules)
+       values (true, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        on conflict (id) do update set
          whatsapp_number = excluded.whatsapp_number,
          phone_display = excluded.phone_display,
@@ -293,14 +293,25 @@ async function main() {
          inclusions = excluded.inclusions,
          exclusions = excluded.exclusions,
          why_items = excluded.why_items,
-         charges = excluded.charges`,
+         charges = excluded.charges,
+         pricing_rules = excluded.pricing_rules`,
       [
         s.whatsappNumber, s.phoneDisplay, s.email, s.gstPercent, s.advancePercent,
         s.circuityFactor, s.inclusions, s.exclusions, JSON.stringify(s.whyItems),
         JSON.stringify(s.charges ?? []),
+        JSON.stringify(s.pricingRules),
       ],
     );
     console.log('[seed]   site settings     1');
+
+    // Optional sample service definitions; preserve existing operator edits.
+    const services = require('../service-seed-data.json');
+    for (const [sort, definition] of services.entries()) {
+      await client.query(`insert into public.services (slug, definition, is_active, sort)
+        values ($1, $2::jsonb, true, $3) on conflict (slug) do nothing`,
+      [definition.slug, JSON.stringify(definition), sort]);
+    }
+    console.log(`[seed]   services          ${services.length}`);
 
     await client.query('commit');
 

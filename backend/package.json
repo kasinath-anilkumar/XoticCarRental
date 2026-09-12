@@ -6,6 +6,7 @@
     "migrate": "node scripts/migrate.js",
     "test:migrations": "node --test scripts/test-migrations.cjs",
     "seed": "node scripts/seed.js",
+    "create-admin": "node scripts/create-admin.js",
     "geocode": "node scripts/geocode.js"
   },
   "dependencies": {

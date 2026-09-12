@@ -35,6 +35,8 @@ export interface LeadStop {
 export interface LeadDetail {
   label: string;
   value: string;
+  /** The selected geocoder result, preserved without exposing a raw token in messages. */
+  place?: { token: string; lat: number; lng: number };
 }
 
 export interface LeadLine {
@@ -55,6 +57,8 @@ export interface Lead {
   customerPlace: string | null;
 
   serviceSlug: string;
+  /** Resolved from the service definition by the trusted enquiry handler. */
+  occasionSlug?: string;
   serviceName: string;
   carSlug: string | null;
   carName: string | null;

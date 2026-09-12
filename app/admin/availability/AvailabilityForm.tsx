@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import type { Availability } from "@/lib/store";
+import { ReferenceSelect } from "@/components/admin/ReferenceSelect";
 
 import { addAvailability, removeAvailability } from "../actions";
 import { styles } from "../styles";
@@ -21,7 +22,7 @@ const STATUSES = [
  * interchangeable to the person reading the list: a *hold* can be released for
  * a better booking, *maintenance* cannot.
  */
-export function AvailabilityForm({ cars, today }: { cars: Array<{ slug: string; name: string }>; today: string }) {
+export function AvailabilityForm({ cars, today }: { cars?: Array<{ slug: string; name: string }>; today: string }) {
   const [state, formAction, pending] = useActionState(addAvailability, null);
 
   return (
@@ -40,16 +41,17 @@ export function AvailabilityForm({ cars, today }: { cars: Array<{ slug: string; 
         )}
 
         <div className={styles.grid4}>
-          <div className="field">
+          {cars ? <div className="field">
             <label htmlFor="avail-car">Vehicle</label>
             <select id="avail-car" name="carSlug" className="input" required>
+              <option value="">Choose a vehicle</option>
               {cars.map((car) => (
                 <option key={car.slug} value={car.slug}>
                   {car.name}
                 </option>
               ))}
             </select>
-          </div>
+          </div> : <ReferenceSelect kind="cars" name="carSlug" label="Vehicle" required />}
 
           <div className="field">
             <label htmlFor="avail-status">Status</label>

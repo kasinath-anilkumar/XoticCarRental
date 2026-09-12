@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { reversePlace } from "@/lib/geo";
+import { reverseLookup } from "@/lib/geo";
 import { clientKey, createRateLimiter } from "@/lib/net/rate-limit";
 import { encodeFreePlace, type PlaceSuggestion } from "@/lib/places";
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const place = await reversePlace({ lat, lng }, { signal: request.signal });
+  const { place, ok } = await reverseLookup({ lat, lng }, { signal: request.signal });
 
   const suggestion: PlaceSuggestion = {
     token: encodeFreePlace({ name: place?.name ?? "My location", lat, lng }),
@@ -54,12 +54,18 @@ export async function GET(request: Request) {
     served: false,
     isAirport: place?.kind === "airport",
     kind: place?.kind,
+    state: place?.state,
+    city: place?.city,
+    locality: place?.locality,
+    country: place?.country,
+    countryCode: place?.countryCode,
+    providerId: place?.id,
   };
 
   return NextResponse.json(
-    { result: suggestion, resolved: place !== null },
+    { result: suggestion, resolved: place !== null, degraded: !ok },
     // A point on the pavement is the same point in an hour, but this is
     // personal — keep it in the visitor's browser, not a shared cache.
-    { headers: { "Cache-Control": "private, max-age=300" } },
+    { headers: { "Cache-Control": ok ? "private, max-age=300" : "no-store" } },
   );
 }

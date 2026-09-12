@@ -1,6 +1,6 @@
 "use client";
 
-import { MAX_TRIP_STOPS } from "@/lib/trip-limits";
+import { MAX_TRIP_DAYS, MAX_TRIP_STOPS } from "@/lib/trip-limits";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,8 @@ import { QuoteLines } from "@/components/quote/QuoteLines";
 import { Icon } from "@/components/ui/Icon";
 import { LocationCombobox } from "@/components/ui/LocationCombobox";
 import { carPrice, type Catalog } from "@/lib/catalog";
+import { bookingIssue } from "@/lib/booking-readiness";
+import { addDays, isISODate } from "@/lib/dates";
 import { formatDuration, formatINR, shortPlace } from "@/lib/format";
 import { tripTypeLabel } from "@/lib/pricing";
 import { resolveQuote, tripStops, tripToParams } from "@/lib/quote";
@@ -21,6 +23,7 @@ import type { TripRequest, TripType } from "@/lib/types";
 export interface CalculatorProps {
   catalog: Catalog;
   initialTrip: TripRequest;
+  minDate: string;
 }
 
 const TRIP_OPTIONS: Array<{ key: TripType; label: string }> = [
@@ -45,7 +48,7 @@ type MobileTab = "route" | "vehicle" | "map";
  * Desktop UX:
  * - Unified 2-column layout with real-time map, full itinerary, and sticky quote card.
  */
-export function Calculator({ catalog, initialTrip }: CalculatorProps) {
+export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
   const router = useRouter();
   const [trip, setTrip] = useState<TripRequest>(initialTrip);
   const [mobileTab, setMobileTab] = useState<MobileTab>("route");
@@ -98,10 +101,14 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
     if (stopsKey.split(";").length < 2) return;
 
     let cancelled = false;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setRouting(true);
       try {
-        const response = await fetch(`/api/directions?stops=${encodeURIComponent(stopsKey)}`);
+        const response = await fetch(`/api/directions?stops=${encodeURIComponent(stopsKey)}`, {
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12_000)]),
+        });
+        if (!response.ok) throw new Error("Route lookup failed.");
         const data = (await response.json()) as { routed?: boolean } & RoutedTrip;
         if (cancelled) return;
         setDirections(data.routed ? { key: stopsKey, trip: data } : null);
@@ -114,6 +121,7 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
 
     return () => {
       cancelled = true;
+      controller.abort();
       clearTimeout(timer);
     };
   }, [stopsKey]);
@@ -130,6 +138,7 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
     ? stops.map((stop) => shortPlace(stop.name)).join(" → ")
     : "Add a pickup and a drop";
   const summaryHref = `/booking-summary?${tripToParams(trip).toString()}`;
+  const bookingPrompt = bookingIssue(trip, catalog.locations, minDate);
   const activePackage = catalog.packages.find((pkg) => pkg.slug === trip.packageSlug);
 
   const mapNote = !resolved.complete
@@ -313,16 +322,26 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
                   Date &amp; Timing
                 </p>
 
-                <div className="grid grid-cols-3 gap-2.5 max-md:grid-cols-2 max-md:[&>*:last-child]:col-span-full">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div className="field">
                     <label htmlFor="calc-date">Pickup date</label>
                     <input
                       id="calc-date"
                       className="input"
                       type="date"
+                      min={minDate}
                       value={trip.date}
-                      onChange={(event) => update("date", event.target.value)}
+                      onChange={(event) => setTrip((current) => ({ ...current, date: event.target.value,
+                        returnDate: current.returnDate && isISODate(event.target.value)
+                          && (current.returnDate < event.target.value || current.returnDate > addDays(event.target.value, MAX_TRIP_DAYS - 1))
+                          ? "" : current.returnDate }))}
                     />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="calc-return-date">Return date (optional)</label>
+                    <input id="calc-return-date" className="input" type="date" min={trip.date || minDate}
+                      max={isISODate(trip.date) ? addDays(trip.date, MAX_TRIP_DAYS - 1) : undefined}
+                      value={trip.returnDate ?? ""} onChange={(event) => update("returnDate", event.target.value)} />
                   </div>
                   <div className="field">
                     <label htmlFor="calc-time">Pickup time</label>
@@ -342,7 +361,7 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
                         className="input pr-10"
                         type="number"
                         min={0}
-                        max={24}
+                        max={12}
                         value={trip.haltHours}
                         onChange={(event) => update("haltHours", Number(event.target.value) || 0)}
                       />
@@ -593,13 +612,13 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
                   />
 
                   <div className="mt-4">
-                    <Link
+                    {!bookingPrompt ? <Link
                       href={summaryHref}
                       className="btn btn-primary w-full min-h-[44px]"
                     >
                       <span>Review &amp; Confirm on WhatsApp</span>
                       <Icon name="ph-arrow-right" size={16} />
-                    </Link>
+                    </Link> : <p className="text-[13px] text-[var(--color-neutral-400)]">{bookingPrompt}</p>}
                   </div>
                 </div>
               </div>
@@ -660,7 +679,7 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
             </p>
 
             <div className="mt-4">
-              {resolved.complete ? (
+              {!bookingPrompt ? (
                 <Link
                   href={summaryHref}
                   className="btn btn-primary btn-block min-h-[44px]"
@@ -674,7 +693,7 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
                   className="btn btn-primary btn-block min-h-[44px]"
                   disabled
                 >
-                  Add a pickup and drop
+                  {bookingPrompt}
                 </button>
               )}
 
@@ -717,14 +736,14 @@ export function Calculator({ catalog, initialTrip }: CalculatorProps) {
           type="button"
           className="btn btn-primary min-h-[44px] px-5"
           onClick={() => {
-            if (!resolved.complete) {
+            if (bookingPrompt) {
               setMobileTab("route");
             } else {
               router.push(summaryHref);
             }
           }}
         >
-          <span>{resolved.complete ? "Review & send" : "Set stops first"}</span>
+          <span>{!bookingPrompt ? "Review & send" : "Complete trip details"}</span>
           <Icon name="ph-arrow-right" size={15} />
         </button>
       </div>

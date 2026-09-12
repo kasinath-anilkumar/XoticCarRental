@@ -10,20 +10,20 @@ import { Media } from "@/components/ui/Media";
 import { carsForOccasion } from "@/lib/catalog";
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
-import { SERVICES, serviceBySlug } from "@/lib/services";
+import { getService, getServicePage } from "@/lib/service-content";
 import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return SERVICES.map((service) => ({ slug: service.slug }));
+export async function generateStaticParams() {
+  return (await getServicePage(1, 100)).data.map((service) => ({ slug: service.slug }));
 }
 
 type Params = Promise<{ slug: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  const service = serviceBySlug(slug);
+  const service = await getService(slug);
   if (!service) return { title: "Service not found" };
 
   return {
@@ -40,10 +40,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function ServicePage({ params }: { params: Params }) {
   const { slug } = await params;
-  const service = serviceBySlug(slug);
+  const service = await getService(slug);
   if (!service) notFound();
 
   const catalog = await getCatalog();
+  const related = (await getServicePage(1, 8)).data;
   if (!isPricingAvailable(catalog)) {
     return (
       <section className="sec">
@@ -84,7 +85,7 @@ export default async function ServicePage({ params }: { params: Params }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
 
       <section className="on-dark relative isolate flex min-h-[380px] items-end overflow-hidden sm:min-h-[440px]">
@@ -129,7 +130,7 @@ export default async function ServicePage({ params }: { params: Params }) {
         aria-label="Services"
         className="scrollbar-none flex gap-2 overflow-x-auto border-b border-[var(--color-divider)] px-4 py-3 sm:px-6"
       >
-        {SERVICES.map((item) => {
+        {related.map((item) => {
           const active = item.slug === service.slug;
           return (
             <Link

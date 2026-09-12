@@ -4,7 +4,7 @@ import Link from "next/link";
 import { GalleryViewer } from "@/components/gallery/GalleryViewer";
 import { Icon } from "@/components/ui/Icon";
 import { getCatalog } from "@/lib/content";
-import { GALLERY } from "@/lib/gallery";
+import { galleryFromCars } from "@/lib/gallery";
 import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -23,21 +23,21 @@ export default async function GalleryPage({ searchParams }: { searchParams: Para
   const params = await searchParams;
   const raw = Array.isArray(params.category) ? params.category[0] : params.category;
   const catalog = await getCatalog();
-  const frameCount = GALLERY.reduce((total, category) => total + category.frames, 0);
+  const categories = galleryFromCars(catalog.cars);
+  const frameCount = categories.reduce((total, category) => total + category.frames.length, 0);
 
   return (
     <>
       {/* ── GALLERY HERO ───────────────────────────────────────────── */}
       <section className="on-dark border-b border-[var(--color-divider)] bg-[linear-gradient(135deg,#050505_0%,#141414_100%)] px-[var(--gutter-desktop)] pt-12 pb-14 max-md:px-[var(--gutter-mobile)] max-md:pt-8 max-md:pb-10">
         <div className="max-w-[840px]">
-          <p className="kick">Occasion Gallery</p>
+          <p className="kick">Fleet gallery</p>
           <h1 className="mb-3 text-[36px] font-medium leading-tight max-lg:text-[30px] max-md:text-[26px]">
             Luxury for every occasion.
           </h1>
           <p className="max-w-[68ch] text-[15px] leading-relaxed text-[var(--color-neutral-300)] max-md:text-[13.5px]">
-            Explore illustrative scenes for wedding arrivals, film shoots, VIP transfers and
-            touring. Select a category, then open any image for a closer look. Our team can share
-            current vehicle photos and availability for your plans.
+            Browse published images from our vehicle listings. Select a vehicle type, then open
+            an image for a closer look. Contact our team to confirm current condition and availability.
           </p>
 
           {/* Quick Metrics */}
@@ -48,7 +48,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Para
             </span>
             <span className="inline-flex items-center gap-1.5 text-text">
               <Icon name="ph-squares-four" size={15} color="var(--color-accent)" />
-              {GALLERY.length} Categories to explore
+              {categories.length} Categories to explore
             </span>
             <span className="inline-flex items-center gap-1.5 text-text">
               <Icon name="ph-map-trifold" size={15} color="var(--color-accent)" />
@@ -60,11 +60,11 @@ export default async function GalleryPage({ searchParams }: { searchParams: Para
 
       {/* ── INTERACTIVE GALLERY VIEWER ─────────────────────────────── */}
       <section className="sec">
-        <GalleryViewer
-          categories={GALLERY}
+        {frameCount > 0 ? <GalleryViewer
+          categories={categories}
           initialCategorySlug={raw ? String(raw) : undefined}
           whatsappNumber={catalog.settings.whatsappNumber}
-        />
+        /> : <div className="rounded-lg border border-divider bg-surface p-6"><h2 className="text-xl">Vehicle images are being updated</h2><p className="mt-2">Contact our team for current vehicle photos and availability.</p><Link href="/contact" className="btn btn-primary mt-3">Contact our team</Link></div>}
       </section>
 
       {/* ── BOTTOM BOOKING INVITATION ──────────────────────────────── */}

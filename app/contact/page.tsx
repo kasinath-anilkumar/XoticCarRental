@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ServiceEnquiryForm } from "@/components/services/ServiceEnquiryForm";
 import { Icon } from "@/components/ui/Icon";
 import { getCatalog } from "@/lib/content";
-import { serviceBySlug } from "@/lib/services";
+import { getService, getServicePage } from "@/lib/service-content";
 import { siteUrl } from "@/lib/site";
 import { GENERAL_ENQUIRY_MESSAGE, whatsappLink } from "@/lib/whatsapp";
 
@@ -13,7 +13,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "Call, WhatsApp or send an enquiry. Every message gets a reference and a callback the same day.",
+    "Call, WhatsApp or send an enquiry. Every message gets a reference and a response from our team.",
   alternates: { canonical: "/contact" },
   openGraph: { url: `${siteUrl()}/contact` },
 };
@@ -23,12 +23,13 @@ export const metadata: Metadata = {
  *
  * Three ways to reach Xotic, in the order people actually use them from a
  * phone: call, WhatsApp, then a form for anyone who would rather write it out.
- * The form is the leisure service's — a general enquiry is a trip, and asking
- * where and when is what makes it answerable in one reply instead of four.
+ * Visitors choose a published service so the enquiry asks relevant questions.
  */
-export default async function ContactPage() {
-  const catalog = await getCatalog();
-  const service = serviceBySlug("leisure");
+export default async function ContactPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
+  const params = await searchParams;
+  const [catalog, choices, service] = await Promise.all([getCatalog(), getServicePage(1, 100), params.service ? getService(params.service) : undefined]);
+  const serviceChoices = service && !choices.data.some((item) => item.slug === service.slug)
+    ? [service, ...choices.data] : choices.data;
   const wa = whatsappLink(catalog.settings.whatsappNumber, GENERAL_ENQUIRY_MESSAGE);
   const tel = `tel:${catalog.settings.phoneDisplay.replace(/[^\d+]/g, "")}`;
 
@@ -40,7 +41,7 @@ export default async function ContactPage() {
       </h1>
       <p className="mb-7 max-w-[62ch] text-sm text-[var(--color-neutral-400)]">
         Calls are answered by the people who dispatch the cars, not a call centre. Every enquiry gets
-        a reference the moment it arrives and a callback the same day.
+        a reference the moment it arrives and a response from our team.
       </p>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.1fr]">
@@ -95,20 +96,29 @@ export default async function ContactPage() {
               quote — it is what the distance is measured from.
             </p>
             <div className="flex flex-wrap gap-2">
-              {catalog.cities.map((city) => (
+              {catalog.cities.slice(0, 12).map((city) => (
                 <Link
                   key={city.slug}
                   href={`/cities/${city.slug}`}
+                  prefetch={false}
                   className="rounded-full border border-[var(--color-divider)] px-3 py-1 text-[12px] text-[var(--color-text)] no-underline hover:border-[var(--color-accent-solid)]"
                 >
                   {city.name}
                 </Link>
               ))}
             </div>
+            {catalog.cities.length > 12 && <Link href="/cities" className="mt-3 inline-block text-sm">Browse all cities</Link>}
           </div>
         </div>
 
-        <div>{service && <ServiceEnquiryForm service={service} />}</div>
+        <div>
+          <form className="mb-6 space-y-3" action="/contact">
+            <div className="field"><label htmlFor="contact-service">What can we help with?</label><select className="input" id="contact-service" name="service" required defaultValue={service?.slug ?? ""}><option value="" disabled>Choose a service</option>{serviceChoices.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></div>
+            <button className="btn btn-secondary" type="submit">Continue</button>
+            {choices.total > choices.data.length && <Link href="/services" className="block text-sm">Browse all services</Link>}
+          </form>
+          {service && <ServiceEnquiryForm service={service} />}
+        </div>
       </div>
     </section>
   );

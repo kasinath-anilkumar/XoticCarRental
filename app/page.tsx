@@ -10,11 +10,12 @@ import { LivePricing } from "@/components/home/LivePricing";
 import { WholeFleet } from "@/components/home/WholeFleet";
 import { ScrollHero } from "@/components/home/ScrollHero";
 import { Icon } from "@/components/ui/Icon";
-import { featuredCars, isoTomorrow, tripDefaults } from "@/lib/catalog";
+import { featuredCars, tripDefaults } from "@/lib/catalog";
+import { businessDate } from "@/lib/dates";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { getCatalog } from "@/lib/content";
 import { getHeroFrames } from "@/lib/hero-frames";
-import { SERVICES } from "@/lib/services";
+import { getServicePage } from "@/lib/service-content";
 
 
 // Content changes rarely and every visitor sees the same page; regenerate
@@ -22,17 +23,14 @@ import { SERVICES } from "@/lib/services";
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [catalog, heroFrames] = await Promise.all([getCatalog(), getHeroFrames()]);
+  const [catalog, heroFrames, services] = await Promise.all([getCatalog(), getHeroFrames(), getServicePage(1, 8)]);
   const packages = catalog.packages;
   const defaultPackage = packages[0];
   const pricingAvailable = isPricingAvailable(catalog);
 
-  // The trip the live pricing panel and the search card start from. Only the
-  // pickup TIME affects the arithmetic, never the date, so the seed trip can
-  // carry a fixed date and this page stays statically renderable; the search
-  // card gets today separately so its calendar has a real floor.
-  const seedTrip = tripDefaults(catalog, "2026-01-01");
-  const today = isoTomorrow(new Date());
+  // Published packages can be previewed before a visitor chooses a schedule.
+  const seedTrip = tripDefaults(catalog, "");
+  const today = businessDate();
 
   return (
     <>
@@ -63,11 +61,11 @@ export default async function HomePage() {
             <h2 className="h2">What is the journey for?</h2>
           </div>
           <Link href="/services" className="inline-flex items-center gap-2 text-[13px] whitespace-nowrap">
-            All ten services <Icon name="ph-arrow-right" size={14} />
+            All {services.total} services <Icon name="ph-arrow-right" size={14} />
           </Link>
         </div>
         <div className="grid-4">
-          {SERVICES.slice(0, 8).map((service) => (
+          {services.data.map((service) => (
             <ServiceCard
               key={service.slug}
               service={service}
@@ -104,15 +102,15 @@ export default async function HomePage() {
             </span>
             <div>
               <p className="font-[family-name:var(--font-heading)] text-[14px] font-semibold text-text">
-                Operating across 20+ metropolitan hubs & 28 states
+                Serving {catalog.cities.length} cities across {new Set(catalog.cities.map((city) => city.state)).size} states and territories
               </p>
               <p className="text-[12px] text-[var(--color-neutral-400)]">
-                Airport transfers, local packages, and cross-border touring throughout India.
+                Explore published locations, local packages and touring options.
               </p>
             </div>
           </div>
           <Link href="/cities" className="btn btn-ghost text-[13px] max-md:w-full">
-            <span>Explore all 20 cities & rates</span>
+            <span>Explore all {catalog.cities.length} cities & rates</span>
             <Icon name="ph-arrow-right" size={14} />
           </Link>
         </div>

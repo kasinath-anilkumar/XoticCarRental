@@ -19,6 +19,7 @@ export function ServiceCard({ service, image }: { service: Service; image: strin
   return (
     <Link
       href={`/services/${service.slug}`}
+      prefetch={false}
       className="on-dark group relative block h-[150px] overflow-hidden rounded-md bg-slot text-text no-underline shadow-[var(--shadow-sm)] md:h-[230px]"
     >
       <Media

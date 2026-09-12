@@ -25,11 +25,6 @@ import { getDistance } from "geolib";
 import type { ResolvedPlace } from "./places";
 import type { CityRoute, TripType } from "./types";
 
-/** Below this, a "trip" is a pickup and drop in the same neighbourhood. */
-export const MIN_LEG_KM = 6;
-
-export const DEFAULT_CIRCUITY_FACTOR = 1.25;
-
 export interface Coordinates {
   lat: number;
   lng: number;
@@ -76,19 +71,19 @@ function overrideKey(from: string, to: string): string {
  *
  * Directional, unlike the published table: a router is entitled to send you
  * home a different way, and this only ever describes the legs of the trip in
- * front of it. The 6 km floor is applied here too — it is a billing rule about
- * what counts as a trip, not a hedge against a bad estimate.
+ * front of it. The configured billing floor applies to routed legs too.
  */
 export function buildRoutedOverrides(
   stops: Array<{ key: string }>,
   legs: Array<{ km: number }>,
+  minimumLegKm = 0,
 ): KmOverrides {
   const measured: KmOverrides = new Map();
   for (const [index, leg] of legs.entries()) {
     const from = stops[index];
     const to = stops[index + 1];
     if (!from || !to || from.key === to.key) continue;
-    measured.set(overrideKey(from.key, to.key), Math.max(MIN_LEG_KM, Math.round(leg.km)));
+    measured.set(overrideKey(from.key, to.key), Math.max(minimumLegKm, Math.round(leg.km)));
   }
   return measured;
 }
@@ -96,14 +91,15 @@ export function buildRoutedOverrides(
 /**
  * Road distance between two points, in whole km.
  *
- * Identical points are 0 (the prototype's `A === B` case). Anything else gets a
- * 6 km floor, so a hop across one neighbourhood still bills as a trip.
+ * Identical points are zero. Other legs use the configured billing floor;
+ * callers doing pure distance calculations may omit the floor.
  */
 export function roadKm(
   from: ResolvedPlace,
   to: ResolvedPlace,
-  circuityFactor = DEFAULT_CIRCUITY_FACTOR,
+  circuityFactor: number,
   overrides?: KmOverrides,
+  minimumLegKm = 0,
 ): number {
   if (from.key === to.key) return 0;
   // A measured distance — published by staff, or handed over by the router for
@@ -111,7 +107,7 @@ export function roadKm(
   const measured = overrides?.get(overrideKey(from.key, to.key));
   if (measured != null) return measured;
   const straight = haversineKm(from, to);
-  return Math.max(MIN_LEG_KM, Math.round(straight * circuityFactor));
+  return Math.max(minimumLegKm, Math.round(straight * circuityFactor));
 }
 
 export interface RouteInput {
@@ -132,7 +128,7 @@ export interface RouteLeg {
 
 export interface RouteResult {
   legs: RouteLeg[];
-  /** Total billable distance, never below 1. */
+  /** Total billable distance; stationary itineraries may be zero. */
   km: number;
   /** The part of it the customer travels in the car. */
   itineraryKm: number;
@@ -157,8 +153,9 @@ export interface RouteResult {
  */
 export function resolveRoute(
   input: RouteInput,
-  circuityFactor = DEFAULT_CIRCUITY_FACTOR,
+  circuityFactor: number,
   overrides?: KmOverrides,
+  minimumLegKm = 0,
 ): RouteResult {
   const { stops, garage, tripType } = input;
   const legs: RouteLeg[] = [];
@@ -168,7 +165,7 @@ export function resolveRoute(
   }
 
   const km = (from: ResolvedPlace, to: ResolvedPlace) =>
-    roadKm(from, to, circuityFactor, overrides);
+    roadKm(from, to, circuityFactor, overrides, minimumLegKm);
 
   for (let i = 0; i < stops.length - 1; i += 1) {
     legs.push({
@@ -206,7 +203,7 @@ export function resolveRoute(
     legs.push({ fromSlug: home.key, toSlug: yard.key, km: back, transfer: true });
   }
 
-  const total = Math.max(1, itineraryKm + transferKm);
+  const total = itineraryKm + transferKm;
   return { legs, km: total, itineraryKm, transferKm };
 }
 
@@ -218,7 +215,8 @@ export function cityRouteKm(
   route: CityRoute,
   from: ResolvedPlace,
   to: ResolvedPlace,
-  circuityFactor = DEFAULT_CIRCUITY_FACTOR,
+  circuityFactor: number,
+  minimumLegKm = 0,
 ): number {
-  return route.kmOverride ?? roadKm(from, to, circuityFactor);
+  return route.kmOverride ?? roadKm(from, to, circuityFactor, undefined, minimumLegKm);
 }

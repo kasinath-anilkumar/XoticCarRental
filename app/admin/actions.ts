@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { PUBLIC_CATALOG_TAG } from "@/lib/catalog-cache";
 import { isISODate } from "@/lib/dates";
 import { LEAD_STATUSES } from "@/lib/leads";
+import { parsePricingRules } from "@/lib/pricing-rules";
 import { getStore } from "@/lib/store";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ExtraCharge } from "@/lib/types";
@@ -61,6 +62,22 @@ function optionalNum(form: FormData, key: string): number | null {
 
 function bool(form: FormData, key: string): boolean {
   return form.get(key) === "on" || form.get(key) === "true";
+}
+
+function placeValidation(form: FormData, city = false): string | null {
+  if (!text(form, "name") || text(form, "name").length > 200) return "Enter a name of 200 characters or fewer.";
+  for (const [key, limit] of [["lat", 90], ["lng", 180]] as const) {
+    const raw = text(form, key);
+    if (!raw || !Number.isFinite(Number(raw)) || Math.abs(Number(raw)) > limit) return `Enter valid ${key === "lat" ? "latitude" : "longitude"} coordinates.`;
+  }
+  if (city) {
+    if (!text(form, "state") || text(form, "state").length > 100) return "Enter the city's state or region.";
+    const multiplier = Number(text(form, "multiplier"));
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 99.99) return "Enter a rate multiplier greater than zero and no more than 99.99.";
+    const count = Number(text(form, "car_count"));
+    if (!Number.isInteger(count) || count < 0) return "Enter a non-negative whole car count.";
+  } else if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text(form, "city_id"))) return "Choose a saved service city.";
+  return null;
 }
 
 // ── fleet ───────────────────────────────────────────────────────────────────
@@ -360,6 +377,8 @@ export async function updateCity(
   form: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  const validation = placeValidation(form, true);
+  if (validation) return fail(validation);
   const supabase = await createSupabaseServerClient();
 
   const id = text(form, "id");
@@ -384,6 +403,25 @@ export async function updateCity(
   return ok("City saved.");
 }
 
+export async function createCity(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const validation = placeValidation(form, true);
+  if (validation) return fail(validation);
+  const name = text(form, "name");
+  const slug = slugify(name);
+  if (!slug) return fail("Enter a city name that can be used in its page address.");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("cities").insert({
+    name, slug, state: text(form, "state"), lat: Number(text(form, "lat")), lng: Number(text(form, "lng")),
+    multiplier: Number(text(form, "multiplier")), car_count: num(form, "car_count"),
+    seo_title: text(form, "seo_title") || null, seo_description: text(form, "seo_description") || null,
+    is_active: bool(form, "is_active"),
+  });
+  if (error) return fail(error.code === "23505" ? "A city with this page address already exists." : error.message);
+  revalidatePublic(["/cities", "/admin/cities"]);
+  return ok(`Added ${name}.`);
+}
+
 // ── locations ───────────────────────────────────────────────────────────────
 
 export async function createLocation(
@@ -391,6 +429,8 @@ export async function createLocation(
   form: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  const validation = placeValidation(form);
+  if (validation) return fail(validation);
   const supabase = await createSupabaseServerClient();
 
   const name = text(form, "name");
@@ -424,6 +464,8 @@ export async function updateLocation(
   form: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  const validation = placeValidation(form);
+  if (validation) return fail(validation);
   const supabase = await createSupabaseServerClient();
 
   const { error } = await supabase
@@ -458,6 +500,8 @@ export async function createGarage(
   form: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  const validation = placeValidation(form);
+  if (validation) return fail(validation);
   const supabase = await createSupabaseServerClient();
 
   const name = text(form, "name");
@@ -489,6 +533,8 @@ export async function updateGarage(
   form: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  const validation = placeValidation(form);
+  if (validation) return fail(validation);
   const supabase = await createSupabaseServerClient();
 
   const { error } = await supabase
@@ -699,15 +745,25 @@ export async function updateSettings(
     return fail("The WhatsApp number should be digits only, country code first.");
   }
 
+  let pricingRules;
+  try {
+    pricingRules = parsePricingRules(Object.fromEntries(["minimumLegKm", "localSpeedKph", "outstationSpeedKph", "oneWayReturnPercent", "nightStartHour", "nightEndHour"].map((key) => [key, text(form, key) === "" ? undefined : Number(text(form, key))])));
+  } catch (error) { return fail(error instanceof Error ? error.message : "Enter all pricing rules."); }
+  for (const key of ["gst_percent", "advance_percent", "circuity_factor"]) {
+    const value = Number(text(form, key));
+    if (!text(form, key) || !Number.isFinite(value) || value < 0 || (key === "circuity_factor" ? value <= 0 || value > 10 : value > 100)) return fail("Enter valid tax, advance and road distance values.");
+  }
+
   const { error } = await supabase
     .from("site_settings")
     .update({
       whatsapp_number: whatsapp,
       phone_display: text(form, "phone_display"),
       email: text(form, "email"),
-      gst_percent: num(form, "gst_percent", 5),
-      advance_percent: num(form, "advance_percent", 25),
-      circuity_factor: num(form, "circuity_factor", 1.25),
+      gst_percent: Number(text(form, "gst_percent")),
+      advance_percent: Number(text(form, "advance_percent")),
+      circuity_factor: Number(text(form, "circuity_factor")),
+      pricing_rules: pricingRules,
       inclusions: splitLines(text(form, "inclusions")),
       exclusions: splitLines(text(form, "exclusions")),
     })
@@ -741,9 +797,12 @@ export async function updateCharges(
     if (!key) break;
 
     const appliesTo = text(form, `appliesTo-${index}`);
+    const amount = text(form, `amount-${index}`);
+    if (!text(form, `label-${index}`) || !amount || !Number.isFinite(Number(amount)) || Number(amount) < 0) return fail("Every charge needs a name and a non-negative amount.");
+    if (!["always", "outstation", "interstate"].includes(appliesTo)) return fail("Choose when each charge applies.");
     charges.push({
       key,
-      label: text(form, `label-${index}`) || key,
+      label: text(form, `label-${index}`),
       note: text(form, `note-${index}`),
       amount: Math.max(0, num(form, `amount-${index}`, 0)),
       appliesTo:

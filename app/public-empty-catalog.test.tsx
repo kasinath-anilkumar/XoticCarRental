@@ -10,6 +10,17 @@ vi.mock("@/lib/store", () => ({ getStore }));
 vi.mock("@/lib/quote-server", () => ({ resolveRoutedQuote }));
 vi.mock("@/lib/supabase/server", () => ({ isSupabaseConfigured }));
 vi.mock("@/lib/supabase/admin", () => ({ canRecordEnquiries }));
+vi.mock("@/lib/service-content", async () => {
+  const { parseService } = await import("@/lib/service-validation");
+  const { pageBounds } = await import("@/lib/pagination");
+  const { default: seed } = await import("../backend/service-seed-data.json");
+  const services = seed.map((value) => parseService(value));
+  return {
+    getService: async (slug: string) => services.find((service) => service.slug === slug),
+    getServices: async () => services,
+    getServicePage: async () => ({ data: services, total: services.length, ...pageBounds(services.length, 1, 24) }),
+  };
+});
 
 import BrowsePage from "./cars/page";
 import CarPage, { generateMetadata as carMetadata } from "./cars/[slug]/page";
@@ -57,8 +68,8 @@ describe("public pages with an incomplete live catalog", () => {
       const pages = [
         BrowsePage({ searchParams: params }), CalculatorPage({ searchParams: params }),
         SummaryPage({ searchParams: params }), CitiesPage(),
-        CityPage({ params: cityParams }), ServicesPage(), ServicePage({ params: serviceParams }),
-        ServiceCityPage({ params: serviceCityParams }), PackagesPage(),
+        CityPage({ params: cityParams }), ServicesPage({ searchParams: Promise.resolve({}) }), ServicePage({ params: serviceParams }),
+        ServiceCityPage({ params: serviceCityParams }), PackagesPage({ searchParams: Promise.resolve({}) }),
         ...(missing === "cars" ? [] : [CarPage({ params: carParams })]),
       ];
       for (const page of await Promise.all(pages)) {

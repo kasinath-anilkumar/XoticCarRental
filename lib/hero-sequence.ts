@@ -30,7 +30,7 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
 
   let context: CanvasRenderingContext2D | null;
   try {
-    context = canvas.getContext("2d", { alpha: true });
+    context = canvas.getContext("2d", { alpha: false, desynchronized: true });
   } catch {
     return inactivePlayer;
   }
@@ -39,27 +39,40 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
 
   const mobile = (window.screen?.width || window.innerWidth) < 768;
   const capacity = mobile ? 8 : 12;
-  const decodeWidth = mobile ? 960 : 1440;
-  const radius = mobile ? 2 : 3;
+  const decodeWidth = mobile ? 768 : 1280;
+  const decodeHeight = decodeWidth * 9 / 16;
+  const lookAhead = mobile ? 4 : 8;
+  const blobBudget = (mobile ? 3 : 6) * 1024 * 1024;
+  const blobCapacity = mobile ? 32 : 64;
   const decoded = new Map<number, ImageBitmap>();
-  const running = new Map<number, AbortController>();
+  const encoded = new Map<number, Blob>();
+  const running = new Map<number, { controller: AbortController; phase: "fetch" | "decode" }>();
   const failed = new Set<number>();
+  let encodedBytes = 0;
+  let decoding = 0;
   let target = 0;
   let direction = 1;
+  let moving = false;
   let disposed = false;
   let ready = false;
   let contain = false;
+  let backgroundDirty = true;
   let painted = -1;
+  let lastCancellation = Number.NEGATIVE_INFINITY;
   let animationFrame: number | null = null;
   let wanted = nearby();
 
   function nearby(): number[] {
     const indices = [target];
-    for (let distance = 1; distance <= radius; distance += 1) {
-      for (const index of [target + distance * direction, target - distance * direction]) {
-        if (index >= 0 && index < frames.length) indices.push(index);
-      }
+    // Startup remains four frames (three on mobile). Once scrolling starts,
+    // spend the small window mostly in the direction the visitor is moving.
+    const ahead = moving ? lookAhead : mobile ? 2 : 3;
+    for (let distance = 1; distance <= ahead; distance += 1) {
+      const index = target + distance * direction;
+      if (index >= 0 && index < frames.length) indices.push(index);
     }
+    const behind = target - direction;
+    if (moving && behind >= 0 && behind < frames.length) indices.push(behind);
     return indices;
   }
 
@@ -69,22 +82,55 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
   }
 
   function trim() {
-    while (decoded.size > capacity) {
+    // Reserve room before a decode starts, including bitmaps whose promises
+    // have not settled yet, rather than briefly exceeding the memory budget.
+    while (decoded.size > capacity - decoding) {
       // Retain the displayed frame so resizing can repaint immediately even
       // during a distant seek. All other entries follow least-recent use.
-      const oldest = [...decoded.keys()].find((index) => index !== painted && index !== target);
+      const candidates = [...decoded.keys()].filter((index) => index !== painted && index !== target);
+      const oldest = candidates.find((index) => !wanted.includes(index)) ?? candidates[0];
       if (oldest === undefined) break;
       decoded.get(oldest)!.close();
       decoded.delete(oldest);
     }
   }
 
+  function rememberBlob(index: number, blob: Blob) {
+    if (!blob.size || blob.size > blobBudget) return;
+    const previous = encoded.get(index);
+    if (previous) encodedBytes -= previous.size;
+    encoded.delete(index);
+    encoded.set(index, blob);
+    encodedBytes += blob.size;
+    while (encodedBytes > blobBudget || encoded.size > blobCapacity) {
+      const oldest = encoded.keys().next().value!;
+      encodedBytes -= encoded.get(oldest)!.size;
+      encoded.delete(oldest);
+    }
+  }
+
   function draw(force = false) {
     if (disposed || decoded.size === 0 || canvas.width < 1 || canvas.height < 1) return;
-    let closest = -1;
-    for (const index of decoded.keys()) {
-      if (closest < 0 || Math.abs(index - target) < Math.abs(closest - target)) closest = index;
+    let closest = decoded.has(target) ? target : -1;
+    if (closest < 0) {
+      for (const index of decoded.keys()) {
+        // A forward scrub must not show a future frame and then hop backward
+        // when the requested frame arrives. Keep progress monotonic while
+        // allowing a deliberate reversal and always settling the exact target.
+        const approaching = direction > 0 ? index <= target : index >= target;
+        const advancing = painted < 0 || (direction > 0 ? index >= painted : index <= painted);
+        if (approaching && advancing && (closest < 0 || Math.abs(index - target) < Math.abs(closest - target))) closest = index;
+      }
     }
+    if (closest < 0 && decoded.has(painted)) closest = painted;
+    // A missing first file still has a useful fallback, without repeatedly
+    // requesting it. Otherwise the poster stays until an appropriate frame.
+    if (closest < 0 && failed.has(target)) {
+      for (const index of decoded.keys()) {
+        if (closest < 0 || Math.abs(index - target) < Math.abs(closest - target)) closest = index;
+      }
+    }
+    if (closest < 0) return;
     if (!force && closest === painted) return;
     const bitmap = decoded.get(closest)!;
     if (bitmap.width < 1 || bitmap.height < 1) return;
@@ -92,11 +138,15 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
     const width = bitmap.width * scale;
     const height = bitmap.height * scale;
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    // Clear and draw in the same task; a waiting fetch never clears the last
-    // successful picture. Transparent margins are needed for contain mode.
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingQuality = "medium";
+    // Cover overwrites the entire opaque canvas. Contain margins only need a
+    // fill after resizing or changing fit; no full-surface clear each frame.
+    if (contain && backgroundDirty) {
+      ctx.fillStyle = "#090b0b";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     ctx.drawImage(bitmap, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+    backgroundDirty = false;
     touch(closest, bitmap);
     const changed = painted !== closest;
     painted = closest;
@@ -115,25 +165,38 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
     });
   }
 
-  function current(index: number, controller: AbortController) {
-    return !disposed && !controller.signal.aborted && wanted.includes(index);
+  function current(controller: AbortController) {
+    return !disposed && !controller.signal.aborted;
   }
 
-  async function load(index: number, controller: AbortController) {
+  async function load(index: number, job: { controller: AbortController; phase: "fetch" | "decode" }) {
+    const { controller } = job;
+    let reserved = false;
     try {
-      const response = await fetch(frames[index], { signal: controller.signal, credentials: "same-origin" });
-      if (!response.ok) throw new Error(`Hero frame returned ${response.status}.`);
-      if (!current(index, controller)) return;
-      const blob = await response.blob();
-      if (!current(index, controller)) return;
+      let blob = encoded.get(index);
+      if (!blob) {
+        const response = await fetch(frames[index], { signal: controller.signal, credentials: "same-origin" });
+        if (!response.ok) throw new Error(`Hero frame returned ${response.status}.`);
+        if (!current(controller)) return;
+        blob = await response.blob();
+      }
+      if (!current(controller)) return;
+      rememberBlob(index, blob);
+      job.phase = "decode";
+      decoding += 1;
+      reserved = true;
+      trim();
       const bitmap = await createImageBitmap(blob, {
         resizeWidth: decodeWidth,
-        resizeHeight: Math.round(decodeWidth * 9 / 16),
-        resizeQuality: "high",
+        resizeHeight: decodeHeight,
+        // Fast bilinear resizing avoids expensive CPU resampling while scrolling.
+        resizeQuality: "low",
       });
-      // ImageBitmap decoding itself cannot be aborted. Dispose or a newer
-      // seek may have made its result obsolete while decoding was underway.
-      if (!current(index, controller)) {
+      decoding -= 1;
+      reserved = false;
+      // Advancing a few frames must not throw away completed work: on slower
+      // connections these late frames are what keep the sequence moving.
+      if (!current(controller)) {
         bitmap.close();
         return;
       }
@@ -143,8 +206,12 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
     } catch {
       // One failed file must not start an automatic retry loop. An intentional
       // later seek back to that frame permits another attempt.
-      if (current(index, controller)) failed.add(index);
+      if (current(controller)) {
+        failed.add(index);
+        scheduleDraw();
+      }
     } finally {
+      if (reserved) decoding -= 1;
       running.delete(index);
       pump();
     }
@@ -156,8 +223,9 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
       if (running.size >= 3) break;
       if (decoded.has(index) || running.has(index) || failed.has(index)) continue;
       const controller = new AbortController();
-      running.set(index, controller);
-      void load(index, controller);
+      const job = { controller, phase: "fetch" as const };
+      running.set(index, job);
+      void load(index, job);
     }
   }
 
@@ -166,26 +234,44 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
       if (disposed || !Number.isFinite(index)) return;
       const next = Math.max(0, Math.min(frames.length - 1, Math.round(index)));
       if (next !== target) {
+        const jump = Math.abs(next - target);
         direction = next > target ? 1 : -1;
         target = next;
+        moving = true;
         failed.delete(target);
         wanted = nearby();
-        for (const [frame, controller] of running) {
-          if (!wanted.includes(frame)) controller.abort();
+        // A distant jump can open one network slot, at most once per 250ms.
+        // Small advances and active decodes always finish; repeated scrolling
+        // can therefore never cancel all useful work before it is displayed.
+        const now = performance.now();
+        if (jump >= capacity * 2 && now - lastCancellation >= 250) {
+          const obsolete = [...running.entries()]
+            .filter(([frame, job]) => job.phase === "fetch" && !job.controller.signal.aborted && Math.abs(frame - target) > capacity)
+            .sort(([first], [second]) => Math.abs(second - target) - Math.abs(first - target))[0];
+          if (obsolete) {
+            obsolete[1].controller.abort();
+            lastCancellation = now;
+          }
         }
       }
-      scheduleDraw();
+      // The scroll component already calls seek inside RAF. Paint its cached
+      // result now instead of putting the image a refresh behind the copy.
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+      draw();
       pump();
     },
 
     resize(width, height, fitContain = false) {
       if (disposed || !Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
-      const ratio = Math.min(1.5, Math.max(1, window.devicePixelRatio || 1));
-      const nextWidth = Math.max(1, Math.round(width * ratio));
-      const nextHeight = Math.max(1, Math.round(height * ratio));
+      const ratio = Math.min(1.5, window.devicePixelRatio || 1, decodeWidth / width, Math.sqrt(decodeWidth * decodeHeight / width / height));
+      const nextWidth = Math.max(1, Math.floor(width * ratio));
+      const nextHeight = Math.max(1, Math.floor(height * ratio));
+      if (canvas.width === nextWidth && canvas.height === nextHeight && contain === fitContain) return;
       contain = fitContain;
       if (canvas.width !== nextWidth) canvas.width = nextWidth;
       if (canvas.height !== nextHeight) canvas.height = nextHeight;
+      backgroundDirty = true;
       draw(true);
     },
 
@@ -194,9 +280,11 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
       disposed = true;
       if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
       animationFrame = null;
-      for (const controller of running.values()) controller.abort();
+      for (const { controller } of running.values()) controller.abort();
       for (const bitmap of decoded.values()) bitmap.close();
       decoded.clear();
+      encoded.clear();
+      encodedBytes = 0;
       failed.clear();
     },
   };

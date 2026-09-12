@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { QuoteLines } from "@/components/quote/QuoteLines";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
 import { Icon } from "@/components/ui/Icon";
-import type { Catalog } from "@/lib/catalog";
+import { carPrice, type Catalog } from "@/lib/catalog";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { formatINR, shortPlace } from "@/lib/format";
 import { tripTypeLabel } from "@/lib/pricing";
@@ -61,12 +61,11 @@ export function LivePricing({ catalog, initialTrip }: LivePricingProps) {
       <div>
         <p className="kick">Transparent pricing</p>
         <h2 className="h2" style={{ marginBottom: "11.2px" }}>
-          Know the exact price before you book
+          Start with a package, then price your route
         </h2>
         <p className="max-w-[460px] text-[15px] text-[var(--color-neutral-300)] [text-wrap:pretty]">
-          Change anything on the left and watch the bill on the right. Every charge Indian
-          customers get surprised by — the driver&rsquo;s bata, the night pickup, the empty run
-          home after a one-way drop — is a line you can see before you send anything.
+          Compare a car and package, then add your pickup, drop and schedule in the calculator.
+          Your route estimate includes the applicable driver, distance and tax charges.
         </p>
 
         <div className="my-8 flex flex-col gap-6 max-md:my-6 max-md:gap-4">
@@ -152,24 +151,25 @@ export function LivePricing({ catalog, initialTrip }: LivePricingProps) {
           <span className="tag tag-accent">{tripTypeLabel(trip.tripType)}</span>
         </div>
         <p className="mb-4 text-[12px] text-[var(--color-neutral-500)]">
-          {routeLine} · {quote.km} km
+          {resolved.complete ? `${routeLine} · ${quote.km} km` : `Starting package rate in ${resolved.city.name}`}
         </p>
 
         <div className="mb-3 flex items-baseline gap-[8px] border-b border-[var(--color-divider)] pt-4 pb-6">
           <span className="font-[family-name:var(--font-heading)] text-[38px] leading-none tabular-nums text-[var(--color-accent-300)] max-md:text-[30px]">
-            {formatINR(quote.total)}
+            {formatINR(resolved.complete ? quote.total : carPrice(catalog, resolved.car, resolved.pkg))}
           </span>
           <span className="text-[12px] text-[var(--color-neutral-500)]">
-            all-in · {resolved.pkg.label}
+            {resolved.complete ? "Trip estimate" : "Base package"} · {resolved.pkg.label}
             {quote.days > 1 ? ` × ${quote.days} days` : ""}
           </span>
         </div>
 
-        <QuoteLines quote={quote} gstPercent={catalog.settings.gstPercent} tight />
+        {resolved.complete ? <QuoteLines quote={quote} gstPercent={catalog.settings.gstPercent} tight /> : (
+          <p className="text-[13px] text-[var(--color-neutral-400)]">Choose your pickup, drop, date and time in the calculator for an itemised trip estimate. Driver allowance, extra distance, timing charges and {catalog.settings.gstPercent}% GST are additional to this base rate.</p>
+        )}
 
         <p className="mt-3 text-[11px] text-[var(--color-neutral-500)]">
-          Tolls, parking and state permits at actuals. {formatINR(quote.advance)} advance holds the
-          car.
+          Tolls, parking and state permits are charged as applicable. Confirm availability and payment terms with our team.
         </p>
       </div>
     </div>

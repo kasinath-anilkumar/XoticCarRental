@@ -15,11 +15,12 @@ const frames = Array.from({ length: 180 }, (_, index) => `/frame-${index}.jpg`);
 let requests: FetchJob[];
 let bitmapList: TestBitmap[];
 let living: Set<TestBitmap>;
+let peakBitmaps: number;
 let rafs: Map<number, FrameRequestCallback>;
 let deferredDecodes: Array<{ index: number; options: ImageBitmapOptions; resolve: (bitmap: ImageBitmap) => void }>;
 let holdDecodes: boolean;
 let canvas: HTMLCanvasElement;
-let ctx: { clearRect: ReturnType<typeof vi.fn>; drawImage: ReturnType<typeof vi.fn> };
+let ctx: { clearRect: ReturnType<typeof vi.fn>; fillRect: ReturnType<typeof vi.fn>; drawImage: ReturnType<typeof vi.fn> };
 let player: HeroSequence | undefined;
 
 function bitmap(index: number, options: ImageBitmapOptions): TestBitmap {
@@ -30,6 +31,7 @@ function bitmap(index: number, options: ImageBitmapOptions): TestBitmap {
     close: vi.fn(() => living.delete(value)),
   } as unknown as TestBitmap;
   living.add(value);
+  peakBitmaps = Math.max(peakBitmaps, living.size);
   bitmapList.push(value);
   return value;
 }
@@ -38,11 +40,12 @@ beforeEach(() => {
   requests = [];
   bitmapList = [];
   living = new Set();
+  peakBitmaps = 0;
   rafs = new Map();
   deferredDecodes = [];
   holdDecodes = false;
   player = undefined;
-  ctx = { clearRect: vi.fn(), drawImage: vi.fn() };
+  ctx = { clearRect: vi.fn(), fillRect: vi.fn(), drawImage: vi.fn() };
   canvas = { width: 300, height: 150, getContext: vi.fn(() => ctx) } as unknown as HTMLCanvasElement;
   let nextRaf = 0;
   vi.stubGlobal("window", {
@@ -79,6 +82,7 @@ beforeEach(() => {
 
 afterEach(() => {
   player?.dispose();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -93,14 +97,14 @@ function paint() {
   for (const callback of callbacks) callback(0);
 }
 
-function respond(index: number, ok = true) {
+function respond(index: number, ok = true, bytes = 93_000) {
   const job = requests.find((request) => request.index === index && !request.finished);
   if (!job) throw new Error(`No active request for frame ${index}`);
   job.finished = true;
-  job.resolve({ ok, status: ok ? 200 : 404, blob: async () => ({ index }) } as unknown as Response);
+  job.resolve({ ok, status: ok ? 200 : 404, blob: async () => ({ index, size: bytes }) } as unknown as Response);
 }
 
-async function fillDemand() {
+async function fillDemand(bytes = 93_000) {
   for (let round = 0; round < 20; round += 1) {
     await settle();
     const pending = requests.filter((request) => !request.finished);
@@ -108,7 +112,7 @@ async function fillDemand() {
       paint();
       return;
     }
-    for (const request of pending) respond(request.index);
+    for (const request of pending) respond(request.index, true, bytes);
   }
   throw new Error("Demand did not settle; the player may be loading continuously.");
 }
@@ -132,7 +136,7 @@ describe("hero frame player", () => {
     expect(living.size).toBe(0);
   });
 
-  it("prioritizes a distant seek and keeps the last image until a closer frame arrives", async () => {
+  it("opens one slot for a distant seek and avoids painting ahead then hopping backward", async () => {
     const onReady = vi.fn();
     const onFrame = vi.fn();
     player = createHeroSequence({ canvas, frames, onReady, onFrame });
@@ -145,12 +149,17 @@ describe("hero frame player", () => {
     paint();
     expect(ctx.clearRect).toHaveBeenCalledTimes(clears);
     await settle();
-    expect(requests.filter((request) => !request.finished).map((request) => request.index)).toEqual([90, 91, 89]);
-    expect(requests.filter((request) => [1, 2, 3].includes(request.index)).every((request) => request.signal.aborted)).toBe(true);
+    expect(requests.filter((request) => !request.finished).map((request) => request.index)).toEqual([2, 3, 90]);
+    expect(requests.filter((request) => request.signal.aborted)).toHaveLength(1);
+    respond(2);
+    respond(3);
+    await settle();
+    paint();
+    expect(onFrame).toHaveBeenLastCalledWith(3);
     respond(91);
     await settle();
     paint();
-    expect(onFrame).toHaveBeenLastCalledWith(91);
+    expect(onFrame).toHaveBeenLastCalledWith(3);
     respond(90);
     await settle();
     paint();
@@ -158,7 +167,7 @@ describe("hero frame player", () => {
     expect(onReady).toHaveBeenCalledTimes(1);
   });
 
-  it.each([{ screenWidth: 1440, budget: 12, decodeWidth: 1440 }, { screenWidth: 390, budget: 8, decodeWidth: 960 }])(
+  it.each([{ screenWidth: 1440, budget: 12, decodeWidth: 1280 }, { screenWidth: 390, budget: 8, decodeWidth: 768 }])(
     "closes evicted frames and stays within the $budget bitmap budget",
     async ({ screenWidth, budget, decodeWidth }) => {
       Object.defineProperty(window.screen, "width", { value: screenWidth });
@@ -169,6 +178,7 @@ describe("hero frame player", () => {
         expect(living.size).toBeLessThanOrEqual(budget);
       }
       expect(living.size).toBe(budget);
+      expect(peakBitmaps).toBeLessThanOrEqual(budget);
       expect(bitmapList.every((image) => image.width === decodeWidth)).toBe(true);
       expect(bitmapList.some((image) => !living.has(image))).toBe(true);
       expect(requests.length).toBeLessThan(40);
@@ -193,6 +203,15 @@ describe("hero frame player", () => {
     player.resize(400, 300, true);
     const contained = ctx.drawImage.mock.calls.at(-1)!;
     expect(contained.slice(1)).toEqual([0, 56.25, 600, 337.5]);
+    expect(ctx.fillRect).toHaveBeenCalledTimes(1);
+    const draws = ctx.drawImage.mock.calls.length;
+    player.resize(400, 300, true);
+    expect(ctx.drawImage).toHaveBeenCalledTimes(draws);
+    expect(ctx.fillRect).toHaveBeenCalledTimes(1);
+    expect(ctx.clearRect).not.toHaveBeenCalled();
+    player.resize(1920, 1200);
+    expect(canvas.width).toBeLessThanOrEqual(1280);
+    expect(canvas.width * canvas.height).toBeLessThanOrEqual(1280 * 720);
   });
 
   it("closes a bitmap decoded after disposal and never paints or signals readiness", async () => {
@@ -215,7 +234,7 @@ describe("hero frame player", () => {
     expect(requests.every((request) => request.signal.aborted)).toBe(true);
   });
 
-  it("discards a completed decode made obsolete by a newer seek", async () => {
+  it("retains late successful decodes so moving targets do not starve the visible sequence", async () => {
     holdDecodes = true;
     const onReady = vi.fn();
     player = createHeroSequence({ canvas, frames, onReady });
@@ -228,10 +247,108 @@ describe("hero frame player", () => {
     pending.resolve(image);
     await settle();
     paint();
-    expect(image.close).toHaveBeenCalledTimes(1);
-    expect(onReady).not.toHaveBeenCalled();
-    expect(ctx.drawImage).not.toHaveBeenCalled();
-    expect(requests.filter((request) => !request.finished).map((request) => request.index)).toEqual([100, 101, 99]);
+    expect(image.close).not.toHaveBeenCalled();
+    expect(onReady).toHaveBeenCalledTimes(1);
+    expect(ctx.drawImage).toHaveBeenCalled();
+    expect(requests.filter((request) => !request.finished).map((request) => request.index)).toEqual([2, 100, 101]);
+  });
+
+  it("paints an already decoded seek synchronously and reuses visited encoded frames", async () => {
+    const onFrame = vi.fn();
+    player = createHeroSequence({ canvas, frames, onFrame });
+    await fillDemand();
+    player.seek(2);
+    expect(onFrame).toHaveBeenLastCalledWith(2);
+    expect(rafs.size).toBe(0);
+    await fillDemand();
+    player.seek(30);
+    await fillDemand();
+    player.seek(60);
+    await fillDemand();
+    expect([...living].some((image) => image.frame === 0)).toBe(false);
+    player.seek(0);
+    await fillDemand();
+    expect(onFrame).toHaveBeenLastCalledWith(0);
+    expect(requests.filter((request) => request.index === 0)).toHaveLength(1);
+    expect(bitmapList.filter((image) => image.frame === 0)).toHaveLength(2);
+  });
+
+  it("limits cancellation during repeated distant jumps", async () => {
+    player = createHeroSequence({ canvas, frames });
+    for (const target of [50, 100, 150]) {
+      player.seek(target);
+      await settle();
+    }
+    expect(requests.filter((request) => request.signal.aborted)).toHaveLength(1);
+    await fillDemand();
+    expect(ctx.drawImage.mock.calls.at(-1)?.[0].frame).toBe(150);
+  });
+
+  it("evicts visited encoded data by byte budget instead of retaining the entire sequence", async () => {
+    player = createHeroSequence({ canvas, frames });
+    for (const target of [0, 10, 20, 30]) {
+      player.seek(target);
+      await fillDemand(300_000);
+    }
+    player.seek(0);
+    await fillDemand();
+    expect(requests.filter((request) => request.index === 0)).toHaveLength(2);
+  });
+
+  it.each([1, 2])("keeps painting through continuous %s-frame seeks while fetch and decode are delayed", async (step) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const underlyingFetch = globalThis.fetch;
+    let decoders = 0;
+    let peakDecoders = 0;
+    let peakLoads = 0;
+    const measure = () => {
+      peakDecoders = Math.max(peakDecoders, decoders);
+      peakLoads = Math.max(peakLoads, decoders + requests.filter((request) => !request.finished).length);
+    };
+    vi.stubGlobal("fetch", vi.fn((url: string, options: RequestInit) => {
+      const result = underlyingFetch(url, options);
+      const request = requests.at(-1)!;
+      measure();
+      const timeout = setTimeout(() => { if (!request.finished) respond(request.index); }, 60);
+      request.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
+      return result;
+    }));
+    vi.stubGlobal("createImageBitmap", vi.fn((blob: Blob & { index: number }, options: ImageBitmapOptions) => {
+      decoders += 1;
+      measure();
+      return new Promise<ImageBitmap>((resolve) => setTimeout(() => {
+        decoders -= 1;
+        resolve(bitmap(blob.index, options));
+      }, 30));
+    }));
+    window.requestAnimationFrame = vi.fn((callback) => setTimeout(() => callback(Date.now()), 16) as unknown as number);
+    window.cancelAnimationFrame = vi.fn((id) => clearTimeout(id));
+    const paintedFrames: Array<{ time: number; index: number }> = [];
+    player = createHeroSequence({ canvas, frames, onFrame: (index) => paintedFrames.push({ time: Date.now(), index }) });
+    await vi.advanceTimersByTimeAsync(240);
+    expect(requests.length).toBeLessThanOrEqual(4);
+    const start = Date.now();
+    for (let target = step; target < 179 + step; target += step) {
+      await vi.advanceTimersByTimeAsync(16);
+      player.seek(Math.min(179, target));
+    }
+    const end = Date.now();
+    const during = paintedFrames.filter((frame) => frame.time >= start && frame.time <= end);
+    const times = [start, ...during.map((frame) => frame.time), end];
+    const longestGap = Math.max(...times.slice(1).map((time, index) => time - times[index]));
+    expect(during.length).toBeGreaterThanOrEqual(step === 1 ? 24 : 12);
+    expect(longestGap).toBeLessThanOrEqual(180);
+    expect(requests.filter((request) => request.signal.aborted)).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(paintedFrames.at(-1)?.index).toBe(179);
+    expect(paintedFrames.every((frame, index) => index === 0 || frame.index >= paintedFrames[index - 1].index)).toBe(true);
+    expect(peakLoads).toBeLessThanOrEqual(3);
+    expect(peakDecoders).toBeLessThanOrEqual(3);
+    expect(peakBitmaps).toBeLessThanOrEqual(12);
+    expect(decoders).toBe(0);
+    player.dispose();
+    expect(living.size).toBe(0);
   });
 
   it("does not retry failed frames in a loop and leaves the poster when decoding is unsupported", async () => {

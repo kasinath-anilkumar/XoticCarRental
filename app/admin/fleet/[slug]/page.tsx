@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
-import { AdminForm, Checkbox, Field, Select } from "../../AdminForm";
+import { ReferenceSelect } from "@/components/admin/ReferenceSelect";
+
+import { AdminForm, Checkbox, Field } from "../../AdminForm";
 import { CarPhotos, type CarPhoto } from "./CarPhotos";
 import { AdminPageHead, AdminShell } from "../../AdminShell";
 import { NeedsDatabase } from "../../NeedsDatabase";
@@ -30,31 +32,12 @@ export default async function AdminCarPage({ params }: { params: Params }) {
   }
   const supabase = await createSupabaseServerClient();
 
-  const [carResult, types, cities, occasions, garages] = await Promise.all([
-    supabase
-      .from("cars")
-      .select(
-        "*, car_occasions(occasion_id), car_service_cities(city_id), car_images(id, url, kind, alt, sort)",
-      )
-      .eq("slug", slug)
-      .maybeSingle(),
-    supabase.from("car_types").select("id, name").order("sort"),
-    supabase.from("cities").select("id, name").order("sort"),
-    supabase.from("occasions").select("id, name").order("sort"),
-    supabase.from("garages").select("id, name, cities(name)").order("name"),
-  ]);
-
+  const carResult = await supabase.from("cars")
+    .select("*, car_types(id,name), home_city:cities!cars_home_city_id_fkey(id,name), garages(id,name), car_occasions(occasion_id,occasions(name)), car_service_cities(city_id,cities(name)), car_images(id,url,kind,alt,sort)")
+    .eq("slug", slug).maybeSingle();
+  if (carResult.error) throw new Error("Could not load vehicle details.");
   const car = carResult.data;
   if (!car) notFound();
-
-  const taggedOccasions = new Set<string>(
-    (car.car_occasions ?? []).map((link: { occasion_id: string }) => link.occasion_id),
-  );
-
-  // §6 — where this unit may be sent. No rows means no restriction.
-  const servedCities = new Set<string>(
-    (car.car_service_cities ?? []).map((link: { city_id: string }) => link.city_id),
-  );
 
   return (
     <AdminShell email={admin.email}>
@@ -84,32 +67,9 @@ export default async function AdminCarPage({ params }: { params: Params }) {
             <Field label="Name" name="name" defaultValue={car.name} required />
             <Field label="Year" name="year" type="number" min={1900} max={2100} step="1" defaultValue={car.year} required />
             <Field label="Badge" name="badge" defaultValue={car.badge} hint="e.g. Most booked" />
-            <Select
-              label="Type"
-              name="car_type_id"
-              defaultValue={car.car_type_id}
-              options={(types.data ?? []).map((t) => ({ value: t.id, label: t.name }))}
-            />
-            <Select
-              label="Home city"
-              name="home_city_id"
-              defaultValue={car.home_city_id}
-              options={(cities.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
-              hint="Its multiplier prices this car"
-            />
-            <Select
-              label="Garage"
-              name="garage_id"
-              defaultValue={car.garage_id ?? ""}
-              options={[
-                { value: "", label: "No garage — city centre is used" },
-                ...(garages.data ?? []).map((g: { id: string; name: string }) => ({
-                  value: g.id,
-                  label: g.name,
-                })),
-              ]}
-              hint="Where the distance is measured from (§9)"
-            />
+            <ReferenceSelect kind="car_types" label="Type" name="car_type_id" initial={car.car_types ? [{ value: car.car_type_id, label: car.car_types.name }] : []} required />
+            <ReferenceSelect kind="cities" label="Home city" name="home_city_id" initial={car.home_city ? [{ value: car.home_city_id, label: car.home_city.name }] : []} required hint="Its multiplier prices this car." />
+            <ReferenceSelect kind="garages" label="Garage" name="garage_id" initial={car.garages ? [{ value: car.garage_id, label: car.garages.name }] : []} hint="Leave empty to measure distance from the city centre." />
             <Field label="Seats" name="seats" type="number" defaultValue={car.seats} />
             <Field label="Transmission" name="transmission" defaultValue={car.transmission} />
             <Field label="Fuel" name="fuel" defaultValue={car.fuel} />
@@ -172,7 +132,7 @@ export default async function AdminCarPage({ params }: { params: Params }) {
               name="night_charge"
               type="number"
               defaultValue={car.night_charge}
-              hint="10pm–6am, or an overnight halt"
+              hint="Pickup within the configured night hours, or an overnight halt."
             />
             <Field label="Sort order" name="sort" type="number" defaultValue={car.sort} />
           </div>
@@ -185,29 +145,7 @@ export default async function AdminCarPage({ params }: { params: Params }) {
             find it.
           </p>
 
-          <div style={{ display: "flex", gap: "16.8px", flexWrap: "wrap" }}>
-            {(occasions.data ?? []).map((occasion) => (
-              <label
-                key={occasion.id}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  name="occasion_ids"
-                  value={occasion.id}
-                  defaultChecked={taggedOccasions.has(occasion.id)}
-                  style={{ width: "16px", height: "16px", accentColor: "var(--color-accent)" }}
-                />
-                {occasion.name}
-              </label>
-            ))}
-          </div>
+          <ReferenceSelect kind="occasions" label="Tagged occasions" name="occasion_ids" multiple initial={(car.car_occasions ?? []).map((link: { occasion_id: string; occasions: { name: string } | null }) => ({ value: link.occasion_id, label: link.occasions?.name ?? "Unavailable occasion" }))} />
 
           <Checkbox label="Live on the site" name="is_active" defaultChecked={car.is_active} />
         </section>
@@ -215,42 +153,13 @@ export default async function AdminCarPage({ params }: { params: Params }) {
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>Where it may be sent</h2>
           <p className={styles.cardHint}>
-            Leave every box clear for a car that travels anywhere Xotic serves — that is most of
-            the fleet, and it is what this means when it is empty. Tick cities only to hold a car
+            Leave the selection empty for a car that travels anywhere the business serves — that is most of
+            the fleet, and it is what this means when it is empty. Select cities only to hold a car
             back: a vintage car that is not driven between states, a signature car kept for one
-            city. Its home city is always allowed whatever is ticked here.
+            city. Its home city is always allowed whatever is selected here.
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "11.2px",
-              marginTop: "11.2px",
-            }}
-          >
-            {(cities.data ?? []).map((item) => (
-              <label
-                key={item.id}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  name="service_city_ids"
-                  value={item.id}
-                  defaultChecked={servedCities.has(item.id)}
-                  style={{ width: "16px", height: "16px", accentColor: "var(--color-accent)" }}
-                />
-                {item.name}
-              </label>
-            ))}
-          </div>
+          <ReferenceSelect kind="cities" label="Allowed service cities" name="service_city_ids" multiple initial={(car.car_service_cities ?? []).map((link: { city_id: string; cities: { name: string } | null }) => ({ value: link.city_id, label: link.cities?.name ?? "Unavailable city" }))} />
         </section>
       </AdminForm>
 

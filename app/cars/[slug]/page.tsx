@@ -17,7 +17,7 @@ import {
   galleryImages,
   heroImage,
   homeCity,
-  occasionBySlug,
+  servesCity,
   similarCars,
   tripDefaults,
 } from "@/lib/catalog";
@@ -26,7 +26,8 @@ import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { formatINR } from "@/lib/format";
 import { rateFor } from "@/lib/pricing";
 import { carFaq } from "@/lib/faq";
-import { resolveQuote, tripToParams } from "@/lib/quote";
+import { tripToParams } from "@/lib/quote";
+import { carEnquiryMessage } from "@/lib/whatsapp";
 
 
 /**
@@ -68,7 +69,7 @@ export const revalidate = 3600;
 
 export async function generateStaticParams() {
   const catalog = await getCatalog();
-  return catalog.cars.map((car) => ({ slug: car.slug }));
+  return catalog.cars.slice(0, 100).map((car) => ({ slug: car.slug }));
 }
 
 type Params = Promise<{ slug: string }>;
@@ -115,21 +116,9 @@ export default async function CarDetailPage({ params }: { params: Params }) {
     { icon: "ph-users-three", label: "Seating", value: `${car.seats} + driver` },
     { icon: "ph-gear-six", label: "Transmission", value: car.transmission },
     { icon: "ph-gas-pump", label: "Fuel", value: car.fuel },
-    {
-      icon: "ph-suitcase-rolling",
-      label: "Luggage",
-      value: car.seats > 7 ? "8 bags" : car.seats > 4 ? "4 bags" : "2 bags",
-    },
   ];
 
-  const weddingSurcharge = occasionBySlug(catalog, "wedding").surcharge;
-
-  // A representative local trip in this car, so the message preview and the
-  // FAQ quote figures that came out of the real engine rather than prose.
-  const sampleQuote = resolveQuote(catalog, {
-    ...tripDefaults(catalog, "2026-01-01"),
-    carSlug: car.slug,
-  });
+  const enquiryMessage = carEnquiryMessage(car, city, catalog.packages[0]);
   const faq = carFaq(catalog, car);
 
   const bookingProps = {
@@ -197,9 +186,9 @@ export default async function CarDetailPage({ params }: { params: Params }) {
                 </p>
               </div>
               <div className="flex flex-wrap justify-end gap-2 max-md:justify-start">
-                {car.occasions.map((occasionSlug) => (
-                  <span key={occasionSlug} className="tag tag-outline">
-                    {occasionBySlug(catalog, occasionSlug).name}
+                {catalog.occasions.filter((occasion) => car.occasions.includes(occasion.slug)).map((occasion) => (
+                  <span key={occasion.slug} className="tag tag-outline">
+                    {occasion.name}
                   </span>
                 ))}
               </div>
@@ -218,11 +207,11 @@ export default async function CarDetailPage({ params }: { params: Params }) {
             <div className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">
               <RateCard
                 car={car}
-                cities={catalog.cities}
+                cities={catalog.cities.filter((city) => servesCity(car, city.slug))}
                 packages={catalog.packages}
                 settings={catalog.settings}
                 homeCitySlug={city.slug}
-                weddingSurcharge={weddingSurcharge}
+                occasions={catalog.occasions.filter((occasion) => car.occasions.includes(occasion.slug))}
               />
             </div>
 
@@ -256,7 +245,7 @@ export default async function CarDetailPage({ params }: { params: Params }) {
             />
 
             <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">Before you message us</h2>
-            <MessagePreview message={sampleQuote.message} defaultOpen />
+            <MessagePreview message={enquiryMessage} defaultOpen />
 
             <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">Questions</h2>
             <FaqBlock items={faq} />

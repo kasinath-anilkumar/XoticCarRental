@@ -9,7 +9,7 @@ import { ChargesExplained } from "@/components/trust/ChargesExplained";
 import { Icon } from "@/components/ui/Icon";
 import { Pagination } from "@/components/ui/Pagination";
 import {
-  BUDGET_BANDS,
+  budgetLabel,
   browseFilterOptions,
   cityBySlug,
   filterCars,
@@ -135,8 +135,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
   }
   if (filters.type !== "all") applied.push({ label: filters.type, param: "type" });
   if (filters.budget !== "all") {
-    const band = BUDGET_BANDS.find((option) => option.key === filters.budget);
-    applied.push({ label: band?.label ?? `Under ₹${filters.budget}`, param: "budget" });
+    applied.push({ label: budgetLabel(filters.budget), param: "budget" });
   }
   if (filters.date) {
     const label =
@@ -200,7 +199,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
         </div>
 
         <div>
-          <div className="sticky top-[var(--header-height)] z-20 mb-6 -mx-[var(--gutter-mobile)] sm:-mx-6 md:-mx-8 lg:mx-0 border-b border-[var(--color-divider)] bg-bg/95 backdrop-blur-sm px-[var(--gutter-mobile)] sm:px-6 md:px-8 lg:px-4 py-3">
+          <div className="sticky top-[var(--header-height)] z-20 mb-6 -mx-[var(--gutter-mobile)] sm:-mx-6 md:-mx-8 lg:mx-0 border-b border-[var(--color-divider)] bg-bg px-[var(--gutter-mobile)] sm:px-6 md:px-8 lg:px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] text-[var(--color-neutral-400)] truncate [&_strong]:font-[family-name:var(--font-heading)] [&_strong]:text-[16px] sm:[&_strong]:text-[17px] [&_strong]:text-text">
@@ -287,6 +286,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
                   car={car}
                   pkg={pkg}
                   citySlug={filters.city !== "all" ? filters.city : undefined}
+                  journeyQuery={baseParams.toString()}
                 />
               ))}
             </div>

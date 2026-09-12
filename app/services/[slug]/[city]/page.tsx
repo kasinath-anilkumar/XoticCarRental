@@ -18,7 +18,7 @@ import {
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { formatINR } from "@/lib/format";
-import { SERVICES, serviceBySlug } from "@/lib/services";
+import { getService, getServicePage } from "@/lib/service-content";
 import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
@@ -38,17 +38,24 @@ export const revalidate = 3600;
  * thing search engines are built to discard. What varies here is real.
  */
 export async function generateStaticParams() {
-  const catalog = await getCatalog();
-  return SERVICES.flatMap((service) =>
-    catalog.cities.map((city) => ({ slug: service.slug, city: city.slug })),
-  );
+  const [catalog, services] = await Promise.all([getCatalog(), getServicePage(1, 24)]);
+  const paths: Array<{ slug: string; city: string }> = [];
+  // Bound deployment work as the service/city combinations grow. Other
+  // published combinations remain available through on-demand rendering.
+  for (const service of services.data) {
+    for (const city of catalog.cities) {
+      paths.push({ slug: service.slug, city: city.slug });
+      if (paths.length === 256) return paths;
+    }
+  }
+  return paths;
 }
 
 type Params = Promise<{ slug: string; city: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug, city: citySlug } = await params;
-  const service = serviceBySlug(slug);
+  const service = await getService(slug);
   const catalog = await getCatalog();
   const city = catalog.cities.find((item) => item.slug === citySlug);
   if (!service || !city) return { title: "Not found" };
@@ -68,8 +75,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function ServiceCityPage({ params }: { params: Params }) {
   const { slug, city: citySlug } = await params;
-  const service = serviceBySlug(slug);
+  const service = await getService(slug);
   const catalog = await getCatalog();
+  const related = (await getServicePage(1, 8)).data;
   const city = catalog.cities.find((item) => item.slug === citySlug);
   if (!service || !city) notFound();
   if (!isPricingAvailable(catalog)) {
@@ -126,7 +134,7 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
 
       <section className="on-dark relative isolate flex min-h-[340px] items-end overflow-hidden">
@@ -302,7 +310,7 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
 
         <p className="mt-6 text-[13px] text-[var(--color-neutral-400)]">
           Or another service in {city.name}:{" "}
-          {SERVICES.filter((item) => item.slug !== service.slug)
+          {related.filter((item) => item.slug !== service.slug)
             .slice(0, 6)
             .map((item, index) => (
               <span key={item.slug}>

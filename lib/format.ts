@@ -8,7 +8,19 @@
  * screen. This is deterministic everywhere.
  */
 
+import type { SiteSettings } from "./types";
+
 const RUPEE = "₹";
+
+/** Keep charge explanations aligned with the operator's current configuration. */
+export function formatChargePolicy(settings: SiteSettings): string {
+  const fees = settings.charges.filter((charge) => charge.isActive && charge.amount > 0).map((charge) => {
+    const scope = charge.appliesTo === "interstate" ? " on known interstate routes" : charge.appliesTo === "outstation" ? " on outstation trips" : " per trip";
+    return `${charge.label}: ${formatINR(charge.amount)}${scope}`;
+  });
+  const configured = fees.length ? `Configured allowances: ${fees.join("; ")}. Applicable allowances appear in the quote.` : "No additional fixed allowances are configured.";
+  return `${configured}${settings.exclusions.length ? ` Quoted rates exclude: ${settings.exclusions.join("; ")}.` : ""} Confirm any route-specific costs with the operator.`;
+}
 
 /**
  * Indian grouping: the last three digits, then pairs.

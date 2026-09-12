@@ -52,27 +52,37 @@ export function isFreePlace(token: PlaceToken): boolean {
 }
 
 export function encodeFreePlace(place: { name: string; lat: number; lng: number }): PlaceToken {
+  if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng) || Math.abs(place.lat) > 90 || Math.abs(place.lng) > 180) {
+    throw new RangeError("Invalid place coordinates");
+  }
   // Five decimals is ~1 m — far finer than any road-distance estimate needs,
   // and it keeps the token short enough to stay readable in a shared link.
   const lat = Number(place.lat.toFixed(5));
   const lng = Number(place.lng.toFixed(5));
-  return `${FREE_PREFIX}${lat},${lng},${place.name}`;
+  // eslint-disable-next-line no-control-regex -- Control characters cannot travel in itinerary names.
+  const name = place.name.replace(/[\u0000-\u001f\u007f~]/g, " ").trim().slice(0, 160).trim();
+  if (!name) throw new TypeError("A place name is required");
+  return `${FREE_PREFIX}${lat},${lng},${name}`;
 }
 
 /** Parses a free-place token. Returns null for a slug or anything malformed. */
 export function decodeFreePlace(token: PlaceToken): ResolvedPlace | null {
-  if (!isFreePlace(token)) return null;
+  if (!isFreePlace(token) || token.length > 500) return null;
 
   const body = token.slice(FREE_PREFIX.length);
   const firstComma = body.indexOf(",");
   const secondComma = body.indexOf(",", firstComma + 1);
   if (firstComma === -1 || secondComma === -1) return null;
 
-  const lat = Number(body.slice(0, firstComma));
-  const lng = Number(body.slice(firstComma + 1, secondComma));
+  const latitude = body.slice(0, firstComma);
+  const longitude = body.slice(firstComma + 1, secondComma);
+  if (![latitude, longitude].every((value) => /^-?\d+(?:\.\d+)?$/.test(value))) return null;
+  const lat = Number(latitude);
+  const lng = Number(longitude);
   const name = body.slice(secondComma + 1).trim();
 
-  if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  // eslint-disable-next-line no-control-regex -- Reject injected control characters in URL-backed names.
+  if (!name || name.length > 160 || /[\u0000-\u001f\u007f~]/.test(name) || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
 
   return { key: token, name, lat, lng, citySlug: "", isAirport: false, served: false };
@@ -126,6 +136,12 @@ export interface PlaceSuggestion {
   isAirport: boolean;
   /** What the geocoder called it, when it came from one. Picks the icon. */
   kind?: GeoKind;
+  city?: string;
+  locality?: string;
+  state?: string;
+  country?: string;
+  countryCode?: string;
+  providerId?: string;
 }
 
 /**
@@ -142,5 +158,11 @@ export function suggestionFromGeo(place: GeoPlace): PlaceSuggestion {
     served: false,
     isAirport: place.kind === "airport",
     kind: place.kind,
+    city: place.city,
+    locality: place.locality,
+    state: place.state,
+    country: place.country,
+    countryCode: place.countryCode,
+    providerId: place.id,
   };
 }

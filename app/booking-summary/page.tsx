@@ -5,7 +5,7 @@ import { SendToWhatsApp } from "@/components/summary/SendToWhatsApp";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
 import { Icon } from "@/components/ui/Icon";
 import { Media } from "@/components/ui/Media";
-import { heroImage, isoTomorrow, tripDefaults } from "@/lib/catalog";
+import { heroImage, tripDefaults } from "@/lib/catalog";
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { formatDate, formatINR, formatTime } from "@/lib/format";
@@ -14,6 +14,8 @@ import { tripFromParams, tripToParams } from "@/lib/quote";
 import { resolveRoutedQuote } from "@/lib/quote-server";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { canRecordEnquiries } from "@/lib/supabase/admin";
+import { bookingIssue } from "@/lib/booking-readiness";
+import { businessDate } from "@/lib/dates";
 
 
 export const metadata: Metadata = {
@@ -37,8 +39,10 @@ export default async function BookingSummaryPage({
     return <section className="sec"><h1 className="mb-6">Booking summary</h1><PricingUnavailable /></section>;
   }
 
-  const defaults = tripDefaults(catalog, isoTomorrow(new Date()));
+  const defaults = tripDefaults(catalog, "");
   const trip = tripFromParams(params, defaults);
+  const issue = bookingIssue(trip, catalog.locations, businessDate());
+  if (issue) return <section className="sec"><h1 className="mb-4">Complete your booking details</h1><p>{issue}</p><Link className="btn btn-primary mt-4" href={`/price-calculator?${tripToParams(trip)}`}>Continue in the calculator</Link></section>;
   const resolved = await resolveRoutedQuote(catalog, trip);
   const { quote, car, pkg, city, occasion } = resolved;
 
@@ -102,6 +106,7 @@ export default async function BookingSummaryPage({
                   <p>
                     <span className="block text-[var(--color-neutral-500)]">Pickup</span>
                     {formatDate(trip.date)} at {formatTime(trip.time)}
+                    {trip.returnDate && <span className="block">Through {formatDate(trip.returnDate)}</span>}
                   </p>
                   <p>
                     <span className="block text-[var(--color-neutral-500)]">Trip</span>
@@ -209,7 +214,7 @@ export default async function BookingSummaryPage({
               <div className="mt-6 flex flex-col gap-2 text-[12px] text-[var(--color-neutral-400)]">
                 <span className="flex items-center gap-2">
                   <Icon name="ph-clock-user" size={14} color="var(--color-accent)" />
-                  Replies in under 10 minutes, 6am–midnight
+                  Our team will confirm availability and your final quote
                 </span>
                 <span className="flex items-center gap-2">
                   <Icon name="ph-arrows-clockwise" size={14} color="var(--color-accent)" />

@@ -134,7 +134,7 @@ export function resolveQuote(
   // Spread order is the precedence: the router fills in, the published table
   // overwrites it where it has something to say.
   const measured = routed?.legs.length
-    ? new Map([...buildRoutedOverrides(stops, routed.legs), ...published])
+    ? new Map([...buildRoutedOverrides(stops, routed.legs, catalog.settings.pricingRules.minimumLegKm), ...published])
     : published;
 
   // Fewer than two stops is no distance. The package still has a price, and
@@ -143,9 +143,11 @@ export function resolveQuote(
     { stops, garage: garagePoint(catalog, car), tripType: trip.tripType },
     catalog.settings.circuityFactor,
     measured,
+    catalog.settings.pricingRules.minimumLegKm,
   );
 
   const quote = computeQuote({
+    pricingRules: catalog.settings.pricingRules,
     car,
     pkg,
     city,
@@ -157,6 +159,7 @@ export function resolveQuote(
     gstPercent: catalog.settings.gstPercent,
     advancePercent: catalog.settings.advancePercent,
     date: trip.date,
+    returnDate: trip.returnDate,
     seasons: catalog.seasons,
     charges: catalog.settings.charges,
     interstate: crossesStates(catalog, stops),
@@ -176,6 +179,7 @@ export function resolveQuote(
           stops,
           customer,
           date: trip.date,
+          returnDate: trip.returnDate,
           time: trip.time,
           gstPercent: catalog.settings.gstPercent,
         })
@@ -253,6 +257,7 @@ export function tripFromParams(
     customerPlace: "cust" in params ? (one("cust") ?? "") : defaults.customerPlace,
     stops,
     date: isISODate(one("date") ?? "") ? one("date")! : defaults.date,
+    returnDate: "returnDate" in params ? (isISODate(one("returnDate") ?? "") ? one("returnDate")! : "") : defaults.returnDate,
     time: isTime(one("time") ?? "") ? one("time")! : defaults.time,
     occasionSlug: one("occ") ?? defaults.occasionSlug,
     haltHours: Number.isFinite(halt) && halt >= 0 ? Math.min(halt, 12) : defaults.haltHours,
@@ -268,6 +273,7 @@ export function tripToParams(trip: TripRequest): URLSearchParams {
     cust: trip.customerPlace,
     stops: trip.stops.join("~"),
     date: trip.date,
+    returnDate: trip.returnDate ?? "",
     time: trip.time,
     occ: trip.occasionSlug,
     halt: String(trip.haltHours),

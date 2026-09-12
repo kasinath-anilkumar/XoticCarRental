@@ -9,9 +9,9 @@
 
 import type { FaqItem } from "@/components/content/FaqBlock";
 
-import { carPrice, homeCity, packageBySlug, type Catalog } from "./catalog";
-import { formatINR } from "./format";
-import { rateFor } from "./pricing";
+import { carPrice, homeCity, type Catalog } from "./catalog";
+import { formatChargePolicy, formatINR } from "./format";
+import { nightWindowLabel, rateFor } from "./pricing";
 import type { Car, City } from "./types";
 
 const NOT_SELF_DRIVE =
@@ -26,17 +26,17 @@ function bataAnswer(car?: Car): string {
   return `Bata is the chauffeur's food and accommodation allowance — ${amount}. It is charged per day of the trip rather than per hour, and it appears as its own line on every quote, never as a surprise at the end.`;
 }
 
-function nightAnswer(car?: Car): string {
+function nightAnswer(catalog: Catalog, car?: Car): string {
   const amount = car ? ` It is ${formatINR(car.nightCharge)} for this car.` : "";
-  return `Only if your pickup falls between 10pm and 6am, plus one for each overnight halt on a multi-day trip.${amount} A 9pm pickup that runs past midnight does not attract it.`;
+  return `A pickup between ${nightWindowLabel(catalog.settings.pricingRules)} carries a night charge, plus one for each overnight halt on a multi-day trip.${amount} The pickup time determines the initial night charge.`;
 }
 
-const ONE_WAY =
-  "The chauffeur has to bring the car home empty, so a one-way drop adds a return allowance of 35% of the distance at the car's extra-km rate. It is a line on the quote, and it is why a one-way drop is not simply half a round trip.";
+function oneWayAnswer(catalog: Catalog): string {
+  return `The chauffeur has to bring the car home empty, so a one-way drop adds a return allowance of ${catalog.settings.pricingRules.oneWayReturnPercent}% of the distance at the car's extra-km rate. It appears as a separate line on the quote when applicable.`;
+}
 
 function tollsAnswer(catalog: Catalog): string {
-  const excluded = catalog.settings.exclusions.slice(0, 3).join(", ").toLowerCase();
-  return `No — ${excluded} are paid at actuals on the day, with receipts. They are left out of the quote because they depend on the exact roads you take.`;
+  return formatChargePolicy(catalog.settings);
 }
 
 /** Car detail page. */
@@ -53,11 +53,11 @@ export function carFaq(catalog: Catalog, car: Car): FaqItem[] {
     },
     { q: "Is this self-drive?", a: NOT_SELF_DRIVE },
     { q: "What is driver bata?", a: bataAnswer(car) },
-    { q: "Is there a night charge?", a: nightAnswer(car) },
-    { q: "What happens on a one-way drop?", a: ONE_WAY },
+    { q: "Is there a night charge?", a: nightAnswer(catalog, car) },
+    { q: "What happens on a one-way drop?", a: oneWayAnswer(catalog) },
     {
       q: `Can I take the ${car.name} outside ${city.name}?`,
-      a: `Yes. Outstation trips run on the ${packageBySlug(catalog, "full").label} package per day, with extra km past the allowance at ${formatINR(car.extraKmRate)}/km. Interstate permits are at actuals.`,
+      a: `Outstation estimates use the selected package per rental day, with extra km past the allowance at ${formatINR(car.extraKmRate)}/km. Check the car's listed service cities and confirm the itinerary with the operator.`,
     },
     { q: "Are tolls and parking included?", a: tollsAnswer(catalog) },
     { q: "How do I pay?", a: paymentAnswer(catalog) },
@@ -81,8 +81,8 @@ export function cityFaq(catalog: Catalog, city: City): FaqItem[] {
     },
     { q: "Is this self-drive?", a: NOT_SELF_DRIVE },
     { q: "What is driver bata?", a: bataAnswer(cheapest) },
-    { q: "Is there a night charge?", a: nightAnswer(cheapest) },
-    { q: "What happens on a one-way drop?", a: ONE_WAY },
+    { q: "Is there a night charge?", a: nightAnswer(catalog, cheapest) },
+    { q: "What happens on a one-way drop?", a: oneWayAnswer(catalog) },
     { q: "Are tolls and parking included?", a: tollsAnswer(catalog) },
     {
       q: `Which pickup points do you cover in ${city.name}?`,

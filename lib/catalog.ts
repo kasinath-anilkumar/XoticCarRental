@@ -155,19 +155,27 @@ export function browseFilterOptions(catalog: Catalog): BrowseFilterOptions {
   };
 }
 
-/**
- * The budget bands the brief names (§5), as ceilings on the estimate.
- *
- * "Custom" is the empty string: any number in the URL is honoured, so a link
- * with `budget=27000` filters at ₹27,000 without the chip existing.
- */
-export const BUDGET_BANDS = [
-  { key: "10000", label: "Under ₹10,000" },
-  { key: "15000", label: "Under ₹15,000" },
-  { key: "20000", label: "Under ₹20,000" },
-  { key: "30000", label: "Under ₹30,000" },
-  { key: "30000+", label: "₹30,000+" },
-] as const;
+/** Input bound, not a suggested budget or a configured vehicle price. */
+export const MAX_BUDGET_AMOUNT = 100_000_000;
+
+/** Positive rupee amounts, including paise. Old amount+ links retain their floor. */
+export function parseBudget(value: string | undefined): string {
+  const raw = value?.trim() ?? "";
+  if (!raw || raw === "all" || raw.length > 32) return "all";
+  const match = /^(\d+(?:\.\d{1,2})?)(\+)?$/.exec(raw);
+  if (!match) return "all";
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_BUDGET_AMOUNT) return "all";
+  return `${amount}${match[2] ?? ""}`;
+}
+
+export function budgetLabel(value: string): string {
+  const budget = parseBudget(value);
+  if (budget === "all") return "Any budget";
+  const floor = budget.endsWith("+");
+  const amount = Number(floor ? budget.slice(0, -1) : budget);
+  return `${floor ? "At least" : "Up to"} ₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+}
 
 /** Invalid dates must never reach availability queries or date arithmetic. */
 export function parseBrowseDate(value: string | undefined): string {
@@ -187,7 +195,7 @@ export function parseFilters(params: Record<string, string | string[] | undefine
     seats: one("seats") ?? "all",
     sort: sort === "low" || sort === "high" ? sort : "popular",
     date: parseBrowseDate(one("date")),
-    budget: one("budget") ?? "all",
+    budget: parseBudget(one("budget")),
     near: one("cust") ?? one("from") ?? "",
     state: one("state") ?? "all",
   };
@@ -248,10 +256,11 @@ export interface FilterContext {
 }
 
 function withinBudget(estimate: number, budget: string): boolean {
-  if (budget === "all" || budget === "") return true;
-  if (budget === "30000+") return estimate >= 30_000;
-  const ceiling = Number(budget);
-  return Number.isFinite(ceiling) ? estimate <= ceiling : true;
+  const parsed = parseBudget(budget);
+  if (parsed === "all") return true;
+  return parsed.endsWith("+")
+    ? estimate >= Number(parsed.slice(0, -1))
+    : estimate <= Number(parsed);
 }
 
 export function filterCars(
@@ -369,11 +378,8 @@ export interface CityRouteFare {
   priceLarge: number | null;
 }
 
-/** Average road speed for a drive-time estimate, in km/h. */
-const AVERAGE_SPEED_KMH = 45;
-
-function driveTimeLabel(km: number): string {
-  const hours = Math.max(0.5, Math.round((km / AVERAGE_SPEED_KMH) * 2) / 2);
+function driveTimeLabel(km: number, speedKph: number): string {
+  const hours = Math.max(0.5, Math.round((km / speedKph) * 2) / 2);
   if (hours < 1) return "about 30 min";
   if (Number.isInteger(hours)) return `about ${hours} hr`;
   return `about ${Math.floor(hours)}½ hr`;
@@ -405,7 +411,7 @@ export function cityRouteFares(catalog: Catalog, city: City): CityRouteFare[] {
     const to = locationBySlug(catalog, route.toSlug);
     if (!from || !to) return [];
 
-    const km = cityRouteKm(route, fromServed(from), fromServed(to), catalog.settings.circuityFactor);
+    const km = cityRouteKm(route, fromServed(from), fromServed(to), catalog.settings.circuityFactor, catalog.settings.pricingRules.minimumLegKm);
     const best = cheapestPackageFare(catalog, cheapest, city.multiplier, km, gstMultiplier);
     if (!best) return [];
 
@@ -420,7 +426,7 @@ export function cityRouteFares(catalog: Catalog, city: City): CityRouteFare[] {
         fromSlug: route.fromSlug,
         toSlug: route.toSlug,
         km,
-        driveTime: driveTimeLabel(km),
+        driveTime: driveTimeLabel(km, catalog.settings.pricingRules.outstationSpeedKph),
         packageLabel: best.pkg.label,
         packageSlug: best.pkg.slug,
         price: best.price,
@@ -494,16 +500,10 @@ function shortName(name: string): string {
 export type TripDefaults = TripRequest;
 
 /**
- * The calculator's starting trip. `today` is passed in from the server so the
- * default pickup date is tomorrow without a clock call during render — that
- * would make the value differ between the server HTML and the hydrated client.
+ * Start with published pricing choices, but never invent a pickup or schedule.
+ * An explicitly supplied date is preserved for callers restoring a saved trip.
  */
 export function tripDefaults(catalog: Catalog, tomorrow: string): TripDefaults {
-  const firstCity = catalog.cities[0];
-  const cityLocations = catalog.locations.filter((l) => l.citySlug === firstCity?.slug);
-  const from = cityLocations[0] ?? catalog.locations[0];
-  const to = cityLocations.find((l) => l.isAirport) ?? cityLocations[1] ?? catalog.locations[1];
-
   return {
     carSlug: catalog.cars[0]?.slug ?? "",
     packageSlug: catalog.packages[0]?.slug ?? "",
@@ -511,12 +511,12 @@ export function tripDefaults(catalog: Catalog, tomorrow: string): TripDefaults {
     // The customer's own location starts empty: it is theirs to give, and the
     // estimate does not need it.
     customerPlace: "",
-    stops: [from?.slug ?? "", to?.slug ?? "", from?.slug ?? ""].filter(Boolean),
+    stops: ["", ""],
     date: tomorrow,
-    time: "09:00",
+    time: "",
     occasionSlug:
       catalog.occasions.find((o) => o.surcharge === 0)?.slug ?? catalog.occasions[0]?.slug ?? "",
-    haltHours: 2,
+    haltHours: 0,
   };
 }
 

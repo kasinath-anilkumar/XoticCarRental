@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Icon } from "@/components/ui/Icon";
-import { BUDGET_BANDS, statesOf, type CarFilters, type Catalog } from "@/lib/catalog";
+import { MAX_BUDGET_AMOUNT, budgetLabel, statesOf, type CarFilters, type Catalog } from "@/lib/catalog";
 import { GENERAL_ENQUIRY_MESSAGE, whatsappLink } from "@/lib/whatsapp";
 
 
@@ -67,17 +67,6 @@ export function FilterSidebar({ catalog, filters, baseParams }: FilterSidebarPro
         { key: "8", label: "8+" },
       ],
     },
-    {
-      // §5: these read against the ESTIMATED trip rate — the package at this
-      // city's multiplier, the driver's allowance, the run from the yard and
-      // the tax — not the headline base rate.
-      label: "Budget",
-      param: "budget",
-      options: [
-        { key: "all", label: "Any" },
-        ...BUDGET_BANDS.map((band) => ({ key: band.key, label: band.label })),
-      ],
-    },
   ];
 
   const hrefFor = (param: string, value: string) => {
@@ -122,7 +111,7 @@ export function FilterSidebar({ catalog, filters, baseParams }: FilterSidebarPro
           Travelling on
         </label>
         {[...baseParams].map(([key, value]) =>
-          key === "date" ? null : <input key={key} type="hidden" name={key} value={value} />,
+          key === "date" || key === "page" ? null : <input key={key} type="hidden" name={key} value={value} />,
         )}
         <div className="flex flex-wrap gap-2">
           <input
@@ -140,6 +129,21 @@ export function FilterSidebar({ catalog, filters, baseParams }: FilterSidebarPro
         <p className="mt-2 text-[11px] text-[var(--color-neutral-400)]">
           Hides vehicles already booked that day.
         </p>
+      </form>
+
+      <form method="get" action="/cars" aria-label="Budget filter" className="mb-6">
+        <label htmlFor="filter-budget" className="mb-2 block text-[12px] text-[var(--color-neutral-400)]">Maximum estimated amount (₹)</label>
+        {[...baseParams].map(([key, value]) => key === "budget" || key === "page" ? null : <input key={key} type="hidden" name={key} value={value} />)}
+        <input key={filters.budget} id="filter-budget" name="budget" className="input w-full" type="number" inputMode="decimal"
+          min="0.01" max={MAX_BUDGET_AMOUNT} step="0.01" placeholder="Any amount"
+          defaultValue={filters.budget === "all" || filters.budget.endsWith("+") ? "" : filters.budget}
+          aria-describedby="filter-budget-help" />
+        <p id="filter-budget-help" className="mt-2 text-[11px] text-[var(--color-neutral-400)]">Leave blank for any budget. Filters the estimated trip rate, including applicable driver allowance and tax.</p>
+        {filters.budget.endsWith("+") && <p className="mt-2 text-[12px]">Current link filter: {budgetLabel(filters.budget)}</p>}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="submit" className="btn btn-secondary text-[12px]">Apply budget</button>
+          {filters.budget !== "all" && <Link href={hrefFor("budget", "all")} className="btn btn-ghost text-[12px]">Clear budget</Link>}
+        </div>
       </form>
 
       {groups.map((group) => (

@@ -101,7 +101,7 @@ export default async function CitiesPage() {
             </div>
             <div className="px-4">
               <p className="font-[family-name:var(--font-heading)] text-[22px] font-semibold text-[var(--color-accent-300)] max-md:text-[18px]">
-                {totalRoutes}+
+                {totalRoutes}
               </p>
               <p className="text-[11px] uppercase tracking-wider text-[var(--color-neutral-500)]">
                 Intercity Routes
@@ -129,8 +129,8 @@ export default async function CitiesPage() {
             <p className="kick">Published fares</p>
             <h2 className="h2 m-0">Popular intercity routes</h2>
             <p className="mt-1 max-w-[65ch] text-[13.5px] text-[var(--color-neutral-400)]">
-              Measured road distances with guaranteed fixed pricing. Unlisted routes can be priced
-              instantly with our calculator.
+              Published route estimates. Add your pickup, drop and schedule in the calculator
+              for the applicable trip charges.
             </p>
           </div>
           <Link href="/price-calculator" className="btn btn-ghost text-[13px]">

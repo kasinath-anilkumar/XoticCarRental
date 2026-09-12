@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 const port = 3100;
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "admin-controls.spec.ts",
   fullyParallel: true,
   workers: 2,
   timeout: 45_000,

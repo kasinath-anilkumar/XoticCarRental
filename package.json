@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit --incremental false",
     "test:db": "node --test backend/scripts/test-db.cjs backend/scripts/test-migrations.cjs",
     "migrate": "npm --prefix backend run migrate",
-    "seed": "npm --prefix backend run seed"
+    "seed": "npm --prefix backend run seed",
+    "create-admin": "npm --prefix backend run create-admin --",
+    "seed:services": "node backend/scripts/seed-services.js"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

@@ -20,6 +20,7 @@ export function CityCard({ city, rail = false }: { city: City; rail?: boolean })
   return (
     <Link
       href={`/cities/${city.slug}`}
+      prefetch={false}
       className={`on-dark group relative block overflow-hidden rounded-md bg-slot text-text no-underline ${size}`}
     >
       <Media

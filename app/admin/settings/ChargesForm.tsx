@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import type { ExtraCharge } from "@/lib/types";
 
@@ -30,44 +30,13 @@ const APPLIES = [
 export function ChargesForm({ charges }: { charges: ExtraCharge[] }) {
   const [state, formAction, pending] = useActionState(updateCharges, null);
 
-  const rows =
-    charges.length > 0
-      ? charges
-      : [
-          {
-            key: "permit",
-            label: "Interstate permit",
-            note: "Border permit for a vehicle leaving its home state",
-            amount: 1500,
-            appliesTo: "interstate" as const,
-            isActive: false,
-          },
-          {
-            key: "tolls",
-            label: "Toll allowance",
-            note: "Highway tolls on an outstation run",
-            amount: 800,
-            appliesTo: "outstation" as const,
-            isActive: false,
-          },
-          {
-            key: "parking",
-            label: "Parking allowance",
-            note: "Venue and airport parking",
-            amount: 300,
-            appliesTo: "always" as const,
-            isActive: false,
-          },
-        ];
-
-  const anyOn = rows.some((row) => row.isActive);
+  const [rows, setRows] = useState<Array<Omit<ExtraCharge, "amount"> & { amount: number | string }>>(charges);
 
   return (
     <section className={styles.card}>
       <h2 className={styles.cardTitle}>Tolls, parking and permits</h2>
       <p className={styles.cardHint}>
-        Off by default, because the site tells customers these are paid at actuals. Switch one on
-        and it becomes its own line on every matching quote — and the &ldquo;at actuals&rdquo; line
+        Add a configured charge and enable it to include a separate line on every matching quote — and the &ldquo;at actuals&rdquo; line
         in <strong>Not included</strong> above needs editing to match, or the page will say both
         things at once.
       </p>
@@ -89,6 +58,7 @@ export function ChargesForm({ charges }: { charges: ExtraCharge[] }) {
                 name={`label-${index}`}
                 className="input"
                 defaultValue={row.label}
+                required
                 style={{ maxWidth: "190px", flex: 1 }}
                 aria-label={`Name for ${row.key}`}
               />
@@ -100,7 +70,8 @@ export function ChargesForm({ charges }: { charges: ExtraCharge[] }) {
                   className="input"
                   type="number"
                   min={0}
-                  step={50}
+                  step="0.01"
+                  required
                   defaultValue={row.amount}
                   style={{ maxWidth: "100px" }}
                   aria-label={`Amount for ${row.label}`}
@@ -139,16 +110,13 @@ export function ChargesForm({ charges }: { charges: ExtraCharge[] }) {
                 />
                 Bill it
               </label>
+              <button type="button" className="btn btn-ghost" onClick={() => setRows((current) => current.filter((item) => item.key !== row.key))}>Remove charge</button>
             </div>
           </div>
         ))}
 
         <div className={styles.actions}>
-          <span className={styles.muted} style={{ fontSize: "12px" }}>
-            {anyOn
-              ? "At least one is billed — check the “Not included” list still reads true."
-              : "All off: quotes say these are paid at actuals."}
-          </span>
+          <button type="button" className="btn btn-secondary" disabled={rows.length >= 20} onClick={() => setRows((current) => [...current, { key: crypto.randomUUID(), label: "", note: "", amount: "", appliesTo: "always", isActive: false }])}>Add charge</button>
           <button type="submit" className="btn btn-primary" disabled={pending}>
             {pending ? "Saving…" : "Save charges"}
           </button>

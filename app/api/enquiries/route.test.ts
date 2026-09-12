@@ -37,6 +37,15 @@ beforeEach(() => {
 });
 
 describe("quote enquiry API", () => {
+  it("uses inclusive selected dates for availability and persists the return date", async () => {
+    const returnDate = addDays(date, 2);
+    const resolved = await resolveRoutedQuote();
+    resolveRoutedQuote.mockResolvedValue({ ...resolved, quote: { ...resolved.quote, days: 3 } });
+    expect((await POST(request({ ...valid, returnDate }))).status).toBe(200);
+    expect(resolveRoutedQuote).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ returnDate }));
+    expect(listAvailability).toHaveBeenCalledWith("sedan", { from: date, to: returnDate });
+    expect(createLead).toHaveBeenCalledWith(expect.objectContaining({ days: 3, details: [{ label: "Return date", value: returnDate }] }));
+  });
   it.each(["catalogue", "storage-only"])("never prices or records seed data with a failed %s configuration", async (configured) => {
     isSupabaseConfigured.mockReturnValue(configured === "catalogue");
     canRecordEnquiries.mockReturnValue(configured === "storage-only");
@@ -64,6 +73,9 @@ describe("quote enquiry API", () => {
   });
   it.each([
     { ...valid, time: "25:61" },
+    { ...valid, returnDate: addDays(date, -1) },
+    { ...valid, returnDate: addDays(date, 30) },
+    { ...valid, returnDate: "2026-02-30" },
     { ...valid, stops: ["@10,76,Pickup", "", "@10.1,76.1,Drop"] },
     { ...valid, stops: Array(13).fill("@10,76,Pickup") },
     { ...valid, carSlug: "unknown" },

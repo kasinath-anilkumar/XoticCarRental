@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/admin/auth";
+import { parsePricingRules } from "@/lib/pricing-rules";
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
 import { AdminForm, Field, TextArea } from "../AdminForm";
@@ -37,6 +38,9 @@ export default async function AdminSettingsPage() {
     );
   }
 
+  let pricingRules;
+  try { pricingRules = parsePricingRules(settings.pricing_rules); } catch { /* Missing values remain blank so staff can configure them. */ }
+
   return (
     <AdminShell email={admin.email}>
       <AdminPageHead
@@ -57,7 +61,7 @@ export default async function AdminSettingsPage() {
               label="WhatsApp number"
               name="whatsapp_number"
               defaultValue={settings.whatsapp_number}
-              hint="e.g. 919876543210"
+              hint="Enter the configured business number, including its country code."
               required
             />
             <Field
@@ -98,8 +102,22 @@ export default async function AdminSettingsPage() {
               type="number"
               step="0.01"
               defaultValue={settings.circuity_factor}
-              hint="Straight-line km × this = road km. 1.25 is a good default for India. Routes with a published distance ignore it."
+              hint="Straight-line distance multiplied by this factor estimates road distance. Published route distances take precedence."
             />
+          </div>
+        </section>
+
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>Operating rules</h2>
+          <p className={styles.cardHint}>These values control estimated driving time, the one-way return charge and the night charge window. Hours use the 24-hour clock in India Standard Time.</p>
+          {!pricingRules && <p className={styles.messageError}>Pricing rules are missing or invalid. Enter every rule before saving.</p>}
+          <div className={styles.grid3}>
+            <Field label="Minimum distance per moving leg (km)" name="minimumLegKm" type="number" step="0.1" min={0} max={100} defaultValue={pricingRules?.minimumLegKm} required hint="The billing floor for each moving leg, including garage travel. Use zero to remove the floor." />
+            <Field label="Local average speed (km/h)" name="localSpeedKph" type="number" step="0.1" min={1} max={160} defaultValue={pricingRules?.localSpeedKph} required />
+            <Field label="Outstation average speed (km/h)" name="outstationSpeedKph" type="number" step="0.1" min={1} max={160} defaultValue={pricingRules?.outstationSpeedKph} required />
+            <Field label="One-way return charge (%)" name="oneWayReturnPercent" type="number" step="0.1" min={0} max={100} defaultValue={pricingRules?.oneWayReturnPercent} required />
+            <Field label="Night charge starts (hour)" name="nightStartHour" type="number" step="1" min={0} max={23} defaultValue={pricingRules?.nightStartHour} required />
+            <Field label="Night charge ends (hour)" name="nightEndHour" type="number" step="1" min={0} max={23} defaultValue={pricingRules?.nightEndHour} required />
           </div>
         </section>
 

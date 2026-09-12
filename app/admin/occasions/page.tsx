@@ -1,3 +1,8 @@
+import { ListFilters } from "@/components/admin/ListFilters";
+import { Pagination } from "@/components/ui/Pagination";
+import { adminListRequest, checkAdminPage, type AdminSearchParams } from "@/lib/admin/list";
+import { searchPattern } from "@/lib/admin/references";
+import { ADMIN_PAGE_SIZE } from "@/lib/pagination";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 
@@ -9,7 +14,7 @@ import { styles } from "../styles";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminOccasionsPage() {
+export default async function AdminOccasionsPage({ searchParams }: { searchParams: AdminSearchParams }) {
   const admin = await requireAdmin();
   if (!isSupabaseConfigured()) {
     return (
@@ -23,7 +28,12 @@ export default async function AdminOccasionsPage() {
   }
   const supabase = await createSupabaseServerClient();
 
-  const { data: occasions, error } = await supabase.from("occasions").select("*").order("sort");
+  const request = adminListRequest(await searchParams);
+  let builder = supabase.from("occasions").select("*", { count: "exact" }).order("sort").order("id");
+  if (request.q) builder = builder.ilike("name", searchPattern(request.q));
+  const result = await builder.range(request.offset, request.end);
+  const total = checkAdminPage(result, request, "/admin/occasions");
+  const { data: occasions, error } = result;
 
   return (
     <AdminShell email={admin.email}>
@@ -34,6 +44,7 @@ export default async function AdminOccasionsPage() {
 
       {error && <p className={styles.messageError}>{error.message}</p>}
 
+      <ListFilters path="/admin/occasions" q={request.q} />
       {(occasions ?? []).map((occasion) => (
         <AdminForm key={occasion.id} action={updateOccasion} submitLabel={`Save ${occasion.name}`}>
           <section className={styles.card}>
@@ -84,6 +95,7 @@ export default async function AdminOccasionsPage() {
           </section>
         </AdminForm>
       ))}
+      <Pagination total={total} page={request.page} pageSize={ADMIN_PAGE_SIZE} path="/admin/occasions" query={request.query} label="occasions" />
     </AdminShell>
   );
 }

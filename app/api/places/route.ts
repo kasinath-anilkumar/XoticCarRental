@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     : await searchPlaces(query, { limit: MAX_RESULTS, near, signal: request.signal });
 
   // The index only ever speaks when the geocoder could not.
-  const places = live.places.length
+  const places = live.ok || request.signal.aborted
     ? live.places
     : (await searchIndex(query, MAX_RESULTS)).map((match) => toGeoPlace(match.place));
 
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       // not cached at all — it would outlive the outage that caused it.
       headers: {
         "Cache-Control": live.ok
-          ? "public, max-age=600, stale-while-revalidate=86400"
+          ? near ? "private, max-age=600" : "public, max-age=600, stale-while-revalidate=86400"
           : "no-store",
       },
     },

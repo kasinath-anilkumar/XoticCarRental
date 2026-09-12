@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, Suspense, useContext, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import type { Package } from "@/lib/types";
 
@@ -39,8 +40,20 @@ export function PackageSelectionProvider({
   );
 
   return (
-    <PackageSelectionContext.Provider value={value}>{children}</PackageSelectionContext.Provider>
+    <PackageSelectionContext.Provider value={value}>
+      <Suspense fallback={null}><PackageFromQuery packages={packages} onSelect={setSlug} /></Suspense>
+      {children}
+    </PackageSelectionContext.Provider>
   );
+}
+
+function PackageFromQuery({ packages, onSelect }: { packages: Package[]; onSelect: (slug: string) => void }) {
+  const query = useSearchParams();
+  const slug = query.get("pkg");
+  useEffect(() => {
+    if (slug && packages.some((pkg) => pkg.slug === slug)) onSelect(slug);
+  }, [slug, packages, onSelect]);
+  return null;
 }
 
 export function usePackageSelection(): PackageSelectionValue {

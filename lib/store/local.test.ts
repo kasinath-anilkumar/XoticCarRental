@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createLocalStore } from "./local";
+import { leadDateStamp } from "../leads";
 import type { Lead, Store } from "./types";
 
 let directory: string;
@@ -24,6 +25,25 @@ beforeEach(async () => {
 afterEach(async () => { await rm(directory, { recursive: true, force: true }); });
 
 describe("local storage integrity and pagination", () => {
+  it("serializes colliding prefixes across arbitrary new services", async () => {
+    const rows = await Promise.all(["executive-shuttle", "executive-transfer", "executive-travel"].map((serviceSlug) => store.createLead({ ...lead, serviceSlug })));
+    expect(rows.map((row) => row.leadId.split("-")[0])).toEqual(["EXECUTIV", "EXECUTIV", "EXECUTIV"]);
+    expect(rows.map((row) => row.leadId.split("-")[2])).toEqual(["001", "002", "003"]);
+    expect(new Set(rows.map((row) => row.serviceSlug)).size).toBe(3);
+  });
+
+  it("keeps legacy references readable after generating new-format enquiries", async () => {
+    const stamp = leadDateStamp(new Date());
+    const legacy: Lead = { ...lead, id: "legacy-row", createdAt: new Date().toISOString(), leadId: `WED-${stamp}-1000` };
+    await writeFile(file, JSON.stringify({ leads: [legacy], availability: [] }), "utf8");
+    const collision = await store.createLead({ ...lead, serviceSlug: "wed" });
+    const current = await store.createLead(lead);
+    expect(collision.leadId).toBe(`WED-${stamp}-1001`);
+    expect(current.leadId).toBe(`WEDDING-${stamp}-001`);
+    const rows = await store.listLeadsPage({}, 1, 10);
+    expect(rows.items.find((row) => row.leadId === legacy.leadId)).toEqual(legacy);
+    expect(await store.leadIdsFor(stamp)).toContain(legacy.leadId);
+  });
   it("records simultaneous submissions with distinct sequential references", async () => {
     const rows = await Promise.all(Array.from({ length: 30 }, () => store.createLead(lead)));
     expect(new Set(rows.map((row) => row.leadId)).size).toBe(30);

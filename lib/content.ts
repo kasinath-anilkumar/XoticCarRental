@@ -3,10 +3,11 @@ import "server-only";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { cache } from "react";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isSupabaseConfigured } from "./supabase/server";
-import { PUBLIC_CATALOG_REVALIDATE, PUBLIC_CATALOG_TAG } from "./catalog-cache";
+import { createPublicClient } from "./public-db";
+import { parsePricingRules } from "./pricing-rules";
 import { readKeysetPages } from "./pagination";
 import type {
   Garage,
@@ -52,17 +53,7 @@ export interface Catalog {
  */
 export const getCatalog = cache(async (): Promise<Catalog> => {
   if (!isSupabaseConfigured()) return seedCatalog();
-  try {
-    return await fetchCatalog();
-  } catch (error) {
-    // A misconfigured or unreachable database should not take the marketing
-    // site down; fall back to the seeded content and say so in the log.
-    // A new developer's project may not have its schema yet. Keep the warning
-    // visible without opening a development error overlay over the fallback.
-    const report = process.env.NODE_ENV === "development" ? console.warn : console.error;
-    report("[content] Supabase read failed, falling back to seed content:", error);
-    return seedCatalog();
-  }
+  return fetchCatalog();
 });
 
 // ── database ────────────────────────────────────────────────────────────────
@@ -70,20 +61,7 @@ export const getCatalog = cache(async (): Promise<Catalog> => {
 async function fetchCatalog(): Promise<Catalog> {
   // Never attach staff cookies to shared data. Aside from fragmenting the
   // cache, an admin session can read unpublished relations through RLS.
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-      global: {
-        fetch: (input, init) => fetch(input, {
-          ...init,
-          cache: "force-cache",
-          next: { revalidate: PUBLIC_CATALOG_REVALIDATE, tags: [PUBLIC_CATALOG_TAG] },
-        }),
-      },
-    },
-  );
+  const supabase = createPublicClient();
 
   const [cities, locations, garages, packages, occasions, cars, carTypes, cityRoutes, seasons, settings] =
     await Promise.all([
@@ -96,22 +74,28 @@ async function fetchCatalog(): Promise<Catalog> {
       readPublicRows(supabase, "car_types", "*", false),
       readPublicRows(supabase, "city_routes", "*, cities(slug), from_location:locations!city_routes_from_location_id_fkey(slug), to_location:locations!city_routes_to_location_id_fkey(slug)"),
       readPublicRows(supabase, "seasons"),
-      supabase.from("site_settings").select("*").limit(1).maybeSingle(),
+      supabase.from("site_settings").select("whatsapp_number,phone_display,email,gst_percent,advance_percent,circuity_factor,inclusions,exclusions,why_items,charges,pricing_rules").limit(1).maybeSingle(),
     ]);
 
   if (settings.error) throw settings.error;
 
   const cityById = new Map<string, string>();
   for (const row of cities) cityById.set(row.id, row.slug);
+  const publishedCities = new Set(cities.map((row) => row.slug));
+  // A vehicle whose base has been unpublished must not disable pricing for
+  // the rest of the fleet or contribute to public location counts.
+  const publicCars = cars.map(mapCar).filter((car) => publishedCities.has(car.homeCitySlug));
+  const cityCounts = new Map<string, number>();
+  for (const car of publicCars) cityCounts.set(car.homeCitySlug, (cityCounts.get(car.homeCitySlug) ?? 0) + 1);
 
   return {
     live: true,
-    cities: cities.map(mapCity),
+    cities: cities.map((row) => ({ ...mapCity(row), carCount: cityCounts.get(row.slug) ?? 0 })),
     locations: locations.map((row) => mapLocation(row, cityById)),
     garages: garages.map(mapGarage),
     packages: packages.map(mapPackage),
     occasions: occasions.map(mapOccasion),
-    cars: cars.map(mapCar),
+    cars: publicCars,
     carTypes: carTypes.map((row) => row.name as string),
     cityRoutes: cityRoutes.map(mapCityRoute),
     seasons: seasons.sort((a, b) => a.starts_on.localeCompare(b.starts_on)).map(mapSeason),
@@ -271,8 +255,9 @@ function mapSeason(row: any): Season {
 }
 
 function mapSettings(row: any): SiteSettings {
-  if (!row) return seedSettings();
+  if (!row) throw new Error("Publish site settings before accepting live enquiries.");
   return {
+    pricingRules: parsePricingRules(row.pricing_rules),
     whatsappNumber: row.whatsapp_number,
     phoneDisplay: row.phone_display,
     email: row.email,

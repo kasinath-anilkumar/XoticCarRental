@@ -27,7 +27,7 @@ export function ScrollHero({ frames }: { frames: string[] }) {
 
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
     // Short screens need a normally scrolling hero so every action stays reachable.
-    const compactViewport = window.matchMedia("(max-height: 699px) and (max-width: 767px), (max-height: 499px)");
+    const compactViewport = window.matchMedia("(max-height: 699px) and (max-width: 767px), (max-height: 599px)");
     const connection = (navigator as Navigator & {
       connection?: EventTarget & { saveData?: boolean };
     }).connection;
@@ -46,45 +46,82 @@ export function ScrollHero({ frames }: { frames: string[] }) {
 
       let visible = true;
       let scheduled = 0;
+      let active = false;
+      let prepared = false;
+      let geometryDirty = true;
+      let start = 0;
+      let distance = 1;
+      let mobile = false;
+      let progress = 0;
+      let previousTime = 0;
+      const activate = () => {
+        surface.style.opacity = "1";
+        root.dataset.motion = "true";
+        active = true;
+        geometryDirty = true;
+      };
       const player = createHeroSequence({
         canvas: surface,
         frames,
         onReady: () => {
-          surface.style.opacity = "1";
-          root.dataset.motion = "true";
+          prepared = true;
+          // Late loading must not add scroll distance above someone who has
+          // already continued to the booking form. Activate on returning up.
+          if (window.scrollY <= start + 1 && !document.hidden) activate();
           schedule();
         },
         onFrame: (index) => { root.dataset.frame = String(index); },
       });
 
-      const update = () => {
-        scheduled = 0;
-        if (!visible || document.hidden || !root.dataset.motion) return;
-        const rect = root.getBoundingClientRect();
+      // Geometry changes on resize/readiness, not on every scroll frame.
+      const measure = () => {
+        geometryDirty = false;
+        const bounds = media.getBoundingClientRect();
         const stage = root.firstElementChild as HTMLElement;
-        const distance = Math.max(1, root.offsetHeight - stage.offsetHeight);
-        const progress = Math.min(1, Math.max(0, -rect.top / distance));
-        const mobile = window.innerWidth < 768;
+        start = root.getBoundingClientRect().top + window.scrollY;
+        distance = Math.max(1, root.offsetHeight - stage.offsetHeight);
+        mobile = window.innerWidth < 768;
+        player.resize(bounds.width, bounds.height, mobile);
+      };
+      const update = (time: number) => {
+        scheduled = 0;
+        if (!visible || document.hidden) { previousTime = 0; return; }
+        if (!active) {
+          if (!prepared || window.scrollY > start + 1) return;
+          activate();
+        }
+        if (geometryDirty) measure();
+        const target = Math.min(1, Math.max(0, (window.scrollY - start) / distance));
+        // Ease coarse mouse-wheel steps over a short, frame-rate-independent
+        // interval. Native page scrolling, touch and keyboard remain in charge.
+        const elapsed = previousTime ? Math.min(64, time - previousTime) : 16;
+        previousTime = time;
+        progress = Math.abs(target - progress) < 0.0005
+          ? target
+          : progress + (target - progress) * (1 - Math.exp(-elapsed / 80));
         player.seek(Math.round(progress * (frames.length - 1)));
         if (copy.current) {
-          copy.current.style.opacity = mobile ? "1" : String(Math.max(0, 1 - progress * 2.6));
-          copy.current.style.transform = mobile ? "none" : `translate3d(0, ${-progress * 48}px, 0)`;
+          copy.current.style.opacity = mobile ? "1" : Math.max(0, 1 - progress * 2.6).toFixed(3);
+          copy.current.style.transform = mobile ? "none" : `translate3d(0, ${(-progress * 48).toFixed(2)}px, 0)`;
         }
-        if (actions.current) actions.current.inert = !mobile && progress > 0.28;
-        if (outro.current) outro.current.style.opacity = mobile ? "0" : String(Math.min(1, Math.max(0, (progress - 0.55) * 4)));
-        if (progressBar.current) progressBar.current.style.transform = `scaleX(${progress})`;
+        const inert = !mobile && progress > 0.28;
+        if (actions.current && actions.current.inert !== inert) actions.current.inert = inert;
+        if (outro.current) outro.current.style.opacity = mobile ? "0" : Math.min(1, Math.max(0, (progress - 0.55) * 4)).toFixed(3);
+        if (progressBar.current) progressBar.current.style.transform = `scaleX(${progress.toFixed(4)})`;
+        if (progress !== target) schedule();
+        else previousTime = 0;
       };
       const schedule = () => {
         if (!scheduled && visible && !document.hidden) scheduled = requestAnimationFrame(update);
       };
       const resize = () => {
-        const bounds = media.getBoundingClientRect();
-        player.resize(bounds.width, bounds.height, window.innerWidth < 768);
+        geometryDirty = true;
         schedule();
       };
       const observer = new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
         if (visible) schedule();
+        else { cancelAnimationFrame(scheduled); scheduled = 0; previousTime = 0; }
       });
       observer.observe(root);
       const sizeObserver = new ResizeObserver(resize);
@@ -92,7 +129,7 @@ export function ScrollHero({ frames }: { frames: string[] }) {
       window.addEventListener("scroll", schedule, { passive: true });
       window.addEventListener("resize", resize, { passive: true });
       document.addEventListener("visibilitychange", schedule);
-      resize();
+      measure();
 
       stop = () => {
         cancelAnimationFrame(scheduled);

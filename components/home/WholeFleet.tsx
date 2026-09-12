@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { CarCard } from "@/components/CarCard";
 import { Icon } from "@/components/ui/Icon";
@@ -13,6 +13,8 @@ export interface WholeFleetProps {
   defaultPackage: Package;
 }
 
+const FLEET_PAGE_SIZE = 6;
+
 /**
  * Redesigned "The Whole Fleet" showcase for the homepage.
  *
@@ -22,16 +24,25 @@ export interface WholeFleetProps {
  */
 export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [visibleCount, setVisibleCount] = useState(FLEET_PAGE_SIZE);
+  const gridId = useId();
 
   const categories = useMemo(() => {
-    const types = [...new Set(catalog.cars.map((car) => car.type))];
-    return ["all", ...types];
+    const types = new Map<string, { key: string; label: string; count: number }>();
+    for (const car of catalog.cars) {
+      const key = car.type;
+      const category = types.get(key);
+      if (category) category.count += 1;
+      else types.set(key, { key, label: car.type, count: 1 });
+    }
+    return [{ key: "all", label: "All Fleet", count: catalog.cars.length }, ...types.values()];
   }, [catalog.cars]);
 
   const filteredCars = useMemo(() => {
     if (activeCategory === "all") return catalog.cars;
     return catalog.cars.filter((car) => car.type.toLowerCase() === activeCategory.toLowerCase());
   }, [catalog.cars, activeCategory]);
+  const visibleCars = filteredCars.slice(0, visibleCount);
 
   const uniqueHomeCitiesCount = useMemo(() => {
     return new Set(catalog.cars.map((car) => car.homeCitySlug)).size;
@@ -59,10 +70,10 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
         </div>
         <div className="px-4 py-3.5 text-center max-md:px-2 max-md:py-2.5">
           <p className="font-[family-name:var(--font-heading)] text-[24px] font-semibold text-[var(--color-accent-300)] max-md:text-[18px]">
-            24/7
+            {catalog.packages.length}
           </p>
           <p className="mt-1 text-[11px] uppercase tracking-wider text-[var(--color-neutral-400)] max-md:text-[9.5px]">
-            Concierge support
+            Rental packages
           </p>
         </div>
       </div>
@@ -71,27 +82,28 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-divider)] pb-4">
         <div className="flex flex-wrap items-center gap-2 overflow-x-auto [scrollbar-width:none]">
           {categories.map((category) => {
-            const isActive = activeCategory === category;
-            const count =
-              category === "all"
-                ? catalog.cars.length
-                : catalog.cars.filter((c) => c.type.toLowerCase() === category.toLowerCase()).length;
+            const isActive = activeCategory === category.key;
 
             return (
               <button
-                key={category}
+                key={category.key}
                 type="button"
-                onClick={() => setActiveCategory(category)}
+                onClick={() => {
+                  if (isActive) return;
+                  setActiveCategory(category.key);
+                  setVisibleCount(FLEET_PAGE_SIZE);
+                }}
                 aria-pressed={isActive}
+                aria-controls={gridId}
                 className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all ${
                   isActive
                     ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
                     : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
                 }`}
               >
-                <span className="capitalize">{category === "all" ? "All Fleet" : category}</span>
+                <span className="capitalize">{category.label}</span>
                 <span className="text-[11px]">
-                  ({count})
+                  ({category.count})
                 </span>
               </button>
             );
@@ -108,16 +120,32 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
       </div>
 
       {/* Responsive Luxury Fleet Grid */}
-      <div className="grid grid-cols-3 gap-6 max-lg:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
-        {filteredCars.map((car, index) => (
+      <div id={gridId} className="grid grid-cols-3 gap-6 max-lg:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
+        {visibleCars.map((car) => (
           <CarCard
             key={car.slug}
             catalog={catalog}
             car={car}
             pkg={defaultPackage}
-            priority={index < 3}
           />
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <output className="text-[13px] text-[var(--color-neutral-400)]">
+          Showing {visibleCars.length} of {filteredCars.length} cars
+        </output>
+        {filteredCars.length > FLEET_PAGE_SIZE && (
+          <button
+            type="button"
+            className="btn btn-secondary min-h-[44px]"
+            aria-controls={gridId}
+            disabled={visibleCars.length >= filteredCars.length}
+            onClick={() => setVisibleCount((count) => count + FLEET_PAGE_SIZE)}
+          >
+            {visibleCars.length < filteredCars.length ? "Show more cars" : "All cars shown"}
+          </button>
+        )}
       </div>
 
       {/* Pricing Transparency Footnote */}

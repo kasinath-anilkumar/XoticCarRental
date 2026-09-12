@@ -80,7 +80,7 @@ export function GalleryLightbox({ items, index, onIndexChange, onClose, whatsapp
         <div className="relative h-full w-full max-w-[88vw] overflow-hidden rounded-lg">
           <Image
             src={activeLightboxItem.src}
-            alt={`${activeLightboxItem.categoryName} — frame ${activeLightboxItem.index}`}
+            alt={activeLightboxItem.alt}
             fill
             loading="eager"
             sizes="90vw"
@@ -113,16 +113,16 @@ export function GalleryLightbox({ items, index, onIndexChange, onClose, whatsapp
 
           <div className="flex items-center gap-2 max-md:w-full">
             <Link
-              href={`/services/${activeLightboxItem.serviceSlug}`}
+              href={activeLightboxItem.carHref}
               className="btn btn-primary min-h-[40px] flex-1 text-[12px] justify-center"
             >
-              <span>Book this service</span>
+              <span>View this car</span>
               <Icon name="ph-arrow-right" size={13} />
             </Link>
             <a
               href={whatsappLink(
                 whatsappNumber,
-                `Hi Xotic, I was viewing the gallery for ${activeLightboxItem.categoryName} (Photo #${activeLightboxItem.index}) and would like to enquire about availability.`,
+                `Hi, I was viewing ${activeLightboxItem.alt} (${activeLightboxItem.carHref}) and would like to enquire about availability.`,
               )}
               target="_blank"
               rel="noopener noreferrer"

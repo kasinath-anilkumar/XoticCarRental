@@ -20,9 +20,11 @@ import { decodeFreePlace, encodeFreePlace, fromServed, resolvePlace } from "./pl
 import { freeThrough, unavailableOn } from "./availability";
 import { seasonCovers, seasonFor } from "./seasons";
 import { leadDateStamp, nextLeadId } from "./leads";
-import { resolveQuote } from "./quote";
+import { resolveQuote, tripFromParams, tripToParams } from "./quote";
+import { parsePricingRules } from "./pricing-rules";
 import {
   carPrice,
+  cityRouteFares,
   estimatedFrom,
   filterCars,
   parseFilters,
@@ -41,6 +43,7 @@ import type {
   Package,
   PricingInput,
   Season,
+  TripRequest,
 } from "./types";
 
 /**
@@ -183,8 +186,11 @@ const celebrity = occasion(
   "Privacy fit-out, route plan, standby at venue",
 );
 
+const pricingRules = { minimumLegKm: 6, localSpeedKph: 32, outstationSpeedKph: 52, oneWayReturnPercent: 35, nightStartHour: 22, nightEndHour: 6 };
+
 function input(overrides: Partial<PricingInput> = {}): PricingInput {
   return {
+    pricingRules,
     car: eclass,
     pkg: p8,
     city: kochi,
@@ -198,6 +204,47 @@ function input(overrides: Partial<PricingInput> = {}): PricingInput {
     ...overrides,
   };
 }
+
+describe("configured operational pricing and rental dates", () => {
+  it("uses configured speed, return allowance and night window in amounts and descriptions", () => {
+    const rules = { ...pricingRules, localSpeedKph: 16, oneWayReturnPercent: 10, nightStartHour: 21 };
+    expect(computeQuote(input({ pricingRules: rules, km: 64, haltHours: 0 })).hours).toBe(4);
+    const quote = computeQuote(input({ pricingRules: rules, tripType: "oneway", km: 100, time: "21:30" }));
+    expect(quote.nightStart).toBe(true);
+    expect(quote.lines.find((line) => line.label === "One-way driver return")).toMatchObject({ amount: 340, note: "10% of 100 km at ₹34/km" });
+    expect(quote.lines.find((line) => line.label.startsWith("Night charge"))?.note).toContain("9:00 pm and 6:00 am");
+  });
+
+  it("bills all selected inclusive rental dates even when driving takes only an hour", () => {
+    const quote = computeQuote(input({ km: 20, haltHours: 0, date: "2028-02-28", returnDate: "2028-03-01" }));
+    expect(quote).toMatchObject({ days: 3, includedKm: 240, includedHours: 24 });
+    expect(quote.lines[0]!.amount).toBe(19_500);
+    expect(quote.lines.find((line) => line.label.startsWith("Driver allowance"))?.amount).toBe(1_800);
+    expect(quote.lines.find((line) => line.label.startsWith("Night charge"))?.amount).toBe(1_000);
+  });
+
+  it("keeps existing amounts for same-day and unspecified return dates", () => {
+    expect(computeQuote(input({ date: "2026-09-14", returnDate: "2026-09-14" }))).toEqual(computeQuote(input({ date: "2026-09-14" })));
+  });
+
+  it("supports an explicitly configured window that does not wrap midnight", () => {
+    const rules = { ...pricingRules, nightStartHour: 2, nightEndHour: 5 };
+    expect(isNightPickup("03:00", rules)).toBe(true);
+    expect(isNightPickup("23:00", rules)).toBe(false);
+    expect(isNightPickup("05:00", rules)).toBe(false);
+  });
+
+  it.each([undefined, {}, { ...pricingRules, localSpeedKph: 0 }, { ...pricingRules, nightEndHour: 22 }, { ...pricingRules, oneWayReturnPercent: 101 }])("refuses missing or invalid pricing configuration", (rules) => {
+    expect(() => parsePricingRules(rules)).toThrow();
+  });
+
+  it("round trips a return date and a deliberately blank final stop", () => {
+    const trip: TripRequest = { carSlug: "eclass", packageSlug: "8h", occasionSlug: "casual", tripType: "round", customerPlace: "", stops: ["@10,76,Pickup", ""], date: "2026-09-14", returnDate: "2026-09-16", time: "09:00", haltHours: 0 };
+    expect(tripFromParams(Object.fromEntries(tripToParams(trip)), trip)).toEqual(trip);
+    expect(tripFromParams({ from: trip.stops[0], date: trip.date, returnDate: trip.returnDate }, { ...trip, stops: [] })).toMatchObject({ stops: [trip.stops[0], ""], returnDate: trip.returnDate });
+    expect(tripFromParams({ returnDate: "" }, trip).returnDate).toBe("");
+  });
+});
 
 describe("computeQuote — the prototype's default trip", () => {
   // E-Class, 8hr package, Marine Drive → airport → back, 2 halt hours, 9am.
@@ -290,7 +337,7 @@ describe("computeQuote — one-way outstation, night pickup, wedding", () => {
     const night = quote.lines.find((l) => l.label.startsWith("Night charge"));
     expect(night).toEqual({
       label: "Night charge × 1",
-      note: "Pickup between 10pm and 6am",
+      note: "Pickup between 10:00 pm and 6:00 am",
       amount: 500,
     });
   });
@@ -401,7 +448,7 @@ describe("isNightPickup", () => {
     ["09:00", false],
     ["21:59", false],
   ])("%s -> %s", (time, expected) => {
-    expect(isNightPickup(time)).toBe(expected);
+    expect(isNightPickup(time, pricingRules)).toBe(expected);
   });
 });
 
@@ -488,12 +535,15 @@ describe("distance", () => {
   });
 
   it("is zero between a point and itself", () => {
-    expect(roadKm(marine, marine)).toBe(0);
+    expect(roadKm(marine, marine, 1.25)).toBe(0);
+    expect(resolveRoute({ stops: [marine, marine], garage: null, tripType: "local" }, 1.25, undefined, 6).km).toBe(0);
   });
 
   it("floors a short hop at 6 km", () => {
     const nearby = fromServed({ ...cokLocation, slug: "nearby", lat: 9.9818, lng: 76.2757 });
-    expect(roadKm(marine, nearby)).toBe(6);
+    expect(roadKm(marine, nearby, 1.25, undefined, pricingRules.minimumLegKm)).toBe(6);
+    expect(roadKm(marine, nearby, 1.25, undefined, 0)).toBe(0);
+    expect(roadKm(marine, nearby, 1.25, undefined, 10)).toBe(10);
   });
 
   it("sums the legs of a there-and-back route", () => {
@@ -639,7 +689,7 @@ describe("routed distance", () => {
   });
 
   it("keeps the minimum billable leg", () => {
-    const measured = buildRoutedOverrides([marine, cok], [{ km: 2.4 }]);
+    const measured = buildRoutedOverrides([marine, cok], [{ km: 2.4 }], pricingRules.minimumLegKm);
     // A 2 km hop is still a trip; the floor is a billing rule, not a hedge
     // against a bad estimate.
     expect(roadKm(marine, cok, 1.25, measured)).toBe(6);
@@ -727,6 +777,7 @@ describe("a trip with an end missing", () => {
       gstPercent: 5,
       advancePercent: 25,
       circuityFactor: 1.25,
+      pricingRules,
       inclusions: [],
       exclusions: [],
       whyItems: [],
@@ -788,6 +839,23 @@ describe("a trip with an end missing", () => {
     expect(resolved.complete).toBe(true);
     expect(resolved.stops.map((stop) => stop.name)).toEqual(["Marine Drive", "Cochin Intl Airport"]);
     expect(resolved.quote.km).toBeGreaterThan(0);
+  });
+
+  it("applies the configured minimum to routed and estimated quote legs", () => {
+    const configured = { ...catalog, settings: { ...catalog.settings, pricingRules: { ...pricingRules, minimumLegKm: 50 } } };
+    const estimated = resolveQuote(configured, trip);
+    expect(estimated.legs.every((leg) => leg.km >= 50)).toBe(true);
+    const routed = resolveQuote(configured, trip, { legs: [{ km: 2, minutes: 5 }], km: 2, minutes: 5, path: [] });
+    expect(routed.itineraryKm).toBe(50);
+    const noFloor = { ...catalog, settings: { ...catalog.settings, pricingRules: { ...pricingRules, minimumLegKm: 0 } } };
+    expect(resolveQuote(noFloor, trip, { legs: [{ km: 2, minutes: 5 }], km: 2, minutes: 5, path: [] }).itineraryKm).toBe(2);
+  });
+
+  it("uses the configured outstation speed for city route travel-time previews", () => {
+    const configured = { ...catalog, cityRoutes: [{ citySlug: "kochi", fromSlug: "kochi-marine", toSlug: "kochi-airport", kmOverride: 104 }] };
+    expect(cityRouteFares(configured, kochi)[0]?.driveTime).toBe("about 2 hr");
+    const faster = { ...configured, settings: { ...configured.settings, pricingRules: { ...pricingRules, outstationSpeedKph: 104 } } };
+    expect(cityRouteFares(faster, kochi)[0]?.driveTime).toBe("about 1 hr");
   });
 
   it("takes the router's kilometres over the estimate", () => {
@@ -925,16 +993,16 @@ describe("lead references (§14)", () => {
   const noon = new Date("2026-08-21T06:30:00Z"); // noon in IST
 
   it("names the service, the day and the sequence", () => {
-    expect(nextLeadId("wedding", noon, [])).toBe("WED-260821-001");
-    expect(nextLeadId("corporate", noon, [])).toBe("CORP-260821-001");
+    expect(nextLeadId("wedding", noon, [])).toBe("WEDDING-260821-001");
+    expect(nextLeadId("corporate", noon, [])).toBe("CORPORAT-260821-001");
     expect(nextLeadId("tour", noon, [])).toBe("TOUR-260821-001");
   });
 
   it("continues the day's run for that service", () => {
-    const taken = ["WED-260821-001", "WED-260821-002", "CORP-260821-001"];
-    expect(nextLeadId("wedding", noon, taken)).toBe("WED-260821-003");
+    const taken = ["WEDDING-260821-001", "WEDDING-260821-002", "CORPORAT-260821-001"];
+    expect(nextLeadId("wedding", noon, taken)).toBe("WEDDING-260821-003");
     // A different service counts its own.
-    expect(nextLeadId("corporate", noon, taken)).toBe("CORP-260821-002");
+    expect(nextLeadId("corporate", noon, taken)).toBe("CORPORAT-260821-002");
   });
 
   it("uses the business's day, not the server's", () => {
@@ -943,8 +1011,8 @@ describe("lead references (§14)", () => {
     expect(leadDateStamp(new Date("2026-08-20T20:00:00Z"))).toBe("260821");
   });
 
-  it("falls back to a general prefix for an unknown service", () => {
-    expect(nextLeadId("something-new", noon, [])).toBe("XWC-260821-001");
+  it("derives a reference for a service without a fixed registry", () => {
+    expect(nextLeadId("something-new", noon, [])).toBe("SOMETHIN-260821-001");
   });
 });
 
@@ -1021,6 +1089,7 @@ describe("filterCars — availability, budget and proximity", () => {
       gstPercent: 5,
       advancePercent: 25,
       circuityFactor: 1.25,
+      pricingRules,
       inclusions: [],
       exclusions: [],
       whyItems: [],
@@ -1306,6 +1375,7 @@ describe("serviceable cities", () => {
         gstPercent: 5,
         advancePercent: 25,
         circuityFactor: 1.25,
+        pricingRules,
         inclusions: [],
         exclusions: [],
         whyItems: [],

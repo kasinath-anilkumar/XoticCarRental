@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LocalBusinessJsonLd } from "@/components/seo/JsonLd";
 import { WhatsAppBanner } from "@/components/layout/WhatsAppBanner";
 import { getCatalog } from "@/lib/content";
+import { getServicePage } from "@/lib/service-content";
 
 import "./globals.css";
 
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s · Xotic Car Rental",
   },
   description:
-    "Chauffeur-driven luxury car rental across 28 states in India. Weddings, VIP airport transfers, corporate delegations, celebrity shoots and inter-state touring — transparent package rates and itemised quotes before you book.",
+    "Chauffeur-driven luxury car rental across our published locations in India. Weddings, VIP airport transfers, corporate delegations, celebrity shoots and inter-state touring — transparent package rates and itemised quotes before you book.",
   openGraph: {
     type: "website",
     siteName: "Xotic Car Rental",
@@ -60,10 +61,10 @@ export const viewport: Viewport = {
 
 // RootLayout: Configures global fonts, metadata, and suppresses browser extension attribute warnings.
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const catalog = await getCatalog();
+  const [catalog, services] = await Promise.all([getCatalog(), getServicePage(1, 5)]);
 
   return (
-    <html lang="en-IN" className={inter.variable} suppressHydrationWarning>
+    <html lang="en-IN" className={inter.variable} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <a className="skip-link" href="#main">Skip to content</a>
         <ScrollFlag />
@@ -71,7 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteHeader settings={catalog.settings} />
         <main id="main" tabIndex={-1}>{children}</main>
         <WhatsAppBanner settings={catalog.settings} />
-        <SiteFooter settings={catalog.settings} />
+        <SiteFooter settings={catalog.settings} cities={catalog.cities} carTypes={catalog.carTypes} services={services.data} />
         <StickyActions settings={catalog.settings} />
         <Analytics />
       </body>

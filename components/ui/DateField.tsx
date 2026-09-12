@@ -22,6 +22,8 @@ export interface DateFieldProps {
   onChange: (iso: string) => void;
   /** Also YYYY-MM-DD. Days before this are unselectable. */
   min?: string;
+  /** Optional explicit upper bound, for a selected rental's date range. */
+  max?: string;
   /** How many months ahead to allow. */
   monthsAhead?: number;
   align?: "start" | "end";
@@ -47,6 +49,7 @@ export function DateField({
   value,
   onChange,
   min,
+  max,
   monthsAhead = 12,
   align = "start",
   clearable = false,
@@ -81,12 +84,14 @@ export function DateField({
   const selected = parseIso(value);
   const minDate = min ? parseIso(min) : undefined;
   const maxDate = (() => {
+    const explicit = max ? parseIso(max) : undefined;
+    if (explicit) return explicit;
     const base = minDate ?? new Date();
     return new Date(base.getFullYear(), base.getMonth() + monthsAhead, base.getDate());
   })();
 
   const choose = (date: Date | undefined) => {
-    if (!date) return;
+    if (!date || (minDate && date < minDate) || date > maxDate) return;
     onChange(toIso(date));
     setOpen(false);
     trigger.current?.focus();
