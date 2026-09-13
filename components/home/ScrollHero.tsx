@@ -87,7 +87,7 @@ export function ScrollHero({ frames }: { frames: string[] }) {
         const text = copy.current;
         overlay = !!text && text.offsetTop < media.offsetTop + media.offsetHeight && media.offsetTop < text.offsetTop + text.offsetHeight
           && text.offsetLeft < media.offsetLeft + media.offsetWidth && media.offsetLeft < text.offsetLeft + text.offsetWidth;
-        // Phones show a 9:16 portrait frame.
+        // Phones show a full-bleed portrait frame, decoded at its own crop.
         player.resize(bounds.width, bounds.height, mobile);
       };
       const update = (time: number) => {

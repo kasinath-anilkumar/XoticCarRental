@@ -38,9 +38,19 @@ const TRIP_OPTIONS: Array<{ key: TripType; label: string }> = [
   { key: "round", label: "Round trip" },
 ];
 
+type CalculatorStep = "route" | "vehicle" | "quote";
+const STEP_KEYS: readonly CalculatorStep[] = ["route", "vehicle", "quote"];
+
+/** The roadmap step that contains a focused, linked or validated element. */
+function stepContaining(element: Element | null): CalculatorStep | null {
+  const step = element?.closest("[data-calc-step]")?.getAttribute("data-calc-step");
+  return STEP_KEYS.find((key) => key === step) ?? null;
+}
+
 /**
- * One continuous calculator at every screen size. Trip changes recalculate
- * the quote and update its URL; section links leave all fields available.
+ * A step-by-step calculator at every screen size: the roadmap shows one
+ * section at a time while the map stays in view. Trip changes recalculate the
+ * quote and update its URL; fragment links and validation reveal their step.
  */
 export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
   const [trip, setTrip] = useState<TripRequest>(() => ({
@@ -49,7 +59,31 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
     stops: [initialTrip.stops[0] ?? "", initialTrip.stops[1] ?? "", ...initialTrip.stops.slice(2)],
   }));
   const lastSyncedTrip = useRef(trip);
-  const [activeStep, setActiveStep] = useState("route");
+  const layout = useRef<HTMLDivElement>(null);
+  const [activeStep, setActiveStep] = useState<CalculatorStep>("route");
+
+  useEffect(() => {
+    const node = layout.current;
+    if (!node) return;
+    const reveal = (event: Event) => {
+      const step = stepContaining(event.target instanceof Element ? event.target : null);
+      if (step) setActiveStep(step);
+    };
+    // Initial fragment navigation can run before this effect subscribes.
+    try {
+      const step = stepContaining(document.getElementById(decodeURIComponent(window.location.hash.slice(1))));
+      if (step) setActiveStep(step);
+    } catch { /* A malformed fragment has no step. */ }
+    node.addEventListener("xotic:reveal-target", reveal);
+    return () => node.removeEventListener("xotic:reveal-target", reveal);
+  }, []);
+
+  const goToStep = (step: CalculatorStep) => {
+    const id = `calc-${step}`;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
+    setActiveStep(step);
+    focusPageTarget(id);
+  };
 
   const update = <K extends keyof TripRequest>(key: K, value: TripRequest[K]) =>
     setTrip((current) => ({ ...current, [key]: value }));
@@ -182,8 +216,8 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
           </div>
         </div>
 
-        {/* The map stays alongside a continuous, editable journey roadmap. */}
-        <div className={styles.layout}>
+        {/* The map stays in view while the roadmap shows one section at a time. */}
+        <div ref={layout} className={styles.layout}>
           <div id="calc-journey" className={styles.journey}>
             <div className={styles.roadmap}>
               <JourneyRoadmap label="Calculator sections" steps={[
@@ -194,7 +228,7 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
             </div>
             <div className={styles.roadmapSteps}>
             <section
-              id="calc-route" className={`${styles.step} ${styles.routeSection}`} data-current={activeStep === "route"} onFocusCapture={() => setActiveStep("route")} tabIndex={-1} aria-labelledby="calc-route-heading"
+              id="calc-route" className={`${styles.step} ${styles.routeSection}`} data-calc-step="route" data-current={activeStep === "route"} onFocusCapture={() => setActiveStep("route")} tabIndex={-1} aria-labelledby="calc-route-heading"
             >
               <div className={styles.sectionHeader}>
                 <div className={styles.sectionTitle}>
@@ -358,13 +392,16 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                 </div>
                 </ResponsiveDisclosure>
               </div>
+              <div className={styles.stepNav}>
+                <button type="button" className={`btn btn-solid ${styles.stepNext}`} onClick={() => goToStep("vehicle")}>
+                  Continue to car &amp; package <Icon name="ph-arrow-right" size={16} />
+                </button>
+              </div>
             </section>
-
-
 
             {/* ── SECTION 2: VEHICLE & PACKAGE ─────────────────────── */}
             <section
-              id="calc-vehicle" className={`${styles.step} ${styles.vehicleSection}`} data-current={activeStep === "vehicle"} onFocusCapture={() => setActiveStep("vehicle")} tabIndex={-1} aria-labelledby="calc-vehicle-heading"
+              id="calc-vehicle" className={`${styles.step} ${styles.vehicleSection}`} data-calc-step="vehicle" data-current={activeStep === "vehicle"} onFocusCapture={() => setActiveStep("vehicle")} tabIndex={-1} aria-labelledby="calc-vehicle-heading"
             >
               <div className={styles.sectionTitle}>
                 <span className={styles.stepNumber} aria-hidden="true">
@@ -434,9 +471,17 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                 </span>
               </div>
 
+              <div className={styles.stepNav}>
+                <button type="button" className="btn btn-secondary" onClick={() => goToStep("route")}>
+                  <Icon name="ph-arrow-left" size={16} /> Back to route
+                </button>
+                <button type="button" className={`btn btn-solid ${styles.stepNext}`} onClick={() => goToStep("quote")}>
+                  See your quote <Icon name="ph-arrow-right" size={16} />
+                </button>
+              </div>
             </section>
 
-          <aside id="calc-quote" className={styles.quote} data-current={activeStep === "quote"} onFocusCapture={() => setActiveStep("quote")} tabIndex={-1} aria-label="Live journey estimate">
+          <aside id="calc-quote" className={styles.quote} data-calc-step="quote" data-current={activeStep === "quote"} onFocusCapture={() => setActiveStep("quote")} tabIndex={-1} aria-label="Live journey estimate">
             <div className={styles.quoteHeader}>
               <div className={styles.sectionTitle}><span className={styles.stepNumber} aria-hidden="true">3</span><div><p className={styles.quoteHeading}>Live estimate</p><h2>Your quote</h2></div></div>
               <Media src={heroImage(resolved.car)} alt={resolved.car.name} placeholder={resolved.car.name} className={styles.quotePhoto} sizes="76px" />
@@ -525,13 +570,18 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                 </span>
               </div>
             </div>
+            <div className={`${styles.stepNav} ${styles.quoteNav}`}>
+              <button type="button" className="btn btn-secondary" onClick={() => goToStep("vehicle")}>
+                <Icon name="ph-arrow-left" size={16} /> Back to car &amp; package
+              </button>
+            </div>
           </aside>
             </div>
-          {resolved.complete && <ResponsiveDisclosure id="calc-distance" title="How the distance is calculated" hideTitleOnDesktop className={styles.distancePanel}><RouteDistanceBreakdown resolved={resolved} /></ResponsiveDisclosure>}
+          {resolved.complete && <div className={styles.distanceStep} data-calc-step="quote" data-current={activeStep === "quote"}><ResponsiveDisclosure id="calc-distance" title="How the distance is calculated" hideTitleOnDesktop className={styles.distancePanel}><RouteDistanceBreakdown resolved={resolved} /></ResponsiveDisclosure></div>}
           </div>
-            <ResponsiveDisclosure id="calc-map" title="Route map & live distance" hideTitleOnDesktop className={styles.mapDisclosure}>
+            <div id="calc-map" className={styles.mapColumn} tabIndex={-1}>
             <section
-              className={`${styles.step} ${styles.mapPanel}`} tabIndex={-1} aria-labelledby="calc-map-heading"
+              className={`${styles.step} ${styles.mapPanel}`} aria-labelledby="calc-map-heading"
             >
               <div className={styles.mapHeading}>
                 <div>
@@ -559,7 +609,7 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
               </div>
               <p className={styles.mapNote}>{mapNote}</p>
             </section>
-            </ResponsiveDisclosure>
+            </div>
         </div>
       </div>
 

@@ -210,7 +210,7 @@ describe("hero frame player", () => {
     expect(canvas.width * canvas.height).toBeLessThanOrEqual(1280 * 720);
   });
 
-  it("decodes a centred 9:16 crop for portrait surfaces and discards the other orientation", async () => {
+  it("decodes a centred crop matching portrait surfaces and discards other shapes", async () => {
     Object.defineProperty(window.screen, "width", { value: 390 });
     const crops: number[][] = [];
     const fullDecodes: TestBitmap[] = [];
@@ -235,8 +235,13 @@ describe("hero frame player", () => {
     expect(portraitFrames.every((image) => image.width === 432 && image.height === 768)).toBe(true);
     expect(ctx.drawImage.mock.calls.at(-1)!.slice(1)).toEqual([0, 0, 432, 768]);
 
-    player.resize(390, 219);
+    player.resize(360, 480, true);
     expect(portraitFrames.every((image) => !living.has(image))).toBe(true);
+    await fillDemand();
+    expect(crops.at(-1)!.join()).toBe("555,0,810,1080");
+    expect([...living].every((image) => image.width === 499 && image.height === 665)).toBe(true);
+
+    player.resize(390, 219);
     await fillDemand();
     expect([...living].every((image) => image.width === 768 && image.height === 432)).toBe(true);
     expect(ctx.drawImage.mock.calls.at(-1)![0].width).toBe(768);

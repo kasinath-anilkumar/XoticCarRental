@@ -19,6 +19,7 @@ for (const tripType of ["round", "oneway"]) {
     });
     const query = new URLSearchParams({ car: "eclass", pkg: "p8", trip: tripType, stops: stops.join("~") });
     await page.goto(`/price-calculator?${query}`);
+    await page.getByRole("navigation", { name: "Calculator sections" }).getByRole("link", { name: "Your quote", exact: true }).click();
     if (isMobile) await page.getByRole("button", { name: "How the distance is calculated", exact: true }).click();
     const breakdown = page.getByRole("region", { name: "Distance breakdown", exact: true });
     await expect(breakdown).toContainText("1,575 km");
@@ -59,7 +60,7 @@ test("a two-stop round trip labels the destination and returns to pickup without
   });
   const query = new URLSearchParams({ car: "eclass", pkg: "p8", trip: "round", stops: stops.slice(0, 2).join("~") });
   await page.goto(`/price-calculator?${query}`);
-  if (isMobile) await page.getByRole("button", { name: "How the distance is calculated", exact: true }).click();
+  const sections = page.getByRole("navigation", { name: "Calculator sections" });
   await expect(page.getByRole("combobox", { name: "Pickup location", exact: true })).toHaveValue("Alappuzha pickup");
   await expect(page.getByRole("combobox", { name: "Destination", exact: true })).toHaveValue("Chennai destination");
   await expect(page.getByRole("combobox", { name: "Final drop", exact: true })).toHaveCount(0);
@@ -67,6 +68,8 @@ test("a two-stop round trip labels the destination and returns to pickup without
   await expect(editableStops).toHaveCount(2);
   await expect(page.getByText("Your round trip returns to the pickup location after the destination.", { exact: true })).toBeVisible();
 
+  await sections.getByRole("link", { name: "Your quote", exact: true }).click();
+  if (isMobile) await page.getByRole("button", { name: "How the distance is calculated", exact: true }).click();
   const breakdown = page.getByRole("region", { name: "Distance breakdown", exact: true });
   await expect(breakdown).toContainText("1,575 km");
   expect(points).toHaveLength(5);
@@ -89,6 +92,7 @@ test("a two-stop round trip labels the destination and returns to pickup without
   await map.scrollIntoViewIfNeeded();
   await expect(map.locator(".xotic-pin")).toHaveCount(3);
   await expect(editableStops).toHaveCount(2);
+  await sections.getByRole("link", { name: "Route & schedule", exact: true }).click();
   await page.getByRole("button", { name: "Add another stop", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Final drop", exact: true })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Destination", exact: true })).toHaveCount(0);

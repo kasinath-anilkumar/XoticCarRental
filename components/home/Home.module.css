@@ -59,4 +59,6 @@
     .promises h3 { font-size: 15px; }
     .promises p { font-size: 12px; line-height: 1.6; }
   }
+  /* Side-by-side image and copy cards need a full row on phones. */
+  @media (max-width: 599px) { .services, .cities { grid-template-columns: minmax(0, 1fr); } }
 }

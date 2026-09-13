@@ -83,12 +83,10 @@
     .description { max-width: 285px; margin: 18px 0; font-size: 12px; line-height: 1.6; }
     .actions { margin-top: 20px; }
     .actions > a { min-height: 44px; padding-inline: 18px; font-size: 12px; }
-    /* A centred 9:16 frame from below the opaque sticky header down to the bottom
-       actions (76px padding + 44px row + 18px gap), full width where the height allows. */
-    .visual {
-      inset: var(--header-height) 0 auto; margin-inline: auto; aspect-ratio: 9 / 16;
-      width: min(100%, (var(--stage-height) - var(--header-height) - 138px - env(safe-area-inset-bottom)) * 9 / 16);
-    }
+    /* A full-bleed portrait frame from below the opaque sticky header down to the
+       bottom actions (76px padding + 44px row + 18px gap): about 9:16 on tall phones,
+       never letterboxed into a narrow column on short ones. */
+    .visual { inset: var(--header-height) 0 calc(138px + env(safe-area-inset-bottom)); }
     .shade { display: none; }
     .bottom { position: relative; inset: auto; grid-row: 3; gap: 12px; }
     .scrollCue { gap: 8px; font-size: 8px; letter-spacing: .08em; }
@@ -110,7 +108,7 @@
     .heading { font-size: 26px; }
     .eyebrow { font-size: 7px; letter-spacing: .1em; margin-bottom: 8px; }
     .actions { margin-top: 12px; }
-    .visual { position: relative; inset: auto; grid-column: 2; grid-row: 1; justify-self: center; width: auto; height: 100%; max-width: 100%; }
+    .visual { position: relative; inset: auto; grid-column: 2; grid-row: 1; }
     .bottom { grid-column: 1 / -1; grid-row: 2; }
   }
   @media (prefers-reduced-motion: reduce) {

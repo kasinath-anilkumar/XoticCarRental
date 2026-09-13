@@ -15,7 +15,7 @@ test("calculator landing fragments survive hydration and query edits keep input 
     await page.goto(`/price-calculator?${query}#${fragment}`);
     await expect(page.locator(`#${fragment}`)).toBeFocused();
     await expect(page).toHaveURL(new RegExp(`#${fragment}$`));
-    if (isMobile && fragment === "calc-map") await expect(page.locator("#calc-map")).toHaveAttribute("data-open", "true");
+    await expect(page.locator("#calc-map .leaflet-container")).toBeVisible();
     await page.getByRole("navigation", { name: "Calculator sections" }).getByRole("link", { name: "Route & schedule", exact: true }).click();
     // Start editing immediately, while a fragment focus callback may still be queued.
     const field = page.getByLabel("Pickup date", { exact: true });
@@ -28,7 +28,7 @@ test("calculator landing fragments survive hydration and query edits keep input 
   }
 });
 
-test("compact mobile calculator prioritizes required fields and opens optional targets on demand", async ({ page, isMobile }, testInfo) => {
+test("compact mobile calculator shows the map, then the required fields, and opens optional targets on demand", async ({ page, isMobile }, testInfo) => {
   test.skip(!isMobile);
   await page.setViewportSize({ width: 320, height: 740 });
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -37,21 +37,21 @@ test("compact mobile calculator prioritizes required fields and opens optional t
   await expect(action).toBeInViewport({ ratio: 1 });
   await expect(page.locator(".stickybar:visible")).toHaveCount(1);
   await expect(page.getByRole("navigation", { name: "Quick actions", exact: true })).toBeHidden();
+  await expect(page.locator("#calc-map .leaflet-container")).toBeVisible();
   for (const label of ["Pickup location", "Final drop"]) {
-    await expect(page.getByRole("combobox", { name: label, exact: true })).toBeInViewport({ ratio: 1 });
+    await expect(page.getByRole("combobox", { name: label, exact: true })).toBeVisible();
   }
   await expect(page.getByLabel("Pickup date", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Pickup time", { exact: true })).toBeVisible();
-  await expect(page.locator("#calc-map")).toHaveAttribute("data-open", "false");
   await expect(page.locator("#calc-options")).toHaveAttribute("data-open", "false");
   await expect(page.getByLabel("Halt duration", { exact: true })).toBeHidden();
   await page.screenshot({ path: testInfo.outputPath("calculator-mobile-priority.png") });
   await action.getByRole("link", { name: "Complete trip details", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Pickup location", exact: true })).toBeFocused();
+  await expect(page.getByRole("combobox", { name: "Pickup location", exact: true })).toBeInViewport({ ratio: 1 });
   expect(new URL(page.url()).searchParams.get("pkg")).toBe("p8");
 
   await page.getByRole("link", { name: "Route map", exact: true }).click();
-  await expect(page.locator("#calc-map")).toHaveAttribute("data-open", "true");
   await expect(page.locator("#calc-map")).toBeFocused();
   await expect(page.locator("#calc-map .leaflet-container")).toBeVisible();
   await page.getByRole("button", { name: "Additional trip details", exact: true }).click();
@@ -87,12 +87,13 @@ test("mobile quote action targets the missing date and time while retaining the 
     expect(target.searchParams.get(key)).toBe(value);
   }
   const route = await page.locator("#calc-route").boundingBox();
-  const vehicle = await page.locator("#calc-vehicle").boundingBox();
-  const quote = await page.locator("#calc-quote").boundingBox();
   const map = await page.locator("#calc-map").boundingBox();
-  expect(route!.y).toBeLessThan(vehicle!.y);
-  expect(vehicle!.y).toBeLessThan(quote!.y);
-  expect(quote!.y).toBeLessThan(map!.y);
+  expect(map!.y).toBeLessThan(route!.y);
+  await expect(page.locator("#calc-vehicle")).toBeHidden();
+  await expect(page.locator("#calc-quote")).toBeHidden();
+  await action.getByRole("link", { name: "Details", exact: true }).click();
+  await expect(page.locator("#calc-quote")).toBeFocused();
+  await expect(page.locator("#calc-route")).toBeHidden();
   await expect(page.getByRole("complementary", { name: "Live journey estimate", exact: true }).getByText(/^GST /)).toBeVisible();
 });
 

@@ -38,7 +38,7 @@ async function boundsOf(section: Locator) {
 }
 
 for (const viewport of viewports) {
-test(`calculator places the map and keeps the complete journey usable at ${viewport.width}x${viewport.height}`, async ({ page, isMobile }, testInfo) => {
+test(`calculator keeps the map in view and steps through the journey at ${viewport.width}x${viewport.height}`, async ({ page, isMobile }, testInfo) => {
   test.skip(isMobile !== viewport.mobile, "Run each viewport in its matching desktop or mobile browser project.");
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -80,31 +80,24 @@ test(`calculator places the map and keeps the complete journey usable at ${viewp
   const map = page.getByRole("region", { name: "Route Map & Live Distance", exact: true });
   const quote = page.getByRole("complementary", { name: "Live journey estimate", exact: true });
   const distance = page.getByRole("region", { name: "Distance breakdown", exact: true });
-  if (isMobile) {
-    await expect(page.locator("#calc-map")).toHaveAttribute("data-open", "false");
-    await expect(page.locator("#calc-distance")).toHaveAttribute("data-open", "false");
-    await page.getByRole("link", { name: "Route map", exact: true }).click();
-    await page.getByRole("button", { name: "How the distance is calculated", exact: true }).click();
-  }
-  for (const section of [route, vehicle, map, quote, distance]) await expect(section).toBeVisible();
-  await expect(distance).toContainText("Uses road-route distances");
+  // The roadmap shows one section at a time; the map is always in view.
+  await expect(route).toBeVisible();
+  await expect(map).toBeVisible();
+  await expect(map.locator(".leaflet-container")).toBeVisible();
+  for (const section of [vehicle, quote, distance]) await expect(section).toBeHidden();
   await page.evaluate(() => document.fonts.ready);
-  await expect(page.getByRole("button", { name: /^Next:/ })).toHaveCount(0);
+  await expect(route.getByRole("button", { name: "Continue to car & package", exact: true })).toBeVisible();
   await expect(map).toHaveCount(1);
-  await expect(quote).toHaveCount(1);
+  // Role queries skip hidden sections, so count the single quote by its id.
+  await expect(page.locator("#calc-quote")).toHaveCount(1);
   await expect(map.getByRole("region", { name: "Distance breakdown", exact: true })).toHaveCount(0);
 
-  const [routeBounds, mapBounds, vehicleBounds, quoteBounds, distanceBounds] = await Promise.all(
-    [route, map, vehicle, quote, distance].map(boundsOf),
-  );
+  const [routeBounds, mapBounds] = await Promise.all([route, map].map(boundsOf));
   if (isMobile) {
     const navigationBounds = await boundsOf(navigation);
-    expect(routeBounds.y).toBeGreaterThanOrEqual(navigationBounds.y + navigationBounds.height - 2);
-    const ordered = [routeBounds, vehicleBounds, quoteBounds, mapBounds, distanceBounds];
-    for (let index = 1; index < ordered.length; index += 1) {
-      expect(ordered[index].y).toBeGreaterThanOrEqual(ordered[index - 1].y + ordered[index - 1].height - 2);
-    }
-    for (const bounds of ordered) {
+    expect(mapBounds.y).toBeGreaterThanOrEqual(navigationBounds.y + navigationBounds.height - 2);
+    expect(routeBounds.y).toBeGreaterThanOrEqual(mapBounds.y + mapBounds.height - 2);
+    for (const bounds of [routeBounds, mapBounds]) {
       expect(bounds.x).toBeGreaterThanOrEqual(0);
       expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width + 1);
     }
@@ -117,14 +110,6 @@ test(`calculator places the map and keeps the complete journey usable at ${viewp
     expect(mapColumn.height).toBeLessThanOrEqual(viewport.height);
     expect(routeBounds.x).toBeGreaterThanOrEqual(journeyBounds.x);
     expect(routeBounds.x + routeBounds.width).toBeLessThanOrEqual(journeyBounds.x + journeyBounds.width + 1);
-    expect(Math.abs(vehicleBounds.x - routeBounds.x)).toBeLessThanOrEqual(2);
-    expect(Math.abs(vehicleBounds.width - routeBounds.width)).toBeLessThanOrEqual(2);
-    expect(vehicleBounds.y).toBeGreaterThanOrEqual(routeBounds.y + routeBounds.height - 2);
-    expect(Math.abs(quoteBounds.x - routeBounds.x)).toBeLessThanOrEqual(2);
-    expect(Math.abs(quoteBounds.width - routeBounds.width)).toBeLessThanOrEqual(2);
-    expect(quoteBounds.y).toBeGreaterThanOrEqual(vehicleBounds.y + vehicleBounds.height - 2);
-    expect(Math.abs(distanceBounds.x - routeBounds.x)).toBeLessThanOrEqual(2);
-    expect(distanceBounds.y).toBeGreaterThanOrEqual(quoteBounds.y + quoteBounds.height - 2);
     expect(await journey.evaluate((element) => {
       const style = getComputedStyle(element);
       return style.maxHeight === "none" && !["auto", "scroll", "hidden"].includes(style.overflowY)
@@ -142,7 +127,7 @@ test(`calculator places the map and keeps the complete journey usable at ${viewp
   // date must not leave a misleading completed marker or bookable action.
   await page.getByLabel("Pickup date", { exact: true }).fill("");
   await expect(routeProgress.getByText("Completed step:", { exact: true })).toHaveCount(0);
-  await expect(quote.getByRole("button", { name: "Review & confirm on WhatsApp", exact: true })).toBeDisabled();
+  await expect(page.locator("#calc-quote").getByRole("button", { name: "Review & confirm on WhatsApp", exact: true, includeHidden: true })).toBeDisabled();
   await expect(routeLink).toHaveAttribute("aria-current", "step");
   await page.getByLabel("Pickup date", { exact: true }).fill(date);
   await expect(routeProgress.getByText("Completed step:", { exact: true })).toHaveCount(1);
@@ -150,23 +135,43 @@ test(`calculator places the map and keeps the complete journey usable at ${viewp
   await page.getByLabel("Halt duration", { exact: true }).fill("2");
   await expect(page).toHaveURL(new RegExp(`date=${date}`));
 
-  await navigation.getByRole("link", { name: "Car & package", exact: true }).click();
+  await route.getByRole("button", { name: "Continue to car & package", exact: true }).click();
   await expect(page).toHaveURL(/#calc-vehicle$/);
   await expect(vehicle).toBeFocused();
+  await expect(route).toBeHidden();
   await expect(navigation.getByRole("link", { name: "Car & package", exact: true })).toHaveAttribute("aria-current", "step");
   await expect(routeLink).not.toHaveAttribute("aria-current", "step");
   await expect(navigation.locator('[aria-current="step"]')).toHaveCount(1);
-  await expect(page.getByRole("combobox", { name: "Pickup location", exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Pickup location", exact: true })).toBeHidden();
   await expect(page.getByRole("textbox", { name: "Select luxury vehicle:", exact: true })).toBeVisible();
+  const vehicleBounds = await boundsOf(vehicle);
+  expect(Math.abs(vehicleBounds.x - routeBounds.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(vehicleBounds.width - routeBounds.width)).toBeLessThanOrEqual(2);
+  await vehicle.getByRole("button", { name: "Back to route", exact: true }).click();
+  await expect(route).toBeFocused();
+  await expect(routeLink).toHaveAttribute("aria-current", "step");
+  await navigation.getByRole("link", { name: "Car & package", exact: true }).click();
+  await expect(vehicle).toBeFocused();
 
   if (isMobile) await page.getByRole("link", { name: "Details", exact: true }).click();
   else await navigation.getByRole("link", { name: "Your quote", exact: true }).click();
   await expect(page).toHaveURL(/#calc-quote$/);
   await expect(quote).toBeFocused();
+  await expect(vehicle).toBeHidden();
   await expect(navigation.getByRole("link", { name: "Your quote", exact: true })).toHaveAttribute("aria-current", "step");
   await expect(navigation.locator('[aria-current="step"]')).toHaveCount(1);
   await expect(quote.getByRole("heading", { name: "Your quote", exact: true })).toBeInViewport();
   if (!isMobile) await expect(page.locator("#calc-map")).toBeInViewport({ ratio: 0.99 });
+  if (isMobile) {
+    await expect(page.locator("#calc-distance")).toHaveAttribute("data-open", "false");
+    await page.getByRole("button", { name: "How the distance is calculated", exact: true }).click();
+  }
+  await expect(distance).toBeVisible();
+  await expect(distance).toContainText("Uses road-route distances");
+  const [quoteBounds, distanceBounds] = await Promise.all([quote, distance].map(boundsOf));
+  expect(Math.abs(quoteBounds.x - routeBounds.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(quoteBounds.width - routeBounds.width)).toBeLessThanOrEqual(2);
+  expect(distanceBounds.y).toBeGreaterThanOrEqual(quoteBounds.y + quoteBounds.height - 2);
   expect(await quote.evaluate((element) => {
     const style = getComputedStyle(element);
     return !["sticky", "fixed", "absolute"].includes(style.position) && style.maxHeight === "none"
@@ -176,8 +181,9 @@ test(`calculator places the map and keeps the complete journey usable at ${viewp
   await expect(page.getByLabel("Pickup date", { exact: true })).toHaveValue(date);
   await expect(page.getByLabel("Pickup time", { exact: true })).toHaveValue("10:00");
   await expect(page.getByLabel("Halt duration", { exact: true })).toHaveValue("2");
-  await expect(page.getByRole("combobox", { name: "Pickup location", exact: true })).toHaveValue("Review pickup");
-  await expect(page.getByRole("combobox", { name: "Final drop", exact: true })).toHaveValue("Review drop");
+  // Hidden sections keep every value the customer entered.
+  await expect(page.getByRole("combobox", { name: "Pickup location", exact: true, includeHidden: true })).toHaveValue("Review pickup");
+  await expect(page.getByRole("combobox", { name: "Final drop", exact: true, includeHidden: true })).toHaveValue("Review drop");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("calculator-quote.png") });
   const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
@@ -186,6 +192,6 @@ test(`calculator places the map and keeps the complete journey usable at ${viewp
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     window.scrollTo({ top: 0, behavior: "instant" });
   });
-  await page.screenshot({ path: testInfo.outputPath("calculator-all-in-one.png"), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("calculator-quote-step.png"), fullPage: true });
 });
 }

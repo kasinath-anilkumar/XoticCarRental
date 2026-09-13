@@ -98,10 +98,6 @@ export function RouteMapCanvas({ stops, previewCenter, path = [] }: RouteMapCanv
       }
 
       const instance = map.current;
-      // Reconnect after a stop or preview-area change: the effect's cleanup
-      // disconnects the old observer even when the map instance is reused.
-      resizeObserver = new ResizeObserver(() => instance.invalidateSize());
-      resizeObserver.observe(holder.current);
       const points = stops.map((stop) => L.latLng(stop.lat, stop.lng));
 
       for (const marker of markers.current) marker.remove();
@@ -144,18 +140,35 @@ export function RouteMapCanvas({ stops, previewCenter, path = [] }: RouteMapCanv
       // Frame the road when there is one — it wanders well outside the box the
       // stops alone would draw, and half a route off the edge looks broken.
       const frame = road ?? points;
-      if (frame.length === 1) {
-        // One stop is a place, not a journey: close enough to see the street.
-        instance.setView(frame[0], 14);
-      } else if (frame.length > 1) {
-        // 16 rather than 13: a pickup and a drop two streets apart used to be
-        // framed as if they were two towns apart.
-        instance.fitBounds(L.latLngBounds(frame), { padding: [30, 30], maxZoom: 16 });
-      } else if (previewLat !== undefined && previewLng !== undefined) {
-        // A city-scale overview is context, with no marker or invented leg.
-        // Keep vehicle changes immediate, including reduced-motion sessions.
-        instance.setView([previewLat, previewLng], 11, { animate: false });
-      }
+      const fit = () => {
+        if (frame.length === 1) {
+          // One stop is a place, not a journey: close enough to see the street.
+          instance.setView(frame[0], 14);
+        } else if (frame.length > 1) {
+          // 16 rather than 13: a pickup and a drop two streets apart used to be
+          // framed as if they were two towns apart.
+          instance.fitBounds(L.latLngBounds(frame), { padding: [30, 30], maxZoom: 16 });
+        } else if (previewLat !== undefined && previewLng !== undefined) {
+          // A city-scale overview is context, with no marker or invented leg.
+          // Keep vehicle changes immediate, including reduced-motion sessions.
+          instance.setView([previewLat, previewLng], 11, { animate: false });
+        }
+      };
+      fit();
+
+      // Reconnect after a stop or preview-area change: the effect's cleanup
+      // disconnects the old observer even when the map instance is reused. A
+      // frame that settles to a new size is framed again, not left cropped.
+      let size = `${holder.current.clientWidth}x${holder.current.clientHeight}`;
+      const element = holder.current;
+      resizeObserver = new ResizeObserver(() => {
+        const next = `${element.clientWidth}x${element.clientHeight}`;
+        if (next === size) return;
+        size = next;
+        instance.invalidateSize({ pan: false });
+        fit();
+      });
+      resizeObserver.observe(element);
     });
 
     return () => {

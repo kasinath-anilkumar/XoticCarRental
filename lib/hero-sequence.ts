@@ -8,7 +8,7 @@ export interface HeroSequenceOptions {
 
 export interface HeroSequence {
   seek(index: number): void;
-  /** Portrait surfaces show a centred 9:16 crop of each frame. */
+  /** Portrait surfaces decode a centred crop matching their own shape. */
   resize(width: number, height: number, portrait?: boolean): void;
   dispose(): void;
 }
@@ -56,8 +56,9 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
   let moving = false;
   let disposed = false;
   let ready = false;
-  let portrait = false;
-  // Bitmaps decoded for a previous orientation are discarded, never painted.
+  // Width/height of the portrait crop; null decodes whole landscape frames.
+  let cropAspect: number | null = null;
+  // Bitmaps decoded for a previous shape are discarded, never painted.
   let shape = 0;
   let source: { width: number; height: number } | undefined;
   let painted = -1;
@@ -166,26 +167,34 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
     return !disposed && !controller.signal.aborted;
   }
 
-  function centreCrop({ width, height }: { width: number; height: number }) {
-    const cropWidth = Math.min(width, height * 9 / 16);
-    const cropHeight = Math.min(height, width * 16 / 9);
+  /** Portrait bitmaps keep the landscape pixel budget at the crop's own shape. */
+  function bitmapSize(aspect: number | null) {
+    if (aspect === null) return [decodeWidth, decodeHeight] as const;
+    const height = Math.round(Math.sqrt(decodeWidth * decodeHeight / aspect));
+    return [Math.round(decodeWidth * decodeHeight / height), height] as const;
+  }
+
+  function centreCrop({ width, height }: { width: number; height: number }, aspect: number) {
+    const cropWidth = Math.min(width, height * aspect);
+    const cropHeight = Math.min(height, width / aspect);
     return [Math.round((width - cropWidth) / 2), Math.round((height - cropHeight) / 2), Math.round(cropWidth), Math.round(cropHeight)] as const;
   }
 
   async function decode(blob: Blob): Promise<ImageBitmap> {
+    const aspect = cropAspect;
+    const [resizeWidth, resizeHeight] = bitmapSize(aspect);
     // Fast bilinear resizing avoids expensive CPU resampling while scrolling.
-    if (!portrait) return createImageBitmap(blob, { resizeWidth: decodeWidth, resizeHeight: decodeHeight, resizeQuality: "low" });
-    // Portrait crops keep the landscape pixel budget, only transposed.
-    const options: ImageBitmapOptions = { resizeWidth: decodeHeight, resizeHeight: decodeWidth, resizeQuality: "low" };
+    const options: ImageBitmapOptions = { resizeWidth, resizeHeight, resizeQuality: "low" };
+    if (aspect === null) return createImageBitmap(blob, options);
     if (source) {
-      const [x, y, width, height] = centreCrop(source);
+      const [x, y, width, height] = centreCrop(source, aspect);
       return createImageBitmap(blob, x, y, width, height, options);
     }
     // Sequence frames share dimensions: learn them once from a full decode.
     const full = await createImageBitmap(blob);
     try {
       source = { width: full.width, height: full.height };
-      const [x, y, width, height] = centreCrop(source);
+      const [x, y, width, height] = centreCrop(source, aspect);
       return await createImageBitmap(full, x, y, width, height, options);
     } finally {
       full.close();
@@ -283,15 +292,17 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
 
     resize(width, height, fitPortrait = false) {
       if (disposed || !Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
-      const reshaped = portrait !== fitPortrait;
+      // Crop shape is rounded so sub-pixel layout changes keep decoded frames.
+      const aspect = fitPortrait ? Math.round(Math.min(16 / 9, Math.max(.25, width / height)) * 1000) / 1000 : null;
+      const reshaped = aspect !== cropAspect;
       if (reshaped) {
-        portrait = fitPortrait;
+        cropAspect = aspect;
         shape += 1;
         for (const bitmap of decoded.values()) bitmap.close();
         decoded.clear();
         painted = -1;
       }
-      const [bitmapWidth, bitmapHeight] = portrait ? [decodeHeight, decodeWidth] : [decodeWidth, decodeHeight];
+      const [bitmapWidth, bitmapHeight] = bitmapSize(cropAspect);
       const ratio = Math.min(1.5, window.devicePixelRatio || 1, bitmapWidth / width, Math.sqrt(bitmapWidth * bitmapHeight / width / height));
       const nextWidth = Math.max(1, Math.floor(width * ratio));
       const nextHeight = Math.max(1, Math.floor(height * ratio));
