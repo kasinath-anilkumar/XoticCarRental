@@ -31,7 +31,7 @@ export function RouteRow(props: RouteRowProps) {
       )}
 
       <div className={styles.rowForm}>
-        <span style={{ flex: 1, minWidth: "260px", fontSize: "14px" }}>
+        <span style={{ flex: "1 1 260px", minWidth: 0, fontSize: "14px", overflowWrap: "anywhere" }}>
           {props.fromName} → {props.toName}
           <span className={styles.muted} style={{ fontSize: "11px", display: "block" }}>
             {props.cityName}

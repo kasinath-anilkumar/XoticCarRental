@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 
 import { requireAdmin } from "@/lib/admin/auth";
 import { formatINR } from "@/lib/format";
@@ -77,8 +78,8 @@ export default async function AdminOverviewPage() {
         </p>
 
         {recent.data && recent.data.length > 0 ? (
-          <div className={styles.tableWrap}>
-            <table className="table">
+          <HorizontalScroll label="Latest enquiries" controls="above">
+            <table className="table min-w-[600px]">
               <thead>
                 <tr>
                   <th>When</th>
@@ -109,7 +110,7 @@ export default async function AdminOverviewPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </HorizontalScroll>
         ) : (
           <p className={styles.muted}>No enquiries yet.</p>
         )}

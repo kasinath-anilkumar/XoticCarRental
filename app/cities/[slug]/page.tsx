@@ -8,6 +8,7 @@ import { FaqBlock } from "@/components/content/FaqBlock";
 import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/seo/JsonLd";
 import { ChargesExplained } from "@/components/trust/ChargesExplained";
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { Media } from "@/components/ui/Media";
 import {
   airportFor,
@@ -144,7 +145,8 @@ export default async function CityPage({ params }: { params: Params }) {
       </section>
 
       {/* ── city switcher rail ─────────────────────────────────────── */}
-      <nav className="flex items-center gap-2 border-b border-[var(--color-divider)] px-[var(--gutter-desktop)] py-3.5 overflow-x-auto [scrollbar-width:thin] max-md:px-[var(--gutter-mobile)] [&>*]:shrink-0" aria-label="Cities">
+      <nav className="border-b border-[var(--color-divider)] px-[var(--gutter-desktop)] py-3.5 max-md:px-[var(--gutter-mobile)]" aria-label="Cities">
+        <HorizontalScroll label="Cities" contentClassName="flex items-center gap-2 py-1">
         <span className="mr-1 text-[11.5px] uppercase tracking-wider text-[var(--color-neutral-500)] max-md:hidden">Hubs:</span>
         {catalog.cities.map((item) => {
           const active = item.slug === city.slug;
@@ -159,6 +161,7 @@ export default async function CityPage({ params }: { params: Params }) {
             </Link>
           );
         })}
+        </HorizontalScroll>
       </nav>
 
       {/* ── published fares ───────────────────────────────────────────── */}
@@ -175,7 +178,7 @@ export default async function CityPage({ params }: { params: Params }) {
 
         {fares.length > 0 ? (
           <>
-            <div className="overflow-x-auto">
+            <HorizontalScroll label="Route fares" controls="above">
               <table className="table">
                 <thead>
                   <tr>
@@ -209,7 +212,7 @@ export default async function CityPage({ params }: { params: Params }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </HorizontalScroll>
             <p className="mt-4 max-w-[78ch] text-[12px] text-[var(--color-neutral-500)]">
               Round trip, cheapest car in each class, including the driver&rsquo;s bata and{" "}
               {catalog.settings.gstPercent}% GST. Tolls, parking and permits are at actuals. Tap a
@@ -231,7 +234,7 @@ export default async function CityPage({ params }: { params: Params }) {
             What a car costs in {city.name}
           </h2>
 
-          <div className="overflow-x-auto">
+          <HorizontalScroll label="Vehicle rates" controls="above">
             <table className="table">
               <thead>
                 <tr>
@@ -273,7 +276,7 @@ export default async function CityPage({ params }: { params: Params }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </HorizontalScroll>
           <p className="mt-4 max-w-[78ch] text-[12px] text-[var(--color-neutral-500)]">
             Package rates carry {city.name}&rsquo;s ×{city.multiplier.toFixed(2)} operating
             multiplier. Extra km and bata are the car&rsquo;s own rates and are not multiplied.{" "}

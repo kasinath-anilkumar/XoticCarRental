@@ -67,7 +67,7 @@ export function ReferenceSelect({ kind, name, label, initial = [], multiple = fa
     <label {...combo.getLabelProps()}>{label}</label>
     {selected.map((item) => <input key={item.value} type="hidden" name={name} value={item.value} />)}
     {!multiple && selected.length === 0 && <input type="hidden" name={name} value="" />}
-    {multiple && selected.length > 0 && <div className="mb-2 flex flex-wrap gap-2">{selected.map((item) => <button key={item.value} type="button" className="btn btn-ghost" aria-label={`Remove ${item.label}`} onClick={() => setSelected((current) => current.filter((entry) => entry.value !== item.value))}>{item.label} ×</button>)}</div>}
+    {multiple && selected.length > 0 && <div className="mb-2 flex flex-wrap gap-2">{selected.map((item) => <button key={item.value} type="button" className="btn btn-ghost max-w-full whitespace-normal [overflow-wrap:anywhere]" aria-label={`Remove ${item.label}`} onClick={() => setSelected((current) => current.filter((entry) => entry.value !== item.value))}>{item.label} ×</button>)}</div>}
     <div className="flex gap-2">
       <input {...combo.getInputProps({ className: "input min-w-0", placeholder: "Search saved records…", maxLength: 100, required: required && selected.length === 0, pattern: required && selected.length === 0 ? "(?!)" : undefined, title: "Choose a saved record from the results.", onBlur: () => { if (!multiple) setQuery(selected[0]?.label ?? ""); } })} />
       {selected.length > 0 && !multiple && <button type="button" className="btn btn-ghost" aria-label={`Clear ${label}`} onClick={() => { setSelected([]); setQuery(""); onChange?.(""); }}>×</button>}

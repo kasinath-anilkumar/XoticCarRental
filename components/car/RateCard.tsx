@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { formatINR } from "@/lib/format";
 import { nightWindowLabel, rateFor } from "@/lib/pricing";
 import type { Car, City, Occasion, Package, SiteSettings } from "@/lib/types";
@@ -226,8 +227,8 @@ export function RateCard({
       )}
 
       {/* Rates Table */}
-      <div className="overflow-x-auto rounded-lg border border-[var(--color-divider)] bg-surface">
-        <table className="table">
+      <HorizontalScroll label="Vehicle rate card" controls="above" className="rounded-lg border border-[var(--color-divider)] bg-surface">
+        <table className="table min-w-[560px]">
           <thead>
             <tr>
               <th>Charge</th>
@@ -283,7 +284,7 @@ export function RateCard({
             ))}
           </tbody>
         </table>
-      </div>
+      </HorizontalScroll>
 
       <p className="mt-3 max-w-[68ch] text-[12px] text-[var(--color-neutral-500)]">
         Package rates carry {city.name}&rsquo;s ×{city.multiplier.toFixed(2)} operating multiplier.

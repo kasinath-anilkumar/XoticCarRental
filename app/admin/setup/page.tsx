@@ -47,7 +47,8 @@ export default function AdminSetupPage() {
                 padding: "11.2px",
                 borderRadius: "var(--radius-md)",
                 fontSize: "12px",
-                overflowX: "auto",
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
                 marginTop: "8.4px",
               }}
             >

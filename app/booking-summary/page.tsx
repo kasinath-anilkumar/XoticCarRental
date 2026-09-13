@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 
 import { SendToWhatsApp } from "@/components/summary/SendToWhatsApp";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
@@ -138,8 +139,8 @@ export default async function BookingSummaryPage({
             </div>
 
             <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">Price breakdown</h2>
-            <div className="overflow-x-auto">
-              <table className="table">
+            <HorizontalScroll label="Booking price breakdown" controls="above">
+              <table className="table min-w-[420px]">
                 <tbody>
                   {quote.lines.map((line) => (
                     <tr key={line.label}>
@@ -164,7 +165,7 @@ export default async function BookingSummaryPage({
                   </tr>
                 </tbody>
               </table>
-            </div>
+            </HorizontalScroll>
 
             <div className="mt-8 flex flex-wrap gap-8">
               <div className="min-w-[240px] flex-1">

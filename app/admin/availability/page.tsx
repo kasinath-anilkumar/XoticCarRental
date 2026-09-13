@@ -1,4 +1,5 @@
 import { ReferenceSelect } from "@/components/admin/ReferenceSelect";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { createSupabaseServerClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -136,8 +137,8 @@ export default async function AdminAvailabilityPage({ searchParams }: { searchPa
           <p className={styles.cardHint}>No {view.key === "past" ? "finished " : view.key === "current" ? "current or upcoming " : ""}holds match these filters.</p>
         ) : (
           <><p className={styles.cardHint}>{result.total} matching {result.total === 1 ? "hold" : "holds"} in {view.label.toLowerCase()}. Dates follow India Standard Time.</p>
-          <div className={styles.tableWrap}>
-            <table className="table">
+          <HorizontalScroll label="Vehicle holds" controls="above">
+            <table className="table min-w-[640px]">
               <thead>
                 <tr>
                   <th>Vehicle</th>
@@ -154,7 +155,7 @@ export default async function AdminAvailabilityPage({ searchParams }: { searchPa
                 ))}
               </tbody>
             </table>
-          </div></>
+          </HorizontalScroll></>
         )}
         <Pagination total={result.total} page={result.page} pageSize={result.pageSize} path="/admin/availability" query={query.toString()} label="holds" />
       </section>

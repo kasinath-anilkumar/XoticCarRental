@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import {
   MAX_BUDGET_AMOUNT,
   budgetLabel,
@@ -246,6 +247,7 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
 
         {/* Category Tabs (UI/UX Layers) */}
         <nav className={styles.tabNav} aria-label="Filter categories">
+          <HorizontalScroll label="Filter categories" contentClassName={styles.tabList}>
           {TABS.map((tab) => {
             const isCurrent = activeTab === tab.id;
             const hasFilter = isTabActive(tab.id);
@@ -254,6 +256,7 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
                 key={tab.id}
                 type="button"
                 className={`${styles.tabButton} ${isCurrent ? styles.tabButtonActive : ""}`}
+                aria-pressed={isCurrent}
                 onClick={() => setActiveTab(tab.id)}
               >
                 <Icon name={tab.icon} size={14} />
@@ -262,6 +265,7 @@ export function MobileFilters({ catalog, filters, baseQuery }: MobileFiltersProp
               </button>
             );
           })}
+          </HorizontalScroll>
         </nav>
 
         {/* Tab Body Content */}

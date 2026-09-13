@@ -734,20 +734,6 @@ textarea.input { min-height: 90px; resize: vertical; }
 .wa-ink { background: var(--color-whatsapp-ink); color: var(--color-whatsapp-tint); border-color: var(--color-whatsapp-ink); }
 .wa-ink:hover { background: var(--color-whatsapp-ink-hover); border-color: var(--color-whatsapp-ink-hover); }
 
-/* Horizontal scroll rows — occasion chips, city chips, mobile card rails. */
-.scroll-x {
-  display: flex;
-  gap: 11.2px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
-  /* The UA thumb is invisible against a near-black track without this. */
-  scrollbar-color: var(--color-neutral-700) transparent;
-  -webkit-overflow-scrolling: touch;
-}
-.scroll-x > * { flex: none; }
-
 /* The sticky bottom action bar the mobile frame puts on detail / quote /
    summary / occasion / city. Hidden above the mobile breakpoint. */
 .stickybar {

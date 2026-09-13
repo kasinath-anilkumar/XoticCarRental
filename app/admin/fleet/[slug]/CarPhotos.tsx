@@ -169,7 +169,7 @@ function PhotoRow({ photo, slug }: { photo: CarPhoto; slug: string }) {
           unoptimized
         />
 
-        <form action={formAction} className={styles.rowForm} style={{ flex: 1, margin: 0 }}>
+        <form action={formAction} className={styles.rowForm} style={{ flex: "1 1 180px", minWidth: 0, margin: 0 }}>
           <input type="hidden" name="id" value={photo.id} />
           <input type="hidden" name="slug" value={slug} />
 
@@ -192,7 +192,7 @@ function PhotoRow({ photo, slug }: { photo: CarPhoto; slug: string }) {
             className="input"
             defaultValue={photo.alt ?? ""}
             placeholder="What is in the picture"
-            style={{ flex: 1, minWidth: "180px" }}
+            style={{ flex: "1 1 180px", minWidth: 0 }}
             aria-label="Description"
             required
           />

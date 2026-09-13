@@ -1,4 +1,5 @@
 import { ListFilters } from "@/components/admin/ListFilters";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { Pagination } from "@/components/ui/Pagination";
 import { adminListRequest, checkAdminPage, type AdminSearchParams } from "@/lib/admin/list";
 import { searchPattern } from "@/lib/admin/references";
@@ -55,8 +56,8 @@ export default async function AdminFleetPage({ searchParams }: { searchParams: A
 
       <ListFilters path="/admin/fleet" q={request.q} city={request.city} cityLabel={selectedCity?.data?.name} withCity />
       <section className={styles.card}>
-        <div className={styles.tableWrap}>
-          <table className="table">
+        <HorizontalScroll label="Fleet rates" controls="above">
+          <table className="table min-w-[760px]">
             <thead>
               <tr>
                 <th>Car</th>
@@ -98,7 +99,7 @@ export default async function AdminFleetPage({ searchParams }: { searchParams: A
               ))}
             </tbody>
           </table>
-        </div>
+        </HorizontalScroll>
         {total === 0 && <p>No vehicles match these filters.</p>}
         <Pagination total={total} page={request.page} pageSize={ADMIN_PAGE_SIZE} path="/admin/fleet" query={request.query} label="vehicles" />
       </section>

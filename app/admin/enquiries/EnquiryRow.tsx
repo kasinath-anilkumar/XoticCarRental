@@ -1,4 +1,5 @@
 "use client";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 
 import { useActionState, useState } from "react";
 
@@ -58,7 +59,7 @@ export function LeadRow(props: LeadRowProps) {
   return (
     <section className={styles.card} style={props.overdue ? { borderLeft: "3px solid var(--color-accent)" } : undefined}>
       <div style={{ display: "flex", gap: "16.8px", alignItems: "baseline", flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: "220px" }}>
+        <div style={{ flex: "1 1 220px", minWidth: 0, overflowWrap: "anywhere" }}>
           <p style={{ margin: 0, fontFamily: "var(--font-heading)", fontSize: "17px" }}>
             {props.leadId || "—"}
             <span
@@ -81,7 +82,7 @@ export function LeadRow(props: LeadRowProps) {
           </p>
         </div>
 
-        <div className={styles.muted} style={{ fontSize: "12px", minWidth: "220px" }}>
+        <div className={styles.muted} style={{ fontSize: "12px", flex: "1 1 220px", minWidth: 0, overflowWrap: "anywhere" }}>
           {props.serviceName}
           {props.quoted ? (
             <>
@@ -139,8 +140,8 @@ export function LeadRow(props: LeadRowProps) {
       </div>
 
       {open && props.details.length > 0 && (
-        <div className={styles.tableWrap} style={{ marginTop: "16.8px" }}>
-          <table className="table">
+        <HorizontalScroll label="Enquiry answers" controls="above" className="mt-4">
+          <table className="table min-w-[420px]">
             <tbody>
               {props.details.map((detail) => (
                 <tr key={detail.label}>
@@ -152,12 +153,12 @@ export function LeadRow(props: LeadRowProps) {
               ))}
             </tbody>
           </table>
-        </div>
+        </HorizontalScroll>
       )}
 
       {open && props.quoted && (
-        <div className={styles.tableWrap} style={{ marginTop: "16.8px" }}>
-          <table className="table">
+        <HorizontalScroll label="Enquiry quote breakdown" controls="above" className="mt-4">
+          <table className="table min-w-[420px]">
             <tbody>
               {props.lines.map((line, index) => (
                 <tr key={`${line.label}-${index}`}>
@@ -174,7 +175,7 @@ export function LeadRow(props: LeadRowProps) {
               ))}
             </tbody>
           </table>
-        </div>
+        </HorizontalScroll>
       )}
 
       <form action={formAction} className={styles.rowForm} style={{ marginTop: "16.8px" }}>

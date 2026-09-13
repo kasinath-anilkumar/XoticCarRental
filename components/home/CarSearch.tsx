@@ -3,6 +3,7 @@
 import { useId, useMemo, useRef, useState, useEffect } from "react";
 
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { Media } from "@/components/ui/Media";
 import { formatINR } from "@/lib/format";
 import { carPrice, heroImage, homeCity, packageBySlug, type Catalog } from "@/lib/catalog";
@@ -242,7 +243,7 @@ export function CarSearch({
       {isOpen && (
         <div className="absolute top-[calc(100%+6px)] right-0 left-0 z-50 flex max-h-[380px] flex-col overflow-hidden rounded-md border border-[var(--color-neutral-800)] bg-[var(--color-surface)] shadow-[var(--shadow-lg)]">
           {/* Quick Category Filter Bar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto border-b border-[var(--color-divider)] bg-[var(--color-surface)] p-2.5 [scrollbar-width:none]">
+          <HorizontalScroll label="Vehicle categories" className="shrink-0 border-b border-[var(--color-divider)] bg-[var(--color-surface)] p-2.5" contentClassName="flex items-center gap-1.5 py-1">
             {carTypes.map((type) => {
               const isActive = selectedType === type;
               const count =
@@ -271,7 +272,7 @@ export function CarSearch({
                 </button>
               );
             })}
-          </div>
+          </HorizontalScroll>
 
           {/* Result Count Info Bar */}
           <div className="flex items-center justify-between border-b border-[var(--color-divider)] bg-[var(--color-neutral-900)]/60 px-3 py-1.5 text-[11px] text-[var(--color-neutral-500)]">
@@ -407,4 +408,3 @@ export function CarSearch({
     </div>
   );
 }
-

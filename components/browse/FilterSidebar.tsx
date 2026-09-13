@@ -149,14 +149,14 @@ export function FilterSidebar({ catalog, filters, baseParams }: FilterSidebarPro
       {groups.map((group) => (
         <div key={group.param} className="mb-6 max-lg:mb-4">
           <p className="mb-3 text-[11px] tracking-[0.1em] uppercase text-[var(--color-neutral-500)]">{group.label}</p>
-          <div className={`flex flex-wrap gap-2 max-lg:flex-nowrap max-lg:overflow-x-auto max-lg:pb-[4px] max-lg:[scrollbar-width:thin] max-lg:[&>*]:flex-none ${group.param === "city" || group.param === "state" ? "max-h-[150px] overflow-y-auto pr-1 [scrollbar-width:thin]" : ""}`}>
+          <div className={`flex flex-wrap gap-2 ${group.param === "city" || group.param === "state" ? "max-h-[150px] overflow-y-auto pr-1 [scrollbar-width:thin]" : ""}`}>
             {group.options.map((option) => {
               const active = filters[group.param] === option.key;
               return (
                 <Link
                   key={option.key}
                   href={hrefFor(group.param, option.key)}
-                  className={`cursor-pointer rounded-sm border px-[10px] py-[5px] text-[12px] whitespace-nowrap no-underline max-lg:inline-flex max-lg:min-h-[44px] max-lg:items-center max-lg:px-[14px] ${active ? "border-[var(--color-accent)] bg-[var(--color-accent-800)] text-[var(--color-accent-100)]" : "border-[var(--color-divider)] bg-transparent text-[var(--color-neutral-300)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent-200)]"}`}
+                  className={`max-w-full cursor-pointer rounded-sm border px-[10px] py-[5px] text-[12px] break-words no-underline max-lg:inline-flex max-lg:min-h-[44px] max-lg:items-center max-lg:px-[14px] ${active ? "border-[var(--color-accent)] bg-[var(--color-accent-800)] text-[var(--color-accent-100)]" : "border-[var(--color-divider)] bg-transparent text-[var(--color-neutral-300)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent-200)]"}`}
                   aria-current={active ? "true" : undefined}
                   scroll={false}
                 >

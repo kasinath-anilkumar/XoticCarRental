@@ -7,6 +7,7 @@ import { FilterSidebar } from "@/components/browse/FilterSidebar";
 import { MobileFilters } from "@/components/browse/MobileFilters";
 import { ChargesExplained } from "@/components/trust/ChargesExplained";
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { Pagination } from "@/components/ui/Pagination";
 import {
   budgetLabel,
@@ -169,7 +170,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
       </p>
 
       {/* Quick Type Filter Bar for fast switching */}
-      <div className="mb-5 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <HorizontalScroll label="Car types" className="mb-5" contentClassName="flex items-center gap-2 py-1">
         {carTypes.map((type) => {
           const active = filters.type === type;
           const label = type === "all" ? "All types" : type;
@@ -189,7 +190,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
             </Link>
           );
         })}
-      </div>
+      </HorizontalScroll>
 
       <div className="grid grid-cols-[264px_1fr] gap-8 lg:gap-12 max-lg:grid-cols-1 [&>*]:min-w-0">
         <div className="min-w-0 max-lg:hidden">
@@ -248,7 +249,7 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
             </div>
 
             {applied.length > 0 && (
-              <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pb-0.5">
                 <span className="text-[11px] text-[var(--color-neutral-500)] whitespace-nowrap flex-none">
                   Filtered:
                 </span>
@@ -257,11 +258,11 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
                     key={chip.param}
                     href={hrefWithout([chip.param])}
                     scroll={false}
-                    className="group inline-flex flex-none items-center gap-1.5 rounded-full border border-[var(--color-accent-800)] bg-[var(--color-accent-900)] py-0.5 pr-2 pl-2.5 text-[11px] sm:text-[12px] text-accent-text no-underline hover:border-[var(--color-accent)] whitespace-nowrap"
+                    className="group inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--color-accent-800)] bg-[var(--color-accent-900)] py-0.5 pr-2 pl-2.5 text-[11px] sm:text-[12px] text-accent-text no-underline hover:border-[var(--color-accent)]"
                     aria-label={`Remove the ${chip.label} filter`}
                   >
-                    <span>{chip.label}</span>
-                    <span className="flex opacity-70 group-hover:opacity-100">
+                    <span className="min-w-0 break-words">{chip.label}</span>
+                    <span className="flex shrink-0 opacity-70 group-hover:opacity-100">
                       <Icon name="ph-x" size={10} />
                     </span>
                   </Link>

@@ -80,7 +80,7 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
 
       {/* Interactive Category Filter Pills */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-divider)] pb-4">
-        <div className="flex flex-wrap items-center gap-2 overflow-x-auto [scrollbar-width:none]">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {categories.map((category) => {
             const isActive = activeCategory === category.key;
 
@@ -95,14 +95,14 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
                 }}
                 aria-pressed={isActive}
                 aria-controls={gridId}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all ${
+                className={`flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all ${
                   isActive
                     ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
                     : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
                 }`}
               >
-                <span className="capitalize">{category.label}</span>
-                <span className="text-[11px]">
+                <span className="min-w-0 break-words capitalize">{category.label}</span>
+                <span className="shrink-0 text-[11px]">
                   ({category.count})
                 </span>
               </button>

@@ -6,6 +6,7 @@ import { CarCard } from "@/components/CarCard";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
 import { ServiceEnquiryForm } from "@/components/services/ServiceEnquiryForm";
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { Media } from "@/components/ui/Media";
 import { carsForOccasion } from "@/lib/catalog";
 import { getCatalog } from "@/lib/content";
@@ -128,8 +129,9 @@ export default async function ServicePage({ params }: { params: Params }) {
       {/* Every service, one tap away — this is the site's spine (§2). */}
       <nav
         aria-label="Services"
-        className="scrollbar-none flex gap-2 overflow-x-auto border-b border-[var(--color-divider)] px-4 py-3 sm:px-6"
+        className="border-b border-[var(--color-divider)] px-4 py-3 sm:px-6"
       >
+        <HorizontalScroll label="Services" contentClassName="flex items-center gap-2 py-1">
         {related.map((item) => {
           const active = item.slug === service.slug;
           return (
@@ -148,6 +150,7 @@ export default async function ServicePage({ params }: { params: Params }) {
             </Link>
           );
         })}
+        </HorizontalScroll>
       </nav>
 
       <section className="sec">

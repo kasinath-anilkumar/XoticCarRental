@@ -86,12 +86,12 @@ export function GalleryViewer({
     <div>
       {/* Category Pills Navigator */}
       <nav aria-label="Gallery categories" className="mb-8 max-md:mb-5">
-        <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+        <div className="flex flex-wrap items-center gap-2 pb-1">
           <button
             type="button"
             onClick={() => handleCategorySelect("all")}
             aria-pressed={activeCategory === "all"}
-            className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
+            className={`flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
               activeCategory === "all"
                 ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
                 : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
@@ -112,15 +112,15 @@ export function GalleryViewer({
                 type="button"
                 onClick={() => handleCategorySelect(category.slug)}
                 aria-pressed={isActive}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
+                className={`flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
                   isActive
                     ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
                     : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
                 }`}
               >
                 <Icon name="ph-car-profile" size={15} />
-                <span>{category.name}</span>
-                <span className="text-[11px]">
+                <span className="min-w-0 break-words">{category.name}</span>
+                <span className="shrink-0 text-[11px]">
                   ({category.frames.length})
                 </span>
               </button>
