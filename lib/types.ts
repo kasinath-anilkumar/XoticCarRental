@@ -282,6 +282,8 @@ export interface PricingInput {
   tripType: TripType;
   /** Total route distance in km, already road-adjusted. */
   km: number;
+  /** The billed kilometres already cover the vehicle's return to its garage. */
+  returnDistanceIncluded?: boolean;
   haltHours: number;
   /** HH:MM, 24-hour — decides the night charge. */
   time: string;

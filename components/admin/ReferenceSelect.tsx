@@ -3,6 +3,7 @@
 import { useCombobox } from "downshift";
 import { useEffect, useId, useState } from "react";
 import type { ReferenceKind, ReferenceOption, ReferencePage } from "@/lib/admin/references";
+import { styles } from "@/app/admin/styles";
 
 interface Props {
   kind: ReferenceKind; name: string; label: string;
@@ -70,10 +71,10 @@ export function ReferenceSelect({ kind, name, label, initial = [], multiple = fa
     {multiple && selected.length > 0 && <div className="mb-2 flex flex-wrap gap-2">{selected.map((item) => <button key={item.value} type="button" className="btn btn-ghost max-w-full whitespace-normal [overflow-wrap:anywhere]" aria-label={`Remove ${item.label}`} onClick={() => setSelected((current) => current.filter((entry) => entry.value !== item.value))}>{item.label} ×</button>)}</div>}
     <div className="flex gap-2">
       <input {...combo.getInputProps({ className: "input min-w-0", placeholder: "Search saved records…", maxLength: 100, required: required && selected.length === 0, pattern: required && selected.length === 0 ? "(?!)" : undefined, title: "Choose a saved record from the results.", onBlur: () => { if (!multiple) setQuery(selected[0]?.label ?? ""); } })} />
-      {selected.length > 0 && !multiple && <button type="button" className="btn btn-ghost" aria-label={`Clear ${label}`} onClick={() => { setSelected([]); setQuery(""); onChange?.(""); }}>×</button>}
+      {selected.length > 0 && !multiple && <button type="button" className={`btn btn-ghost ${styles.referenceClear}`} aria-label={`Clear ${label}`} onClick={() => { setSelected([]); setQuery(""); onChange?.(""); }}>×</button>}
     </div>
     <div className={combo.isOpen ? "absolute top-full right-0 left-0 z-40 rounded-md border border-[var(--color-divider)] bg-surface shadow-xl" : "hidden"}>
-      <ul {...combo.getMenuProps()} className="m-0 max-h-64 list-none overflow-y-auto p-1">
+      <ul {...combo.getMenuProps()} className="scroll-shadows m-0 max-h-64 list-none overflow-y-auto p-1">
         {combo.isOpen && options.map((item, index) => <li key={item.value} {...combo.getItemProps({ item, index })} className={`cursor-pointer rounded p-3 text-sm ${combo.highlightedIndex === index ? "bg-[var(--color-accent-900)]" : ""}`}>{item.label}{item.detail && <span className="block text-xs text-[var(--color-neutral-400)]">{item.detail}</span>}</li>)}
       </ul>
       <output className="m-0 block px-3 py-2 text-xs">{loading ? "Loading choices…" : error || (options.length === 0 ? "No matching records. Add the record in its management page." : `Page ${result.page}`)}</output>

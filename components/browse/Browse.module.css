@@ -1,0 +1,99 @@
+.surface { background: #fff; color: #171b18; }
+.page { max-width: 1440px; margin: 0 auto; padding: 24px clamp(20px, 3.5vw, 52px) 72px; }
+.breadcrumb { margin: 0 0 22px; font-size: 12px; color: #626a65; }
+.intro { margin-bottom: 24px; }
+.kicker { color: #9a4300; font-size: 11px; font-weight: 600; margin: 0 0 9px; }
+.title { font-family: var(--font-heading); font-size: clamp(28px, 3vw, 42px); line-height: 1.16; letter-spacing: -.04em; font-weight: 650; margin: 0; }
+.mobileTitle { display: none; }
+.description { font-size: 14px; color: #626a65; line-height: 1.6; margin: 10px 0 0; }
+.journeySearch { display: grid; grid-template-columns: minmax(210px, 1.6fr) repeat(2, minmax(135px, 1fr)) minmax(145px, 1.1fr) auto; align-items: end; gap: 16px; padding: 20px; margin-bottom: 24px; background: #fff; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); box-shadow: 0 3px 12px rgb(23 27 24 / .025); }
+.searchField { display: flex; flex-direction: column; min-width: 0; gap: 8px; }
+.searchField label, .pickupField :global(.field) > label { color: #515b54; font-size: 11px; font-weight: 500; }
+.searchField input, .searchField select { width: 100%; min-width: 0; min-height: 46px; padding: 10px 11px; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); background: #fff; color: #171b18; font: inherit; font-size: 12px; }
+.searchField input:disabled { background: #f6f7f8; color: #68736b; }
+.searchField :is(input, select):focus-visible { outline: 2px solid #a94b00; outline-offset: 2px; }
+.pickupField { min-width: 0; }
+.pickupField :global(.field) { margin: 0; gap: 8px; }
+.pickupField :global(.input) { min-height: 46px; font-size: 12px; background: #fff; }
+.searchButton { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 46px; padding: 11px 17px; border: 1px solid #ff7a00; border-radius: var(--radius-sm); background: #ff7a00; color: #171b18; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; white-space: nowrap; }
+.searchButton:hover { background: #f18a30; }
+.searchButton:disabled { opacity: .65; cursor: wait; }
+.searchButton:focus-visible { outline: 2px solid #171b18; outline-offset: 3px; }
+.typeRail { margin-bottom: 24px; }
+.typeRailContent { display: flex; align-items: stretch; gap: 8px; padding-block: 3px; }
+.typeLink { min-height: 46px; padding: 10px 14px; display: inline-flex; align-items: center; gap: 9px; flex: none; text-decoration: none; color: #171b18; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); background: #fff; transition: border-color .2s, background-color .2s; }
+.typeLink:hover { border-color: #aeb7b1; background: #f0f2f1; }
+.typeActive, .typeActive:hover { border-color: #171b18; background: #171b18; color: #fff; }
+.typeIcon { display: flex; flex: none; }
+.typeName { font-size: 12px; line-height: 1.35; font-weight: 500; white-space: nowrap; }
+/* Keep the absolutely positioned screen-reader suffix inside its scroll rail. */
+.typeCount { position: relative; padding-left: 8px; border-left: 1px solid #c6cdc8; color: inherit; font-size: 11px; line-height: 1.3; }
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+.results { min-width: 0; }
+.toolbar { margin-bottom: 20px; }
+.toolbarTop { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.resultSummary { flex: 1 1 180px; min-width: 0; }
+.toolbarTop { scroll-margin-top: calc(var(--header-height) + 8px); }
+.toolbarTop:focus { outline: none; }
+.toolbarTop:focus-visible { outline: 2px solid #9a4300; outline-offset: 3px; }
+.resultCount { margin: 0; color: #171b18; font-size: 15px; line-height: 1.4; }
+.resultCount strong { font-size: 21px; font-weight: 650; margin-right: 3px; }
+.resultHint { margin: 6px 0 0; color: #626a65; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.toolbarActions { display: flex; align-items: end; gap: 12px; min-width: 0; }
+.mobileFilter { display: none; }
+.sort { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.sort label { color: #626a65; font-size: 11px; white-space: nowrap; }
+.sort select { min-height: 44px; width: 167px; max-width: 100%; padding: 10px; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); background: #fff; color: #171b18; font: inherit; font-size: 12px; cursor: pointer; }
+.sort select:focus-visible { outline: 2px solid #a94b00; outline-offset: 2px; }
+.sort select:disabled { cursor: progress; opacity: .7; }
+.rateNote { display: flex; align-items: start; gap: 8px; margin: 16px 0 0; color: #626a65; font-size: 11px; line-height: 1.6; }
+.rateNote svg { flex: none; margin-top: 1px; }
+.selection { margin-top: 16px; padding-top: 12px; border-top: 1px solid #dfe3e1; }
+.selectionHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.selectionHead h2 { display: flex; align-items: center; gap: 7px; margin: 0; font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0; line-height: 1.4; color: #626a65; }
+.selectionHead h2 span { font-size: 11px; }
+.clearFilters { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 0; color: #9a4300; font-size: 11px; text-underline-offset: 3px; }
+.selectionChips { display: flex; flex-wrap: wrap; gap: 8px; }
+.selectionChip { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; max-width: 100%; padding: 8px 11px; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); color: #171b18; background: #fff; font-size: 11px; text-decoration: none; }
+.selectionChip:hover { border-color: #aeb7b1; }
+.selectionChip > svg { flex: none; }
+.chipCopy { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; overflow-wrap: anywhere; }
+.chipCategory { color: #626a65; }
+.cars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.empty { padding: 44px 24px; text-align: center; background: #fff; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); }
+.chargesInfo { margin-top: 56px; }
+@media (max-width: 1199px) { .journeySearch { grid-template-columns: repeat(4, minmax(0, 1fr)); } .pickupField { grid-column: span 2; } .searchButton { align-self: end; } .layout { grid-template-columns: 240px minmax(0, 1fr); gap: 20px; } }
+@media (max-width: 1023px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 0; } .mobileFilter { display: block; } .toolbarTop { position: sticky; top: var(--header-height); padding-block: 12px; background: #fff; z-index: 5; } }
+@media (max-width: 639px) { .page { padding: 20px 16px 72px; } .breadcrumb { margin-bottom: 18px; } .intro { margin-bottom: 20px; } .title { font-size: 28px; } .description { font-size: 12px; margin-top: 8px; } .journeySearch { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; gap: 14px 12px; } .searchField :is(input, select), .pickupField :global(.input) { font-size: 16px; min-height: 46px; } .searchField label { font-size: 10px; } .searchButton { font-size: 12px; padding-inline: 10px; } .typeRail { margin-bottom: 14px; } .typeLink { padding-inline: 12px; } .typeIcon { display: none; } .toolbarTop { align-items: stretch; gap: 14px; } .resultSummary { flex-basis: 100%; } .toolbarActions { width: 100%; justify-content: space-between; } .sort { flex: 1; justify-content: end; max-width: 220px; } .sort select { width: 100%; min-width: 0; } .sort label { display: none; } .rateNote { font-size: 11px; } .cars { grid-template-columns: minmax(0, 1fr); gap: 18px; } }
+@media (prefers-reduced-motion: reduce) { .typeLink { transition: none; } }
+
+@media (max-width: 1023px) {
+  .page { padding-top: 14px; padding-bottom: 24px; }
+  .breadcrumb, .fullTitle { display: none; }
+  .mobileTitle { display: inline; }
+  .intro { margin-bottom: 14px; }
+  .kicker, .description { display: none; }
+  .title { font-size: 24px; line-height: 1.2; letter-spacing: -.03em; }
+  .journeyEditor { margin-bottom: 12px; }
+  .journeySearch { margin: 0; padding: 12px 0 0; border: 0; box-shadow: none; }
+  .typeRail { margin-bottom: 10px; }
+  .typeLink { min-height: 44px; padding: 8px 10px; gap: 7px; }
+  .typeName { font-size: 11px; }
+  .typeCount { padding-left: 6px; }
+  .toolbarTop { position: sticky; top: var(--header-height); z-index: 10; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; margin-inline: -16px; padding: 9px 16px; border-block: 1px solid #dfe3e1; background: #fff; }
+  .resultSummary { grid-column: 1 / -1; display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+  .resultCount { font-size: 12px; }
+  .resultCount strong { font-size: 16px; }
+  .resultHint { margin: 0; font-size: 11px; }
+  .toolbarActions { grid-column: 1 / -1; gap: 10px; width: 100%; }
+  .sort { max-width: none; }
+  .sort select { font-size: 13px; }
+  .sort label { display: none; }
+  .toolbar { margin-bottom: 12px; }
+  .rateNote { margin-top: 10px; font-size: 11px; line-height: 1.45; }
+  .selection { margin-top: 8px; padding-top: 0; border-top: 0; }
+  .selectionHead h2 { font-size: 11px; }
+  .selectionChip { padding: 6px 9px; }
+  .cars { gap: 14px; }
+  .chargesInfo { margin-top: 18px; }
+}

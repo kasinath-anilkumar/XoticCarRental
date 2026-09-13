@@ -33,7 +33,7 @@ export function ChargesForm({ charges }: { charges: ExtraCharge[] }) {
   const [rows, setRows] = useState<Array<Omit<ExtraCharge, "amount"> & { amount: number | string }>>(charges);
 
   return (
-    <section className={styles.card}>
+    <section id="extra-charges" className={styles.card} style={{ marginTop: "24px" }}>
       <h2 className={styles.cardTitle}>Tolls, parking and permits</h2>
       <p className={styles.cardHint}>
         Add a configured charge and enable it to include a separate line on every matching quote — and the &ldquo;at actuals&rdquo; line

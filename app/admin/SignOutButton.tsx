@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { styles } from "./styles";
 
 export function SignOutButton() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export function SignOutButton() {
   };
 
   return (
-    <button type="button" className="btn btn-secondary" onClick={signOut} disabled={busy}>
+    <button type="button" className={styles.signOut} onClick={signOut} disabled={busy}>
       {busy ? "Signing out…" : "Sign out"}
     </button>
   );

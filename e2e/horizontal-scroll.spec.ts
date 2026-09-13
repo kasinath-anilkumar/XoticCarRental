@@ -33,7 +33,8 @@ test("city navigation scroll buttons move the rail without moving the page", asy
   const cities = horizontalScroll(page, "Cities");
   await expect(cities.viewport).toHaveAttribute("tabindex", "0");
   await expect.poll(() => remaining(cities.viewport)).toBeGreaterThan(1);
-  await cities.wrapper.scrollIntoViewIfNeeded();
+  // Clear persistent bottom actions before measuring whether the click scrolls the page.
+  await cities.wrapper.evaluate((element) => element.scrollIntoView({ block: "center", behavior: "instant" }));
   await expect(cities.next).toBeVisible();
   await cities.viewport.focus();
   await cities.viewport.press("Home");

@@ -5,6 +5,7 @@ import { ReferenceSelect } from "@/components/admin/ReferenceSelect";
 import { SERVICE_GROUPS, type Service, type ServiceField, type ServiceFieldType } from "@/lib/services";
 import { AdminForm } from "../AdminForm";
 import { saveService } from "./actions";
+import { styles } from "../styles";
 
 const emptyService: Service = { slug: "", name: "", short: "", icon: "ph-car", kicker: "", title: "", blurb: "", tagline: "", occasionSlug: "", group: "occasions", carFilter: {}, h2: "", includes: [], packages: [], note: "", fields: [] };
 
@@ -23,12 +24,12 @@ export function ServiceEditor({ initial, id, active = false, sort = 0, occasion,
   const change = <K extends keyof Service>(key: K, value: Service[K]) => setService((current) => ({ ...current, [key]: value }));
   const changeField = (index: number, patch: Partial<ServiceField>) => change("fields", service.fields.map((field, position) => position === index ? { ...field, ...patch } : field));
   return (
-    <AdminForm action={saveService} submitLabel={id ? "Save service" : "Create service"} className="max-w-5xl space-y-8">
+    <AdminForm action={saveService} submitLabel={id ? "Save service" : "Create service"} className={styles.editorForm}>
       <input type="hidden" name="id" value={id ?? ""} />
       <input type="hidden" name="definition" value={JSON.stringify(service)} />
-      <fieldset className="space-y-4 rounded-xl border border-[var(--color-divider)] p-5">
+      <fieldset className={styles.editorSection}>
         <legend className="px-2 text-lg font-medium">Publication and pricing</legend>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={styles.grid2}>
           <TextControl label="Service name" value={service.name} onChange={(value) => change("name", value)} required max={120} />
           <TextControl label="URL slug" value={service.slug} onChange={(value) => change("slug", value)} required max={80} disabled={Boolean(id)} />
           <TextControl label="Short name" value={service.short} onChange={(value) => change("short", value)} required max={60} />
@@ -41,9 +42,9 @@ export function ServiceEditor({ initial, id, active = false, sort = 0, occasion,
         <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="is_active" defaultChecked={active} /> Published on the website</label>
       </fieldset>
 
-      <fieldset className="space-y-4 rounded-xl border border-[var(--color-divider)] p-5">
+      <fieldset className={styles.editorSection}>
         <legend className="px-2 text-lg font-medium">Page content</legend>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={styles.grid2}>
           <TextControl label="Kicker" value={service.kicker} onChange={(value) => change("kicker", value)} required max={120} />
           <TextControl label="Icon name" value={service.icon} onChange={(value) => change("icon", value)} required max={80} />
         </div>
@@ -53,7 +54,7 @@ export function ServiceEditor({ initial, id, active = false, sort = 0, occasion,
         <TextControl label="Booking note" value={service.note} onChange={(value) => change("note", value)} multiline />
       </fieldset>
 
-      <fieldset className="space-y-4 rounded-xl border border-[var(--color-divider)] p-5">
+      <fieldset className={styles.editorSection}>
         <legend className="px-2 text-lg font-medium">What is included</legend>
         <TextControl label="Includes heading" value={service.h2} onChange={(value) => change("h2", value)} required max={200} />
         {service.includes.map((item, index) => <div key={index} className="grid gap-3 border-t border-[var(--color-divider)] pt-4 sm:grid-cols-[1fr_2fr_auto]">
@@ -64,7 +65,7 @@ export function ServiceEditor({ initial, id, active = false, sort = 0, occasion,
         <button type="button" className="btn btn-secondary" disabled={service.includes.length >= 20} onClick={() => change("includes", [...service.includes, { title: "", detail: "" }])}>Add included item</button>
       </fieldset>
 
-      <fieldset className="space-y-4 rounded-xl border border-[var(--color-divider)] p-5">
+      <fieldset className={styles.editorSection}>
         <legend className="px-2 text-lg font-medium">Indicative packages</legend>
         <p className="text-sm text-[var(--color-neutral-400)]">These are advertised starting prices. Vehicle package rates remain under Fleet and Packages.</p>
         {service.packages.map((item, index) => <div key={index} className="space-y-3 border-t border-[var(--color-divider)] pt-4">
@@ -74,7 +75,7 @@ export function ServiceEditor({ initial, id, active = false, sort = 0, occasion,
         <button type="button" className="btn btn-secondary" disabled={service.packages.length >= 20} onClick={() => change("packages", [...service.packages, { name: "", detail: "", price: "", unit: "" }])}>Add package</button>
       </fieldset>
 
-      <fieldset className="space-y-5 rounded-xl border border-[var(--color-divider)] p-5">
+      <fieldset className={styles.editorSection}>
         <legend className="px-2 text-lg font-medium">Enquiry questions</legend>
         <p className="text-sm text-[var(--color-neutral-400)]">Use Place search for locations. Car type choices stay in sync with the fleet.</p>
         {service.fields.map((field, index) => <div key={index} className="space-y-3 border-t border-[var(--color-divider)] pt-4">

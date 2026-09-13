@@ -1,11 +1,9 @@
 /**
  * The quote engine.
  *
- * A direct port of the prototype's `calc()` (design/project/Xotic Car Rental.dc.html).
- * The arithmetic is deliberately unchanged — these are the numbers the business
- * quotes customers, and lib/pricing.test.ts pins every branch of it. If a rule
- * needs to change, change it here and update the fixtures in the same commit,
- * so a quote never moves by accident.
+ * Package arithmetic and configured extras live here so every quote surface
+ * agrees. Garage-to-garage callers mark the return distance as included to
+ * avoid charging a second return allowance. Tests pin the billing rules.
  *
  * Pure: no database, no network, no clock. Callers resolve the car, package,
  * city and occasion first and pass distance in from lib/distance.ts.
@@ -88,7 +86,7 @@ export function computeQuote(input: PricingInput): Quote {
   const seasonSurcharge = season ? Math.round(base * (season.multiplier - 1)) : 0;
 
   const oneWayReturn =
-    tripType === "oneway"
+    tripType === "oneway" && !input.returnDistanceIncluded
       ? Math.round(km * car.extraKmRate * rules.oneWayReturnPercent / 100)
       : 0;
 

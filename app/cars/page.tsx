@@ -5,10 +5,14 @@ import { CarCard } from "@/components/CarCard";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
 import { FilterSidebar } from "@/components/browse/FilterSidebar";
 import { MobileFilters } from "@/components/browse/MobileFilters";
+import { BrowseSort } from "@/components/browse/BrowseSort";
+import { BrowseJourneySearch } from "@/components/browse/BrowseJourneySearch";
+import styles from "@/components/browse/Browse.module.css";
 import { ChargesExplained } from "@/components/trust/ChargesExplained";
 import { Icon } from "@/components/ui/Icon";
 import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { Pagination } from "@/components/ui/Pagination";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import {
   budgetLabel,
   browseFilterOptions,
@@ -25,6 +29,8 @@ import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { CARS_PAGE_SIZE, pageBounds, parsePage } from "@/lib/pagination";
 import { resolvePlace } from "@/lib/places";
 import { getStore } from "@/lib/store";
+import { BROWSE_FILTER_KEYS, removeBrowseFilters } from "@/lib/browse-filters";
+import { businessDate } from "@/lib/dates";
 
 
 export const metadata: Metadata = {
@@ -34,12 +40,6 @@ export const metadata: Metadata = {
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-const SORT_OPTIONS = [
-  { key: "popular", label: "Popular", icon: "ph-sparkle" },
-  { key: "low", label: "Price low", icon: "ph-caret-up" },
-  { key: "high", label: "Price high", icon: "ph-caret-down" },
-] as const;
 
 export default async function BrowsePage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
@@ -92,23 +92,11 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
     if (first) baseParams.set(key, first);
   }
 
-  const hrefWithout = (keys: string[]) => {
-    const next = new URLSearchParams(baseParams);
-    next.delete("page");
-    if (keys.includes("date")) next.delete("returnDate");
-    for (const key of keys) next.delete(key);
-    const query = next.toString();
-    return query ? `/cars?${query}` : "/cars";
-  };
-
-  const sortHref = (key: string) => {
-    const next = new URLSearchParams(baseParams);
-    next.delete("page");
-    if (key === "popular") next.delete("sort");
-    else next.set("sort", key);
-    const query = next.toString();
-    return query ? `/cars?${query}` : "/cars";
-  };
+  const baseQuery = baseParams.toString();
+  const filterOptions = browseFilterOptions(catalog);
+  const minDate = businessDate();
+  const clearHref = `${removeBrowseFilters(baseQuery, BROWSE_FILTER_KEYS)}#fleet-results`;
+  const pickup = single(params.stops)?.split("~")[0] ?? single(params.from) ?? "";
 
   const typeHref = (type: string) => {
     const next = new URLSearchParams(baseParams);
@@ -116,10 +104,11 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
     if (type === "all") next.delete("type");
     else next.set("type", type);
     const query = next.toString();
-    return query ? `/cars?${query}` : "/cars";
+    return `${query ? `/cars?${query}` : "/cars"}#fleet-results`;
   };
 
-  const carTypes = ["all", ...new Set(catalog.cars.map((car) => car.type))];
+  const carTypes = [{ key: "all", name: "All types", count: filterOptions.carCount },
+    ...filterOptions.carTypes.map((type) => ({ key: type.name, ...type }))];
 
   const title =
     filters.city !== "all"
@@ -129,157 +118,127 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
         : "Cars with drivers across India";
 
   // What is currently narrowing the list, so it can be shown and undone.
-  const applied: Array<{ label: string; param: keyof CarFilters }> = [];
-  if (filters.state !== "all") applied.push({ label: filters.state, param: "state" });
+  const applied: Array<{ category: string; label: string; param: keyof CarFilters }> = [];
+  if (filters.state !== "all") applied.push({ category: "State", label: filters.state, param: "state" });
   if (filters.city !== "all") {
-    applied.push({ label: cityBySlug(catalog, filters.city).name, param: "city" });
+    applied.push({ category: "City", label: cityBySlug(catalog, filters.city).name, param: "city" });
   }
-  if (filters.type !== "all") applied.push({ label: filters.type, param: "type" });
+  if (filters.type !== "all") applied.push({ category: "Type", label: filters.type, param: "type" });
   if (filters.budget !== "all") {
-    applied.push({ label: budgetLabel(filters.budget), param: "budget" });
+    applied.push({ category: "Budget", label: budgetLabel(filters.budget), param: "budget" });
   }
   if (filters.date) {
     const label =
       returnDateParam && returnDateParam >= filters.date
-        ? `${filters.date} → ${returnDateParam}`
-        : `Free on ${filters.date}`;
-    applied.push({ label, param: "date" });
+        ? `${dateLabel(filters.date)} – ${dateLabel(returnDateParam)}`
+        : dateLabel(filters.date);
+    applied.push({ category: "Dates", label, param: "date" });
   }
   if (filters.occasion !== "all") {
-    applied.push({ label: occasionBySlug(catalog, filters.occasion).name, param: "occasion" });
+    applied.push({ category: "Occasion", label: occasionBySlug(catalog, filters.occasion).name, param: "occasion" });
   }
   if (filters.seats !== "all") {
     const seatLabel =
       filters.seats === "4" ? "Up to 4 seats" : filters.seats === "7" ? "5–7 seats" : "8+ seats";
-    applied.push({ label: seatLabel, param: "seats" });
+    applied.push({ category: "Seats", label: seatLabel, param: "seats" });
   }
 
   return (
-    <div className="px-[var(--gutter-mobile)] sm:px-6 md:px-8 lg:px-[var(--gutter-desktop)] pt-6 sm:pt-8 md:pt-12 pb-14">
-      <p className="mb-4 text-[12px] text-[var(--color-neutral-600)]">
+    <div className={styles.surface}><div className={styles.page}>
+      <p className={styles.breadcrumb}>
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
           Home
         </Link>{" "}
         / Browse cars
       </p>
-      <h1 className="mb-2 text-[26px] sm:text-[30px] lg:text-[34px]">{title}</h1>
-      <p className="mb-6 sm:mb-8 max-w-[70ch] text-[12px] sm:text-[13px] text-[var(--color-neutral-500)]">
-        Rates are the {pkg.label} package in each car&rsquo;s home city, before the driver&rsquo;s
-        bata and {catalog.settings.gstPercent}% GST. Your exact price depends on the route — the
-        calculator works it out line by line.
-      </p>
+      <header className={styles.intro}>
+        <div><p className={styles.kicker}>Find your next ride</p><h1 className={styles.title}><span className={styles.fullTitle}>{title}</span><span className={styles.mobileTitle}>{filters.city === "all" && filters.state === "all" && filters.type === "all" ? "Cars with drivers" : title}</span></h1><p className={styles.description}>Choose your car. A chauffeur takes care of the drive.</p></div>
+      </header>
 
-      {/* Quick Type Filter Bar for fast switching */}
-      <HorizontalScroll label="Car types" className="mb-5" contentClassName="flex items-center gap-2 py-1">
+      <BrowseJourneySearch key={baseQuery} baseQuery={baseQuery} pickup={pickup} date={filters.date}
+        returnDate={filters.date && returnDateParam >= filters.date ? returnDateParam : ""} packageSlug={pkg.slug}
+        packages={catalog.packages.map(({ slug, label }) => ({ slug, label }))}
+        locations={catalog.locations.filter((location) => location.slug === pickup)} minDate={minDate} />
+
+      <HorizontalScroll label="Car types" className={styles.typeRail} contentClassName={styles.typeRailContent}>
         {carTypes.map((type) => {
-          const active = filters.type === type;
-          const label = type === "all" ? "All types" : type;
+          const active = filters.type === type.key;
           return (
             <Link
-              key={type}
-              href={typeHref(type)}
+              key={type.key}
+              href={typeHref(type.key)}
+              prefetch={false}
               scroll={false}
               aria-current={active ? "true" : undefined}
-              className={`inline-flex flex-none items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] sm:text-[13px] whitespace-nowrap transition-colors no-underline ${
-                active
-                  ? "border border-[var(--color-accent)] bg-[var(--color-accent-800)] font-medium text-[var(--color-accent-100)] shadow-xs"
-                  : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-300)] hover:border-[var(--color-neutral-600)] hover:text-text"
-              }`}
+              className={`${styles.typeLink} ${active ? styles.typeActive : ""}`}
             >
-              {label}
+              <span className={styles.typeIcon}><Icon name={type.key === "all" ? "ph-steering-wheel" : "ph-car-profile"} size={19} /></span>
+              <span className={styles.typeName}>{type.name}</span><span className={styles.typeCount}>{type.count}<span className="visually-hidden"> in fleet</span></span>
             </Link>
           );
         })}
       </HorizontalScroll>
 
-      <div className="grid grid-cols-[264px_1fr] gap-8 lg:gap-12 max-lg:grid-cols-1 [&>*]:min-w-0">
-        <div className="min-w-0 max-lg:hidden">
-          <div className="sticky top-[calc(var(--header-height)+16.8px)] max-h-[calc(100dvh-var(--header-height)-33.6px)] overflow-y-auto [scrollbar-color:var(--color-neutral-700)_transparent] [scrollbar-width:thin]">
-            <FilterSidebar catalog={catalog} filters={filters} baseParams={baseParams} />
-          </div>
-        </div>
+      <div className={styles.layout}>
+        <FilterSidebar key={baseQuery} catalog={filterOptions} filters={filters} baseQuery={baseQuery} minDate={minDate} />
 
-        <div>
-          <div className="sticky top-[var(--header-height)] z-20 mb-6 -mx-[var(--gutter-mobile)] sm:-mx-6 md:-mx-8 lg:mx-0 border-b border-[var(--color-divider)] bg-bg px-[var(--gutter-mobile)] sm:px-6 md:px-8 lg:px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] text-[var(--color-neutral-400)] truncate [&_strong]:font-[family-name:var(--font-heading)] [&_strong]:text-[16px] sm:[&_strong]:text-[17px] [&_strong]:text-text">
-                  <strong>{cars.length}</strong> {cars.length === 1 ? "car" : "cars"} available
+        <div className={styles.results}>
+            <section id="fleet-results" tabIndex={-1} className={styles.toolbarTop} aria-label="Fleet results and controls">
+              <div className={styles.resultSummary}>
+                <p className={styles.resultCount}>
+                  <strong>{cars.length}</strong> {cars.length === 1 ? "car" : "cars"}{filters.date ? " for your dates" : " to explore"}
                 </p>
-                {(hiddenByDate > 0 || customer) && (
-                  <p className="mt-[1px] text-[11px] sm:text-[12px] text-[var(--color-neutral-400)] truncate">
+                {!filters.date && <p className={styles.resultHint}>Add travel dates to check availability.</p>}
+                {(hiddenByDate > 0 || (customer && filters.sort === "popular")) && (
+                  <p className={styles.resultHint}>
                     {hiddenByDate > 0 && (
                       <>
-                        {hiddenByDate} {hiddenByDate === 1 ? "car is" : "cars are"} booked on {filters.date}.{" "}
+                        {hiddenByDate} {hiddenByDate === 1 ? "car is" : "cars are"} booked for your selected dates.{" "}
                       </>
                     )}
-                    {customer && <>Nearest to {customer.name} first.</>}
+                    {customer && filters.sort === "popular" && <>Nearest to {customer.name} first.</>}
                   </p>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-3 flex-none">
-                <div className="lg:hidden">
-                  <MobileFilters catalog={browseFilterOptions(catalog)} filters={filters} baseQuery={baseParams.toString()} />
+              <div className={styles.toolbarActions}>
+                <div className={styles.mobileFilter}>
+                  <MobileFilters key={baseQuery} catalog={filterOptions} filters={filters} baseQuery={baseQuery} minDate={minDate} />
                 </div>
-
-                <div className="inline-flex gap-[2px] rounded-md bg-well p-[3px]">
-                  {SORT_OPTIONS.map((option) => {
-                    const active = filters.sort === option.key;
-                    return (
-                      <Link
-                        key={option.key}
-                        href={sortHref(option.key)}
-                        scroll={false}
-                        aria-current={active ? "true" : undefined}
-                        title={`Sort by ${option.label}`}
-                        className={`inline-flex items-center gap-1 rounded-sm px-2 sm:px-[10px] py-1 sm:py-[5px] text-[12px] sm:text-[13px] whitespace-nowrap no-underline transition-colors ${
-                          active
-                            ? "bg-surface text-accent-text shadow-[var(--shadow-sm)] font-medium"
-                            : "text-[var(--color-neutral-400)] hover:text-text"
-                        }`}
-                      >
-                        <Icon name={option.icon} size={13} />
-                        <span className="max-sm:hidden">{option.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
+                <BrowseSort key={baseQuery} value={filters.sort} baseQuery={baseQuery} />
               </div>
-            </div>
+            </section>
+
+          <div className={styles.toolbar}>
+            <p className={styles.rateNote}><Icon name="ph-info" size={16} />{pkg.label} base rates in each car&rsquo;s home city. Driver allowance, {catalog.settings.gstPercent}% GST and route extras are additional.</p>
 
             {applied.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap items-center gap-1.5 pb-0.5">
-                <span className="text-[11px] text-[var(--color-neutral-500)] whitespace-nowrap flex-none">
-                  Filtered:
-                </span>
+              <section className={styles.selection} aria-label="Your selection">
+                <div className={styles.selectionHead}>
+                  <h2>Your selection <span>{applied.length}</span></h2>
+                  <Link href={clearHref} scroll={false} prefetch={false} className={styles.clearFilters}>Clear all</Link>
+                </div>
+                <div className={styles.selectionChips}>
                 {applied.map((chip) => (
                   <Link
                     key={chip.param}
-                    href={hrefWithout([chip.param])}
+                    href={`${removeBrowseFilters(baseQuery, [chip.param])}#fleet-results`}
                     scroll={false}
-                    className="group inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--color-accent-800)] bg-[var(--color-accent-900)] py-0.5 pr-2 pl-2.5 text-[11px] sm:text-[12px] text-accent-text no-underline hover:border-[var(--color-accent)]"
+                    prefetch={false}
+                    className={styles.selectionChip}
                     aria-label={`Remove the ${chip.label} filter`}
                   >
-                    <span className="min-w-0 break-words">{chip.label}</span>
-                    <span className="flex shrink-0 opacity-70 group-hover:opacity-100">
-                      <Icon name="ph-x" size={10} />
-                    </span>
+                    <span className={styles.chipCopy}><span className={styles.chipCategory}>{chip.category}</span><span>{chip.label}</span></span>
+                    <Icon name="ph-x" size={15} />
                   </Link>
                 ))}
-                <Link
-                  href={hrefWithout(["city", "state", "type", "occasion", "seats", "sort", "budget", "date"])}
-                  scroll={false}
-                  className="flex-none px-1.5 py-0.5 text-[11px] sm:text-[12px] text-[var(--color-neutral-500)] whitespace-nowrap no-underline hover:text-accent-text"
-                >
-                  Clear all
-                </Link>
-              </div>
+                </div>
+              </section>
             )}
           </div>
 
           {cars.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+            <div className={styles.cars}>
               {visibleCars.map((car) => (
                 <CarCard
                   key={car.slug}
@@ -287,39 +246,43 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
                   car={car}
                   pkg={pkg}
                   citySlug={filters.city !== "all" ? filters.city : undefined}
-                  journeyQuery={baseParams.toString()}
+                  journeyQuery={baseQuery}
                 />
               ))}
             </div>
           ) : (
-            <div className="rounded-md bg-surface p-[48px] sm:p-[56px] text-center shadow-[var(--shadow-sm)] max-md:px-5 max-md:py-[28px]">
+            <div className={styles.empty}>
               <Icon name="ph-car-profile" size={34} color="var(--color-neutral-600)" />
               <p className="mt-4 mb-2 font-[family-name:var(--font-heading)] text-[18px] sm:text-[19px]">
                 No cars match those filters
               </p>
               <p className="mb-6 text-[13px] text-[var(--color-neutral-500)] max-w-[50ch] mx-auto">
-                Clear a filter, or tell us the car on WhatsApp and we will source it from a partner
-                fleet.
+                Try another vehicle type, widen your service area, or adjust your travel dates.
               </p>
               <Link
-                href={hrefWithout(["city", "state", "type", "occasion", "seats", "budget", "date"])}
+                href={clearHref}
+                prefetch={false}
                 className="btn btn-secondary"
               >
                 Clear filters
               </Link>
             </div>
           )}
-          <Pagination total={cars.length} page={pagination.page} pageSize={CARS_PAGE_SIZE} path="/cars" query={baseParams.toString()} label="cars" />
+          <Pagination total={cars.length} page={pagination.page} pageSize={CARS_PAGE_SIZE} path="/cars" query={baseQuery} label="cars" targetId="fleet-results" />
         </div>
       </div>
 
-      <section style={{ marginTop: "56px" }}>
+      <ResponsiveDisclosure title="How prices work" hideTitleOnDesktop className={styles.chargesInfo}>
         <ChargesExplained settings={catalog.settings} />
-      </section>
-    </div>
+      </ResponsiveDisclosure>
+    </div></div>
   );
 }
 
 function single(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function dateLabel(value: string): string {
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
 }

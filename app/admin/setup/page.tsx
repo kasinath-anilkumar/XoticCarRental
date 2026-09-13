@@ -18,10 +18,10 @@ export default function AdminSetupPage() {
   return (
     <div className={styles.loginPage}>
       <div className={styles.loginCard} style={{ width: "min(680px, 100%)" }}>
+        <p className={styles.eyebrow}>Workspace setup</p>
         <h1 className={styles.loginTitle}>Connect Supabase to use the admin</h1>
         <p className={styles.loginLede}>
-          The site is currently rendering from <code>backend/seed-data.js</code>. Everything a
-          visitor sees works, but nothing is editable and enquiries are not being recorded.
+          Connect your database, load your catalog and create a staff login to begin managing the business.
         </p>
 
         <ol style={{ fontSize: "14px", lineHeight: 1.7, paddingLeft: "1.2em" }}>

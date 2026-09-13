@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 
 import { AdminNav } from "./AdminNav";
 import { SignOutButton } from "./SignOutButton";
@@ -13,23 +14,29 @@ export function AdminShell({
 }) {
   return (
     <div className={styles.shell}>
-      <nav className={styles.sidebar} aria-label="Admin">
+      <a href="#admin-content" className={styles.skipLink}>Skip to workspace</a>
+      <aside className={styles.sidebar}>
         <Link href="/admin" className={styles.brand}>
-          XOTIC
+          <span className={styles.brandMark}><Icon name="ph-car-profile" size={22} /></span>
+          <span><span className={styles.brandName}>XOTIC</span><span className={styles.brandSub}>Rental operations</span></span>
         </Link>
-        <span className={styles.brandSub}>Admin</span>
         <AdminNav />
         <div className={styles.sidebarFoot}>
-          <p style={{ margin: "0 0 8.4px" }}>{email}</p>
-          <SignOutButton />
-          <p style={{ margin: "11.2px 0 0" }}>
-            <Link href="/" style={{ color: "inherit" }}>
-              View the site
-            </Link>
-          </p>
+          <Link href="/" target="_blank" rel="noreferrer"><Icon name="ph-arrow-up-right" size={16} /> View the website</Link>
+          <p>A considered journey starts here.</p>
         </div>
-      </nav>
-      <div className={styles.main}>{children}</div>
+      </aside>
+      <div className={styles.workspace}>
+        <div className={styles.workspaceBar}>
+          <p className={styles.workspaceLabel}><strong>Operations</strong> / Workspace</p>
+          <div className={styles.account}>
+            <span className={styles.avatar} aria-hidden="true">{email?.slice(0, 1).toUpperCase() || "X"}</span>
+            <span className={styles.accountEmail}>{email || "Staff workspace"}</span>
+            {email !== "local admin (no database)" && <SignOutButton />}
+          </div>
+        </div>
+        <div id="admin-content" tabIndex={-1} className={styles.main}>{children}</div>
+      </div>
     </div>
   );
 }
@@ -46,6 +53,7 @@ export function AdminPageHead({
   return (
     <header className={styles.pageHead}>
       <div>
+        <p className={styles.eyebrow}>Xotic management</p>
         <h1 className={styles.pageTitle}>{title}</h1>
         {lede && <p className={styles.pageLede}>{lede}</p>}
       </div>

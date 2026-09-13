@@ -16,8 +16,8 @@ export function NewSeasonForm() {
   const [state, formAction, pending] = useActionState(createSeason, null);
 
   return (
-    <section className={styles.card}>
-      <h2 className={styles.cardTitle}>Add a season</h2>
+    <details className={`${styles.card} ${styles.createCard}`}>
+      <summary className={styles.recordSummary}><span className={styles.recordName}>Add a season</span><span className={styles.recordMeta}>Plan a recurring pricing window</span></summary>
       <p className={styles.cardHint}>
         Both ends are inclusive and repeat every year. To cover November through February, put{" "}
         <code>11-01</code> to <code>02-28</code> — the window wraps past New Year on its own.
@@ -92,6 +92,6 @@ export function NewSeasonForm() {
           </button>
         </div>
       </form>
-    </section>
+    </details>
   );
 }

@@ -1,0 +1,21 @@
+.heading { margin-bottom: 20px; }
+.eyebrow { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: #914100; font-size: 12px; font-weight: 700; letter-spacing: .055em; text-transform: uppercase; }
+.eyebrow::before { content: ''; width: 18px; height: 3px; background: #ff7a00; }
+.heading h2 { margin: 0; font: 700 clamp(23px, 2.2vw, 30px)/1.25 var(--font-heading); letter-spacing: -.025em; color: #171b18; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin: 0; padding: 24px; list-style: none; border: 1px solid #dfe4e0; border-radius: 3px; background: #fff; }
+.step { position: relative; min-width: 0; }
+.step:not(:last-child)::after { content: ''; position: absolute; left: 44px; right: -16px; top: 16px; height: 1px; background: #dfe4e0; }
+.marker { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #ff7a00; border-radius: 3px; color: #914100; background: #fff; font-size: 13px; font-weight: 750; }
+.step h3 { margin: 16px 0 8px; font: 700 18px/1.35 var(--font-heading); color: #171b18; letter-spacing: -.015em; }
+.step p { margin: 0; color: #58615b; font-size: 14px; line-height: 1.6; }
+@media (max-width: 767px) {
+  .heading { margin-bottom: 14px; }
+  .heading h2 { font-size: 22px; }
+  .eyebrow { font-size: 11px; }
+  .steps { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 16px; }
+  .step { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 5px 12px; }
+  .marker { grid-row: 1 / span 2; }
+  .step h3 { margin: 0; font-size: 16px; }
+  .step p { grid-column: 2; font-size: 13px; line-height: 1.5; }
+  .step:not(:last-child)::after { left: 15px; top: 40px; bottom: -10px; right: auto; width: 1px; height: auto; }
+}

@@ -1,11 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-test("homepage fleet loads six more cars and resets when changing category", async ({ page }) => {
+test("homepage fleet loads six more cars and resets when changing category", async ({ page, isMobile }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  const fleet = page.locator("section").filter({
-    has: page.getByRole("heading", { name: "A car for the entrance, the road and everything in between" }),
-  });
+  const fleet = page.locator("#home-fleet");
+  if (isMobile) await fleet.getByRole("button", { name: "Browse by vehicle type", exact: true }).click();
   const cards = fleet.getByRole("article");
   const allCategory = fleet.getByRole("button", { name: /^All Fleet/ });
   const total = Number((await allCategory.textContent())?.match(/\((\d+)\)/)?.[1]);

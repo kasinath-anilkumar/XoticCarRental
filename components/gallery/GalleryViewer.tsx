@@ -6,7 +6,9 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import type { GalleryCategory } from "@/lib/gallery";
+import styles from "./GalleryViewer.module.css";
 
 export interface GalleryItem {
   id: string;
@@ -84,143 +86,27 @@ export function GalleryViewer({
 
   return (
     <div>
-      {/* Category Pills Navigator */}
-      <nav aria-label="Gallery categories" className="mb-8 max-md:mb-5">
-        <div className="flex flex-wrap items-center gap-2 pb-1">
-          <button
-            type="button"
-            onClick={() => handleCategorySelect("all")}
-            aria-pressed={activeCategory === "all"}
-            className={`flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
-              activeCategory === "all"
-                ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
-                : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
-            }`}
-          >
-            <Icon name="ph-squares-four" size={15} />
-            <span>All vehicles</span>
-            <span className="text-[11px]">
-              ({allItems.length})
-            </span>
-          </button>
-
-          {categories.map((category) => {
-            const isActive = activeCategory === category.slug;
-            return (
-              <button
-                key={category.slug}
-                type="button"
-                onClick={() => handleCategorySelect(category.slug)}
-                aria-pressed={isActive}
-                className={`flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
-                  isActive
-                    ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
-                    : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
-                }`}
-              >
-                <Icon name="ph-car-profile" size={15} />
-                <span className="min-w-0 break-words">{category.name}</span>
-                <span className="shrink-0 text-[11px]">
-                  ({category.frames.length})
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <nav aria-label="Gallery categories" className={styles.filters}>
+        <HorizontalScroll label="Gallery categories" contentClassName={styles.filterItems}>
+        <button type="button" onClick={() => handleCategorySelect("all")} aria-pressed={activeCategory === "all"}><Icon name="ph-squares-four" size={16} /><span>All vehicles</span><span>({allItems.length})</span></button>
+        {categories.map((category) => <button key={category.slug} type="button" onClick={() => handleCategorySelect(category.slug)} aria-pressed={activeCategory === category.slug}><span>{category.name}</span><span>({category.frames.length})</span></button>)}
+        </HorizontalScroll>
       </nav>
-
-      {/* Category Header Blurb */}
-      {activeCategoryObj && (
-        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3 border-b border-[var(--color-divider)] pb-4">
-          <div>
-            <h2 className="font-[family-name:var(--font-heading)] text-[22px] font-semibold text-text max-md:text-[18px]">
-              {activeCategoryObj.name}
-            </h2>
-            <p className="mt-1 text-[13px] text-[var(--color-neutral-400)]">
-              {activeCategoryObj.blurb}
-            </p>
-          </div>
-          <Link
-            href={activeCategoryObj.browseHref}
-            className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--color-accent-300)] hover:text-[var(--color-accent-200)]"
-          >
-            <span>Browse these vehicles</span>
-            <Icon name="ph-arrow-right" size={13} />
-          </Link>
-        </div>
-      )}
-
-      {/* Responsive Gallery Grid */}
-      <div className="grid grid-cols-3 gap-6 max-lg:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
+      {activeCategoryObj && <div className={styles.resultHeader}><div><h2>{activeCategoryObj.name}</h2><p>{activeCategoryObj.blurb}</p></div><Link href={activeCategoryObj.browseHref}>Browse these vehicles <Icon name="ph-arrow-up-right" size={16} /></Link></div>}
+      <div className={styles.masonry}>
         {filteredItems.slice(0, visibleCount).map((item, index) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); setLightboxIndex(index); }}
-            aria-haspopup="dialog"
-            aria-label={`View ${item.categoryName}, photo ${item.index}`}
-            className="group relative aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-lg border border-[var(--color-divider)] bg-[var(--color-slot)] p-0 text-left shadow-[var(--shadow-sm)] transition-all hover:border-[var(--color-accent)] hover:shadow-[var(--shadow-md)]"
-          >
-            <Image
-              src={item.src}
-              alt={item.alt}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-
-            {/* Gradient Overlay */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgb(0,0,0,0.85)] via-[rgb(0,0,0,0.2)] to-transparent opacity-80 transition-opacity group-hover:opacity-95" />
-
-            {/* Floating Top Badge */}
-            <div className="absolute top-3 left-3">
-              <span className="rounded bg-black/75 px-2.5 py-0.5 text-[10.5px] font-medium text-white backdrop-blur-xs">
-                {item.categoryName}
-              </span>
-            </div>
-
-            {/* Center Zoom Lens Trigger on Hover */}
-            <div className="absolute inset-0 grid place-items-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              <span className="grid size-11 place-items-center rounded-full bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-lg transition-transform duration-200 group-hover:scale-110">
-                <Icon name="ph-magnifying-glass-plus" size={20} />
-              </span>
-            </div>
-
-            {/* Bottom Card Caption */}
-            <div className="absolute right-3.5 bottom-3 left-3.5 flex items-end justify-between text-white">
-              <div>
-                <p className="font-[family-name:var(--font-heading)] text-[15px] font-medium text-white">
-                  {item.categoryName} · Photo #{item.index}
-                </p>
-                <p className="mt-0.5 text-[11.5px] text-neutral-300">
-                  Tap to view full frame
-                </p>
-              </div>
-              <span className="text-[11px] text-[var(--color-accent-300)] font-medium">
-                Expand ↗
-              </span>
-            </div>
+          <button key={item.id} type="button" onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); setLightboxIndex(index); }} aria-haspopup="dialog" aria-label={`View ${item.categoryName}, photo ${item.index}`} className={styles.frame}>
+            <Image src={item.src} alt={item.alt} fill sizes="(max-width: 767px) 50vw, (max-width: 1000px) 50vw, 33vw" />
+            <span className={styles.scrim} />
+            <span className={styles.caption}><span><strong>{item.categoryName}</strong><small>Photo {String(item.index).padStart(2, "0")}</small></span><span className={styles.expand}><Icon name="ph-arrow-up-right" size={18} /></span></span>
           </button>
         ))}
       </div>
-
-      <div className="mt-6 text-center">
-        <output className="block text-sm text-[var(--color-neutral-400)]">
-          Showing {Math.min(visibleCount, filteredItems.length)} of {filteredItems.length} photos
-        </output>
-        {visibleCount < filteredItems.length && (
-          <button type="button" className="btn btn-secondary mt-3"
-            onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>
-            Show more photos
-          </button>
-        )}
+      <div className={styles.more}>
+        <output>Showing {Math.min(visibleCount, filteredItems.length)} of {filteredItems.length} photos</output>
+        {visibleCount < filteredItems.length && <button type="button" className="btn btn-secondary" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>Show more photos <Icon name="ph-plus" size={16} /></button>}
       </div>
-
-      {lightboxIndex !== null && filteredItems[lightboxIndex] && (
-        <GalleryLightbox items={filteredItems} index={lightboxIndex}
-          onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)}
-          whatsappNumber={whatsappNumber} />
-      )}
+      {lightboxIndex !== null && filteredItems[lightboxIndex] && <GalleryLightbox items={filteredItems} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} whatsappNumber={whatsappNumber} />}
     </div>
   );
 }

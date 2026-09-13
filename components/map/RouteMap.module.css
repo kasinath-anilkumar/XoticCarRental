@@ -32,7 +32,7 @@
 .frame {
   position: relative;
   isolation: isolate;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--color-well);
   box-shadow: var(--shadow-sm);
@@ -92,6 +92,19 @@
   line-height: 28px;
 }
 .canvas :global(.leaflet-bar a:hover) { background: var(--color-accent-900); }
+.canvas :global(.leaflet-bar a:first-child) {
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+.canvas :global(.leaflet-bar a:last-child) {
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+.canvas :global(.leaflet-popup-content-wrapper),
+.canvas :global(.leaflet-control-layers),
+.canvas :global(.leaflet-tooltip) {
+  border-radius: var(--radius-sm);
+}
 
 /* A marker drawn from the palette instead of Leaflet's bundled PNG, which
    bundlers routinely fail to resolve. */
@@ -100,7 +113,7 @@
   place-items: center;
   width: 26px;
   height: 26px;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   background: var(--color-accent);
   color: var(--color-accent-ink);
   font-family: var(--font-heading);

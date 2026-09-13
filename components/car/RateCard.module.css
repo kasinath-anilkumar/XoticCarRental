@@ -1,0 +1,100 @@
+.rateCard { min-width: 0; scroll-margin-top: calc(var(--header-height) + 24px); }
+.header { margin-bottom: 24px; }
+.eyebrow { margin: 0 0 10px; color: var(--color-accent-text); font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+.header h2 { margin: 0 0 10px; font-family: var(--font-heading); font-size: 32px; font-weight: 500; letter-spacing: -.04em; line-height: 1.15; }
+.header > p:last-child { margin: 0; color: var(--color-neutral-400); font-size: 13px; line-height: 1.7; }
+.citySummary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 18px 20px; border: 1px solid var(--color-divider); background: var(--color-surface); }
+.cityInfo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cityIcon { display: grid; flex-shrink: 0; place-items: center; width: 38px; height: 38px; border-radius: var(--radius-sm); color: var(--color-accent-text); background: var(--color-bg); }
+.cityInfo > div { min-width: 0; }
+.cityLabel { display: block; margin-bottom: 5px; color: var(--color-neutral-400); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+.cityInfo strong { display: inline; font-family: var(--font-heading); font-size: 17px; font-weight: 500; overflow-wrap: anywhere; }
+.cityState { display: inline-block; margin-left: 8px; color: var(--color-neutral-400); font-size: 12px; overflow-wrap: anywhere; }
+.changeCity { min-height: 44px; padding: 10px 13px; gap: 8px; font-size: 12px; }
+.changeCity svg { flex-shrink: 0; }
+.cityPicker { margin-top: 12px; padding: 22px; border: 1px solid var(--color-divider); background: var(--color-surface); }
+.cityPickerHeading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 19px; }
+.cityPickerHeading h3 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.02em; }
+.closePicker { display: grid; flex-shrink: 0; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); background: transparent; color: var(--color-text); cursor: pointer; }
+.cityFields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .85fr); gap: 14px; margin-bottom: 20px; }
+.cityFields :global(.input) { width: 100%; min-width: 0; min-height: 44px; }
+.cityOptions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.cityOption { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-width: 0; min-height: 66px; padding: 12px 14px; text-align: left; border: 1px solid var(--color-divider); background: var(--color-bg); color: var(--color-text); cursor: pointer; }
+.cityOption > span { min-width: 0; }
+.cityOption strong { display: block; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.cityOption small { display: block; margin-top: 4px; color: var(--color-neutral-400); font-size: 11px; overflow-wrap: anywhere; }
+.cityOption svg { flex-shrink: 0; }
+.cityOptionActive { border-color: var(--color-text); box-shadow: inset 0 0 0 1px var(--color-text); }
+.cityOption:hover { border-color: var(--color-text); }
+.cityResults { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 17px; }
+.cityResults output, .noCities { color: var(--color-neutral-400); font-size: 12px; line-height: 1.6; }
+.cityResults button { font-size: 12px; }
+.noCities { margin: 12px 0 0; }
+.homeNote { margin: 14px 0 23px; color: var(--color-neutral-400); font-size: 12px; line-height: 1.7; }
+.packages { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; }
+.package { display: flex; flex-direction: column; min-width: 0; padding: 22px 18px 18px; border: 1px solid var(--color-divider); border-top: 3px solid var(--color-divider); background: var(--color-surface); color: var(--color-text); text-align: left; cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease; }
+.package:hover { border-color: var(--color-text); }
+.packageActive { border-color: var(--color-text); border-top-color: var(--color-accent-solid); background: var(--color-bg); }
+.packageName { font-family: var(--font-heading); font-size: 16px; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
+.packageDescription { display: block; margin: 6px 0 22px; color: var(--color-neutral-400); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.packagePrice { display: block; margin-top: auto; font-family: var(--font-heading); font-size: clamp(24px, 2.1vw, 31px); font-weight: 500; letter-spacing: -.045em; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.packageAction { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--color-divider); color: var(--color-neutral-400); font-size: 11px; }
+.packageActive .packageAction { color: var(--color-text); }
+.packageAction svg { flex-shrink: 0; }
+.package:focus-visible, .cityOption:focus-visible, .closePicker:focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: 3px; }
+.extras { margin-top: 30px; }
+.extrasHeading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 9px; }
+.extrasHeading h3 { margin: 0; font-family: var(--font-heading); font-size: 22px; font-weight: 500; letter-spacing: -.03em; }
+.extrasHeading p { margin: 0; color: var(--color-neutral-400); font-size: 12px; }
+.charges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 25px; margin: 0; }
+.charge { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 14px; min-width: 0; padding-block: 18px; border-bottom: 1px solid var(--color-divider); }
+.charge dt { min-width: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.charge dt span { display: block; margin-top: 5px; color: var(--color-neutral-400); font-size: 11px; line-height: 1.7; }
+.charge dd { max-width: 15ch; margin: 0; text-align: right; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.5; overflow-wrap: anywhere; }
+.taxNote { margin: 20px 0 0; padding-left: 14px; border-left: 2px solid var(--color-accent-solid); color: var(--color-neutral-400); font-size: 12px; line-height: 1.8; }
+@media (max-width: 1100px) and (min-width: 701px) { .charges { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) {
+  .packages { grid-template-columns: minmax(0, 1fr); }
+  .package { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .75fr); column-gap: 16px; padding: 19px 18px 16px; }
+  .packageName { grid-column: 1; grid-row: 1; }
+  .packageDescription { grid-column: 1; grid-row: 2; margin: 5px 0 0; }
+  .packagePrice { grid-column: 2; grid-row: 1 / span 2; align-self: center; margin: 0; text-align: right; font-size: 28px; }
+  .packageAction { grid-column: 1 / -1; margin-top: 15px; padding-top: 12px; }
+  .charges { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .citySummary { padding: 17px; }
+  .cityState { display: block; margin: 4px 0 0; }
+  .cityPicker { padding: 18px 16px; }
+  .cityFields { grid-template-columns: minmax(0, 1fr); }
+  .cityOptions { gap: 8px; }
+  .cityOption { padding: 12px 10px; }
+  .cityOption strong { font-size: 12px; }
+  .packagePrice { font-size: 25px; }
+}
+@media (prefers-reduced-motion: reduce) { .package { transition: none; } }
+@media (max-width: 767px) {
+  .header { margin-bottom: 14px; }
+  .eyebrow { display: none; }
+  .header h2 { font-size: 23px; margin-bottom: 6px; }
+  .header > p:last-child { font-size: 12px; line-height: 1.5; }
+  .citySummary { padding: 12px; gap: 10px; }
+  .cityInfo { gap: 8px; }
+  .cityIcon { width: 30px; height: 30px; }
+  .cityInfo strong { font-size: 15px; }
+  .cityState { font-size: 11px; }
+  .changeCity { padding-inline: 10px; font-size: 11px; }
+  .homeNote { margin: 10px 0 14px; font-size: 11px; line-height: 1.5; }
+  .packages { gap: 8px; }
+  .package { padding: 12px; gap: 0 12px; }
+  .packageName { font-size: 14px; line-height: 1.4; }
+  .packageDescription { font-size: 11px; line-height: 1.45; }
+  .packagePrice { font-size: 23px; }
+  .packageAction { margin-top: 10px; padding-top: 8px; font-size: 10px; }
+  .extras { margin-top: 14px; }
+  .extrasHeading { display: none; }
+  .charge { padding-block: 12px; gap: 10px; }
+  .charge dt, .charge dd { font-size: 12px; }
+  .charge dt span { line-height: 1.5; }
+  .taxNote { margin-top: 12px; font-size: 11px; line-height: 1.5; }
+}

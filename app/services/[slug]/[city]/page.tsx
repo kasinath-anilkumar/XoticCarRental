@@ -5,8 +5,10 @@ import { notFound } from "next/navigation";
 import { CarCard } from "@/components/CarCard";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
 import { ServiceEnquiryForm } from "@/components/services/ServiceEnquiryForm";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { Icon } from "@/components/ui/Icon";
-import { Media } from "@/components/ui/Media";
+import { EditorialIntro, editorial } from "@/components/content/Editorial";
 import {
   carsBasedIn,
   cityFromPrice,
@@ -131,93 +133,30 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
   };
 
   return (
-    <>
+    <div className={editorial.page}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
 
-      <section className="on-dark relative isolate flex min-h-[340px] items-end overflow-hidden">
-        <Media
-          src={city.heroImage}
-          alt=""
-          placeholder={`${city.name} photo`}
-          lighten
-          priority
-          className="absolute inset-0 -z-10 size-full object-cover"
-          icon={service.icon}
-          sizes="100vw"
-        />
-        <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "linear-gradient(180deg, rgb(0 0 0 / 0.45) 0%, rgb(0 0 0 / 0.2) 45%, rgb(0 0 0 / 0.75) 100%)",
-          }}
-        />
-        <div className="mx-auto w-full max-w-[1180px] px-4 pt-[calc(var(--header-height)+32px)] pb-9 sm:px-6">
-          <p className="text-[12px] opacity-90">
-            <Link href="/services" className="text-inherit no-underline">
-              Services
-            </Link>{" "}
-            /{" "}
-            <Link href={`/services/${service.slug}`} className="text-inherit no-underline">
-              {service.short}
-            </Link>{" "}
-            / {city.name}
-          </p>
-          <h1 className="mt-2 max-w-[20ch] font-[family-name:var(--font-heading)] text-[30px] leading-[1.08] sm:text-[40px]">
-            {service.name} in {city.name}
-          </h1>
-          <p className="mt-3 max-w-[58ch] text-[15px] opacity-90">{service.blurb}</p>
-
-          <div className="mt-4 flex flex-wrap gap-6 text-[13px]">
-            {from && (
-              <span>
-                <strong className="font-[family-name:var(--font-heading)] text-[17px]">
-                  {formatINR(from)}
-                </strong>{" "}
-                from, {pkg.label}
-              </span>
-            )}
-            <span>
-              <strong className="font-[family-name:var(--font-heading)] text-[17px]">
-                {based.length}
-              </strong>{" "}
-              {based.length === 1 ? "car" : "cars"} based here
-            </span>
-            <span>
-              <strong className="font-[family-name:var(--font-heading)] text-[17px]">
-                {pickups.length}
-              </strong>{" "}
-              pickup {pickups.length === 1 ? "point" : "points"}
-            </span>
-          </div>
-        </div>
-      </section>
+      <EditorialIntro eyebrow={city.name} title={`${service.name} in ${city.name}.`} description={service.tagline} image={city.heroImage} imageLabel={`${city.name}, ${city.state}`} breadcrumb={[{label:"Services", href:"/services"}, {label:service.short, href:`/services/${service.slug}`}]}
+        actions={<><Link href="#enquiry" className="btn btn-primary">Plan this journey <Icon name="ph-arrow-up-right" size={17} /></Link><Link href={`/cars?city=${city.slug}&occasion=${service.occasionSlug}`} className="btn btn-secondary">Explore the fleet</Link></>} />
+      <div className={editorial.facts}>
+        {from && <span><strong>{formatINR(from)}</strong><span>from / {pkg.label}</span></span>}
+        <span><strong>{based.length}</strong><span>cars based here</span></span>
+        <span><strong>{pickups.length}</strong><span>pickup points</span></span>
+      </div>
 
       <section className="sec">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_1fr]">
+        <div className={`${editorial.twoColumns} ${editorial.enquiryLayout}`}>
           <div>
-            <h2 className="h2 mb-4">{service.h2}</h2>
-            {service.includes.map((item) => (
-              <div key={item.title} className="mb-3 flex gap-3">
-                <Icon
-                  name="ph-check-circle"
-                  size={20}
-                  color="var(--color-accent)"
-                  style={{ flex: "none" }}
-                />
-                <div>
-                  <p className="text-[15px] font-medium">{item.title}</p>
-                  <p className="text-[13px] text-[var(--color-neutral-400)]">{item.detail}</p>
-                </div>
-              </div>
-            ))}
-
-            <p className="mt-5 rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-4 text-[13px] text-[var(--color-neutral-400)]">
-              <Icon name="ph-info" size={15} color="var(--color-accent)" /> {service.note}
-            </p>
+            <ResponsiveDisclosure title="What’s included" id="service-details" hideTitleOnDesktop>
+            <h2 className={`h2 mb-4 ${editorial.secondaryHeading}`}>{service.h2}</h2>
+            <ul className={editorial.features}>{service.includes.map((item, index) => (
+              <li key={item.title}><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{item.title}</h3><p>{item.detail}</p></div></li>
+            ))}</ul>
+            </ResponsiveDisclosure>
+            <p className={editorial.note}>{service.note}</p>
 
             {/* The half of this page that only exists because it is about a
                 city: what the rate is here, and where the car would meet you. */}
@@ -235,7 +174,7 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
                   <li key={fare.name}>
                     <Link
                       href={`/price-calculator?from=${fare.fromSlug}&to=${fare.toSlug}&pkg=${fare.packageSlug}&trip=round&occ=${service.occasionSlug}`}
-                      className="flex items-baseline justify-between gap-4 border-b border-[var(--color-divider)] py-2 text-[13px] text-[var(--color-neutral-300)] no-underline"
+                      className={editorial.routeLink}
                     >
                       <span className="text-[var(--color-text)]">{fare.name}</span>
                       <span className="text-[11px] whitespace-nowrap text-[var(--color-neutral-500)]">
@@ -249,29 +188,31 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
 
             {pickups.length > 0 && (
               <>
-                <h2 className="h2 mt-9 mb-3">Where we pick up in {city.name}</h2>
+                <ResponsiveDisclosure title={`Pickup points in ${city.name}`} hideTitleOnDesktop>
+                <h2 className={`h2 mt-9 mb-3 ${editorial.secondaryHeading}`}>Where we pick up in {city.name}</h2>
                 <div className="flex flex-wrap gap-2">
                   {pickups.map((point) => (
                     <span
                       key={point.slug}
-                      className="rounded-full border border-[var(--color-divider)] px-3 py-1 text-[12px] text-[var(--color-neutral-300)]"
+                      className="rounded-sm border border-[var(--color-divider)] px-3 py-1 text-[12px] text-[var(--color-neutral-300)]"
                     >
                       {point.name}
                     </span>
                   ))}
                 </div>
+                </ResponsiveDisclosure>
               </>
             )}
           </div>
 
-          <div id="enquiry" className="scroll-mt-[calc(var(--header-height)+16px)]">
+          <div id="enquiry" tabIndex={-1} className={editorial.enquiryTarget}>
             <ServiceEnquiryForm service={service} />
           </div>
         </div>
       </section>
 
       {cars.length > 0 && (
-        <section className="sec">
+        <section className={`sec ${editorial.carRail}`}>
           <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="h2">
               {service.short} cars in {city.name}
@@ -281,27 +222,30 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
               <Icon name="ph-arrow-right" size={15} />
             </Link>
           </div>
-          <div className="grid-4">
+          <HorizontalScroll label={`${service.short} cars in ${city.name}`} controls="above">
+          <div className="grid-cars">
             {cars.map((car) => (
               <CarCard key={car.slug} car={car} catalog={catalog} pkg={pkg} />
             ))}
           </div>
+          </HorizontalScroll>
         </section>
       )}
 
       <section className="sec">
-        <h2 className="h2 mb-1">{service.short} elsewhere</h2>
+        <ResponsiveDisclosure title={`${service.short} in other cities`} hideTitleOnDesktop>
+        <h2 className={`h2 mb-1 ${editorial.secondaryHeading}`}>{service.short} elsewhere</h2>
         <p className="mb-4 text-[13px] text-[var(--color-neutral-400)]">
           The same service, priced at each city&rsquo;s own rate.
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className={editorial.pillList}>
           {catalog.cities
             .filter((item) => item.slug !== city.slug)
             .map((item) => (
               <Link
                 key={item.slug}
                 href={`/services/${service.slug}/${item.slug}`}
-                className="rounded-full border border-[var(--color-divider)] px-3 py-1.5 text-[13px] text-[var(--color-text)] no-underline hover:border-[var(--color-accent-solid)]"
+                className="rounded-sm border border-[var(--color-divider)] px-3 py-1.5 text-[13px] text-[var(--color-text)] no-underline hover:border-[var(--color-accent-solid)]"
               >
                 {service.short} in {item.name}
               </Link>
@@ -320,6 +264,7 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
             ))}
           .
         </p>
+        </ResponsiveDisclosure>
       </section>
 
       {occasion && occasion.surcharge > 0 && (
@@ -330,6 +275,6 @@ export default async function ServiceCityPage({ params }: { params: Params }) {
           </p>
         </section>
       )}
-    </>
+    </div>
   );
 }

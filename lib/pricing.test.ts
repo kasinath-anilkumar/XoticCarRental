@@ -12,6 +12,7 @@ import { computeQuote, isNightPickup, tripTypeLabel } from "./pricing";
 import {
   buildKmOverrides,
   buildRoutedOverrides,
+  GARAGE_ROUTE_KEY,
   haversineKm,
   resolveRoute,
   roadKm,
@@ -206,6 +207,15 @@ function input(overrides: Partial<PricingInput> = {}): PricingInput {
 }
 
 describe("configured operational pricing and rental dates", () => {
+  it("does not charge a second return allowance when garage-return kilometres are already billed", () => {
+    const legacy = computeQuote(input({ tripType: "oneway", km: 300, haltHours: 0 }));
+    const completeRoute = computeQuote(input({ tripType: "oneway", km: 300, haltHours: 0, returnDistanceIncluded: true }));
+    expect(completeRoute.km).toBe(300);
+    expect(completeRoute.lines.some((line) => line.label === "One-way driver return")).toBe(false);
+    expect(completeRoute.lines.find((line) => line.label.startsWith("Extra distance"))?.amount).toBe((300 - 80) * 34);
+    expect(legacy.subtotal - completeRoute.subtotal).toBe(3570);
+  });
+
   it("uses configured speed, return allowance and night window in amounts and descriptions", () => {
     const rules = { ...pricingRules, localSpeedKph: 16, oneWayReturnPercent: 10, nightStartHour: 21 };
     expect(computeQuote(input({ pricingRules: rules, km: 64, haltHours: 0 })).hours).toBe(4);
@@ -913,8 +923,8 @@ describe("garage-to-garage (§9)", () => {
     const transfers = route.legs.filter((leg) => leg.transfer);
     expect(transfers).toHaveLength(2);
     // One out of the yard, one back into it — and nothing in between claims to be.
-    expect(transfers[0]!.fromSlug).toBe("garage");
-    expect(transfers[1]!.toSlug).toBe("garage");
+    expect(transfers[0]!.fromSlug).toBe(GARAGE_ROUTE_KEY);
+    expect(transfers[1]!.toSlug).toBe(GARAGE_ROUTE_KEY);
     expect(route.legs.filter((leg) => !leg.transfer)).toHaveLength(1);
   });
 

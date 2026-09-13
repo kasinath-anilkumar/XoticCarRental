@@ -1,0 +1,62 @@
+@layer theme, base, vendor, app, components, utilities;
+@layer components {
+  .journeySearch { position: relative; z-index: 2; max-width: 1440px; margin: -24px auto 0; padding: 0 var(--gutter-desktop) 32px; scroll-margin-top: calc(var(--header-height) + 20px); }
+  .proof { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 24px var(--gutter-desktop); background: #fff; border-block: 1px solid #e1e7e3; }
+  .proof > div { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .proof svg { flex: none; color: #995016; }
+  .proof strong { display: block; font-size: 14px; font-weight: 650; }
+  .proof small { display: block; margin-top: 4px; font-size: 12px; color: #657067; }
+  .sectionAside { max-width: 330px; font-size: 13px; color: #667169; line-height: 1.6; }
+  .sectionAside > p { margin-bottom: 6px; }
+  .textLink { display: inline-flex; align-items: center; justify-content: space-between; min-height: 44px; gap: 14px; color: #34443a; font-size: 13px; font-weight: 600; text-decoration: none; }
+  .textLink:hover { color: #995016; }
+  .featured { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .occasions { background: #fff; border-block: 1px solid #e6ebe8; }
+  .services { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+  .story { display: grid; grid-template-columns: 1fr 1fr; margin: 48px var(--gutter-desktop); border: 1px solid #e0e6e2; border-radius: var(--radius-sm); overflow: hidden; background: #fff; }
+  .storyImage { min-width: 0; position: relative; }
+  .storyContent { display: contents; }
+  .storyMedia { height: 100%; min-height: 340px; }
+  .storyCopy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 32px clamp(24px, 4vw, 56px); }
+  .storyCopy h2 { font-size: clamp(27px, 2.8vw, 38px); line-height: 1.2; font-weight: 700; letter-spacing: -.035em; margin: 8px 0 18px; }
+  .storyCopy > p:not(:first-child) { max-width: 410px; color: #657067; font-size: 14px; line-height: 1.75; margin-bottom: 16px; }
+  .destinations { background: #fff; border-block: 1px solid #e0e6e2; }
+  .cities { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .coverage { display: flex; align-items: center; gap: 10px; padding-top: 20px; margin: 12px 0 0; font-size: 12px; color: #5a685e; }
+  .coverage > svg { flex: none; }
+  .pricing { background: #fff; border-block: 1px solid #e0e6e2; }
+  .fleetHeading { max-width: 680px; }
+  .why { background: #fff; border-top: 1px solid #e0e6e2; }
+  .promises { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 22px; }
+  .promises > div { padding: 20px; border: 1px solid #e0e6e2; border-radius: var(--radius-sm); }
+  .promises svg { color: #995016; margin-bottom: 16px; }
+  .promises h3 { font-size: 16px; margin-bottom: 10px; }
+  .promises p { font-size: 13px; line-height: 1.7; color: #657067; }
+  @media (max-width: 1023px) { .featured { gap: 14px; } .services { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cities { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 767px) {
+    .journeySearch { margin-top: 0; padding: 20px var(--gutter-mobile); }
+    .proof { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 14px var(--gutter-mobile); }
+    .proof > div { justify-content: center; text-align: center; gap: 0; }
+    .proof svg, .proof small { display: none; }
+    .proof strong { font-size: 12px; line-height: 1.45; font-weight: 500; }
+    .proof > div + div { border-left: 1px solid #e1e7e3; padding-left: 8px; }
+    .featured { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(82vw, 310px); gap: 12px; }
+    .sectionAside { max-width: 100%; }
+    .sectionAside > p { display: none; }
+    .services { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .story { display: block; margin: 12px var(--gutter-mobile); padding-inline: 14px; }
+    .storyContent { display: block; }
+    .storyMedia { min-height: 0; height: auto; aspect-ratio: 2; }
+    .storyCopy { padding: 16px 0 0; }
+    .storyCopy .serif, .storyCopy h2, .storyCopy > p:first-child { display: none; }
+    .storyCopy > p:not(:first-child) { font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
+    .disclosureHead { display: none; }
+    .pricing, .why { padding-block: 12px; }
+    .cities { gap: 12px; }
+    .coverage { line-height: 1.7; align-items: flex-start; }
+    .promises { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .promises > div { padding: 14px; }
+    .promises h3 { font-size: 15px; }
+    .promises p { font-size: 12px; line-height: 1.6; }
+  }
+}

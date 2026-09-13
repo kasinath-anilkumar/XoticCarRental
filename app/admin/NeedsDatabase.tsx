@@ -33,30 +33,21 @@ export function NeedsDatabase({
     <AdminShell email={email}>
       <AdminPageHead title={title} lede={lede} />
 
-      <section className={styles.card}>
+      <section className={`${styles.card} ${styles.empty}`}>
+        <span className={styles.emptyIcon}><Icon name="ph-database" size={25} /></span>
         <h2 className={styles.cardTitle}>
-          <Icon name="ph-warning-circle" size={18} color="var(--color-accent)" /> No database
-          connected
+          Connect your operations data
         </h2>
         <p className={styles.cardHint}>
-          {what} lives in <code>backend/seed-data.js</code> until Supabase is connected. The site
-          reads it happily — every page works — but a form here would have nowhere to save to.
-        </p>
-        <p className={styles.cardHint} style={{ marginTop: "8.4px" }}>
-          Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to{" "}
-          <code>.env.local</code>, run the migrations in{" "}
-          <code>backend/supabase/migrations</code>, then seed with{" "}
-          <code>npm run seed</code>. README.md, &ldquo;Connecting Supabase&rdquo;, has the order.
+          {what} needs a connected database before records can be created or edited here.
         </p>
 
         <div className={styles.actions}>
-          <Link href="/admin/enquiries" className="btn btn-primary">
-            <Icon name="ph-chat-teardrop-text" size={16} />
-            Leads still work
+          <Link href="/admin/setup" className="btn btn-primary">
+            View setup instructions
           </Link>
-          <Link href="/admin/availability" className="btn btn-secondary">
-            <Icon name="ph-calendar-blank" size={16} />
-            So does availability
+          <Link href="/admin/enquiries" className="btn btn-secondary">
+            Open local enquiry desk
           </Link>
         </div>
       </section>

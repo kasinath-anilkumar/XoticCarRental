@@ -22,9 +22,10 @@
  */
 
 import { createInflight, createThrottle, TtlCache } from "../net/cache";
+import { MAX_ROUTE_POINTS } from "../trip-limits";
 
 import { createOsrmProvider } from "./osrm";
-import type { LatLng, RouteProvider, RoutedTrip } from "./types";
+import { isRoutedTripForStops, type LatLng, type RouteProvider, type RoutedTrip } from "./types";
 
 export type { LatLng, RouteLeg, RoutedTrip } from "./types";
 
@@ -87,12 +88,11 @@ export async function routeThrough(
   stops: LatLng[],
   options: { signal?: AbortSignal } = {},
 ): Promise<RoutedTrip | null> {
-  const usable = stops.filter(
-    ([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng),
-  );
-  if (usable.length < 2) return null;
+  if (stops.length < 2 || stops.length > MAX_ROUTE_POINTS || stops.some(
+    ([lat, lng]) => !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180,
+  )) return null;
 
-  const cacheKey = key(usable);
+  const cacheKey = key(stops);
   const hit = cache.get(cacheKey);
   if (hit) return hit;
 
@@ -100,7 +100,8 @@ export async function routeThrough(
     return await inflight(cacheKey, async () => {
       const router = await provider();
       await gate?.();
-      const trip = await router.route(usable, options);
+      const trip = await router.route(stops, options);
+      if (!isRoutedTripForStops(trip, stops.length)) throw new Error("Incomplete or invalid route response");
       cache.set(cacheKey, trip);
       return trip;
     });

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { readFile } from "node:fs/promises";
 
-const routes = ["/", "/cars", "/cars/eclass", "/services/wedding", "/cities/kochi", "/gallery", "/price-calculator", "/booking-summary", "/contact"];
+const routes = ["/", "/cars", "/cars/eclass", "/services", "/services/wedding", "/services/wedding/kochi", "/cities", "/cities/kochi", "/gallery", "/packages", "/about", "/price-calculator", "/booking-summary", "/contact", "/contact?service=wedding", "/admin/login"];
 
 for (const path of routes) {
   test(`${path} renders without errors, overflow, or accessibility violations`, async ({ page }, testInfo) => {
@@ -17,6 +17,11 @@ for (const path of routes) {
     const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(accessibility.violations.map(({ id, nodes }) => ({ id, targets: nodes.map((node) => node.target) }))).toEqual([]);
     expect(errors).toEqual([]);
+    if (path.startsWith("/admin")) {
+      await expect(page.getByRole("navigation", { name: "Primary", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("navigation", { name: "Quick actions", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("contentinfo")).toHaveCount(0);
+    }
     await page.screenshot({ path: testInfo.outputPath("page.png"), fullPage: true });
   });
 }
@@ -108,9 +113,12 @@ test("missing routes and malformed API input fail cleanly", async ({ page, reque
 test("calculator supports a bounded itinerary of twelve stops", async ({ page }) => {
   await page.goto("/price-calculator?stops=");
   const add = page.getByRole("button", { name: "Add another stop", exact: true });
-  for (let count = 0; count < 12; count++) await add.click();
+  const stops = page.locator('[id^="calc-stop-"][role="combobox"]');
+  // The planner starts with editable pickup and drop fields.
+  await expect(stops).toHaveCount(2);
+  for (let count = 2; count < 12; count++) await add.click();
   await expect(page.getByRole("button", { name: "Maximum 12 stops", exact: true })).toBeDisabled();
-  await expect(page.locator('[id^="calc-stop-"][role="combobox"]')).toHaveCount(12);
+  await expect(stops).toHaveCount(12);
 });
 
 test("every generated public route responds successfully", async ({ request }, testInfo) => {

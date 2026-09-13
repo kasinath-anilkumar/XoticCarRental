@@ -1,0 +1,37 @@
+@layer theme, base, vendor, app, components, utilities;
+@layer components {
+  .card { overflow: visible; border: 1px solid #dde3e0; border-radius: var(--radius-sm); background: #fff; box-shadow: 0 8px 28px rgb(26 41 33 / .06); }
+  .heading { display: flex; align-items: center; gap: 12px; padding: 18px 20px 0; }
+  .heading > span { display: none; }
+  .heading > p { margin: 0; font-family: var(--font-heading); font-size: 17px; font-weight: 700; color: #171b18; }
+  .heading > svg { margin-left: auto; color: #a64c00; width: 20px; }
+  .form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; padding: 16px 20px; }
+  .form > div { min-width: 0; }
+  .pickup, .packages, .submit { grid-column: 1 / -1; }
+  .packages { min-width: 0; padding: 0; margin: 0; border: 0; }
+  .packages legend { padding: 0; margin-bottom: 6px; font-size: 12px; color: #56625b; }
+  .packageChoices { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; }
+  .packageChoice { position: relative; display: grid; place-items: center; min-height: 42px; padding: 8px; border: 1px solid #dce2de; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; color: #455149; background: #fff; }
+  .packageChoice:has(input:checked) { border-color: #b45812; color: #8b410a; background: #fff4e9; font-weight: 600; }
+  .packageChoice:has(input:focus-visible) { outline: 2px solid #995016; outline-offset: 2px; }
+  .packageChoice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .form :global(.input), .form button[aria-haspopup] { min-height: 46px; background: #fff; border-color: #d9e0dc; }
+  .submit { min-height: 48px; width: 100%; padding-inline: 16px; font-size: 14px; font-weight: 650; }
+  .options { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; border-top: 1px solid #edf0ee; padding: 8px 20px; font-size: 11px; color: #58645c; }
+  .options > button { min-height: 36px; }
+  .options > span:last-child { display: none; }
+  @media (min-width: 1024px) {
+    .form { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .pickup, .submit { grid-column: auto; }
+    .packages { grid-column: span 2; }
+  }
+  @media (max-width: 767px) {
+    .heading { padding: 14px 12px 0; }
+    .heading > p { font-size: 16px; }
+    .form { padding: 12px; gap: 10px; }
+    .options { padding: 2px 12px; gap: 0 10px; }
+    .options > button { min-height: 44px; }
+    .packageChoices { grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); }
+    .packageChoice { font-size: 11px; padding: 6px 3px; }
+  }
+}

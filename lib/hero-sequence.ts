@@ -8,7 +8,8 @@ export interface HeroSequenceOptions {
 
 export interface HeroSequence {
   seek(index: number): void;
-  resize(width: number, height: number, contain?: boolean): void;
+  /** Portrait surfaces show a centred 9:16 crop of each frame. */
+  resize(width: number, height: number, portrait?: boolean): void;
   dispose(): void;
 }
 
@@ -55,8 +56,10 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
   let moving = false;
   let disposed = false;
   let ready = false;
-  let contain = false;
-  let backgroundDirty = true;
+  let portrait = false;
+  // Bitmaps decoded for a previous orientation are discarded, never painted.
+  let shape = 0;
+  let source: { width: number; height: number } | undefined;
   let painted = -1;
   let lastCancellation = Number.NEGATIVE_INFINITY;
   let animationFrame: number | null = null;
@@ -134,19 +137,13 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
     if (!force && closest === painted) return;
     const bitmap = decoded.get(closest)!;
     if (bitmap.width < 1 || bitmap.height < 1) return;
-    const scale = (contain ? Math.min : Math.max)(canvas.width / bitmap.width, canvas.height / bitmap.height);
+    const scale = Math.max(canvas.width / bitmap.width, canvas.height / bitmap.height);
     const width = bitmap.width * scale;
     const height = bitmap.height * scale;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "medium";
-    // Cover overwrites the entire opaque canvas. Contain margins only need a
-    // fill after resizing or changing fit; no full-surface clear each frame.
-    if (contain && backgroundDirty) {
-      ctx.fillStyle = "#090b0b";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+    // Cover overwrites the entire opaque canvas; no full-surface clear each frame.
     ctx.drawImage(bitmap, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
-    backgroundDirty = false;
     touch(closest, bitmap);
     const changed = painted !== closest;
     painted = closest;
@@ -169,6 +166,32 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
     return !disposed && !controller.signal.aborted;
   }
 
+  function centreCrop({ width, height }: { width: number; height: number }) {
+    const cropWidth = Math.min(width, height * 9 / 16);
+    const cropHeight = Math.min(height, width * 16 / 9);
+    return [Math.round((width - cropWidth) / 2), Math.round((height - cropHeight) / 2), Math.round(cropWidth), Math.round(cropHeight)] as const;
+  }
+
+  async function decode(blob: Blob): Promise<ImageBitmap> {
+    // Fast bilinear resizing avoids expensive CPU resampling while scrolling.
+    if (!portrait) return createImageBitmap(blob, { resizeWidth: decodeWidth, resizeHeight: decodeHeight, resizeQuality: "low" });
+    // Portrait crops keep the landscape pixel budget, only transposed.
+    const options: ImageBitmapOptions = { resizeWidth: decodeHeight, resizeHeight: decodeWidth, resizeQuality: "low" };
+    if (source) {
+      const [x, y, width, height] = centreCrop(source);
+      return createImageBitmap(blob, x, y, width, height, options);
+    }
+    // Sequence frames share dimensions: learn them once from a full decode.
+    const full = await createImageBitmap(blob);
+    try {
+      source = { width: full.width, height: full.height };
+      const [x, y, width, height] = centreCrop(source);
+      return await createImageBitmap(full, x, y, width, height, options);
+    } finally {
+      full.close();
+    }
+  }
+
   async function load(index: number, job: { controller: AbortController; phase: "fetch" | "decode" }) {
     const { controller } = job;
     let reserved = false;
@@ -186,17 +209,13 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
       decoding += 1;
       reserved = true;
       trim();
-      const bitmap = await createImageBitmap(blob, {
-        resizeWidth: decodeWidth,
-        resizeHeight: decodeHeight,
-        // Fast bilinear resizing avoids expensive CPU resampling while scrolling.
-        resizeQuality: "low",
-      });
+      const generation = shape;
+      const bitmap = await decode(blob);
       decoding -= 1;
       reserved = false;
       // Advancing a few frames must not throw away completed work: on slower
       // connections these late frames are what keep the sequence moving.
-      if (!current(controller)) {
+      if (!current(controller) || generation !== shape) {
         bitmap.close();
         return;
       }
@@ -262,17 +281,25 @@ export function createHeroSequence({ canvas, frames, onFrame, onReady }: HeroSeq
       pump();
     },
 
-    resize(width, height, fitContain = false) {
+    resize(width, height, fitPortrait = false) {
       if (disposed || !Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return;
-      const ratio = Math.min(1.5, window.devicePixelRatio || 1, decodeWidth / width, Math.sqrt(decodeWidth * decodeHeight / width / height));
+      const reshaped = portrait !== fitPortrait;
+      if (reshaped) {
+        portrait = fitPortrait;
+        shape += 1;
+        for (const bitmap of decoded.values()) bitmap.close();
+        decoded.clear();
+        painted = -1;
+      }
+      const [bitmapWidth, bitmapHeight] = portrait ? [decodeHeight, decodeWidth] : [decodeWidth, decodeHeight];
+      const ratio = Math.min(1.5, window.devicePixelRatio || 1, bitmapWidth / width, Math.sqrt(bitmapWidth * bitmapHeight / width / height));
       const nextWidth = Math.max(1, Math.floor(width * ratio));
       const nextHeight = Math.max(1, Math.floor(height * ratio));
-      if (canvas.width === nextWidth && canvas.height === nextHeight && contain === fitContain) return;
-      contain = fitContain;
+      if (canvas.width === nextWidth && canvas.height === nextHeight && !reshaped) return;
       if (canvas.width !== nextWidth) canvas.width = nextWidth;
       if (canvas.height !== nextHeight) canvas.height = nextHeight;
-      backgroundDirty = true;
       draw(true);
+      if (reshaped) pump();
     },
 
     dispose() {

@@ -16,13 +16,13 @@ import {
   type Catalog,
 } from "./catalog";
 import { resolvePlace, type ResolvedPlace } from "./places";
-import { buildKmOverrides, buildRoutedOverrides, resolveRoute, type RouteLeg } from "./distance";
+import { buildKmOverrides, buildRoutedOverrides, resolveRoute, routePoints, type RouteLeg } from "./distance";
 import { computeQuote } from "./pricing";
 import { CatalogPricingUnavailableError, isPricingAvailable } from "./catalog-readiness";
 import { isISODate, isTime } from "./dates";
 import { MAX_TRIP_STOPS } from "./trip-limits";
 import { GENERAL_ENQUIRY_MESSAGE, quoteMessage, whatsappLink } from "./whatsapp";
-import type { RoutedTrip } from "./route/types";
+import { isRoutedTripForStops, type RoutedTrip } from "./route/types";
 import type { Car, City, Occasion, Package, Quote, TripRequest } from "./types";
 
 export { CatalogPricingUnavailableError } from "./catalog-readiness";
@@ -35,7 +35,7 @@ export interface ResolvedQuote {
   occasion: Occasion;
   /** Where the customer is, when they have said. Never part of the route. */
   customer: ResolvedPlace | null;
-  /** The itinerary in visiting order. Empty until a pickup is chosen. */
+  /** Passenger itinerary, including an inferred round-trip return to pickup. */
   stops: ResolvedPlace[];
   /** First and last of the itinerary — the two every summary line needs. */
   from: ResolvedPlace | null;
@@ -85,6 +85,26 @@ export function tripStops(catalog: Catalog, trip: TripRequest): ResolvedPlace[] 
   return stops;
 }
 
+function canonicalPassengerStops(stops: ResolvedPlace[], tripType: TripRequest["tripType"]): ResolvedPlace[] {
+  // Preserve partial inputs so clearing a drop does not erase its pickup.
+  return stops.length < 2 ? stops : routePoints({ stops, garage: null, tripType });
+}
+
+/** Passenger stops used by summaries, messages and saved enquiries. */
+export function passengerRouteStops(catalog: Catalog, trip: TripRequest): ResolvedPlace[] {
+  return canonicalPassengerStops(tripStops(catalog, trip), trip.tripType);
+}
+
+/** Complete vehicle itinerary shared by browser routing and server quotes. */
+export function vehicleRouteStops(catalog: Catalog, trip: TripRequest): ResolvedPlace[] {
+  if (!isPricingAvailable(catalog)) throw new CatalogPricingUnavailableError();
+  return routePoints({
+    stops: tripStops(catalog, trip),
+    garage: garagePoint(catalog, carBySlug(catalog, trip.carSlug)),
+    tripType: trip.tripType,
+  });
+}
+
 /**
  * @param routed The driven route for this exact trip, when one could be had.
  *   Its per-leg distances replace the estimate; a published route fare still
@@ -123,24 +143,31 @@ export function resolveQuote(
   // A place token is either one of our pickup points, or anywhere in India by
   // coordinates. Anything else — an empty field, a token from a link that no
   // longer resolves — is nothing, and stays nothing.
-  const stops = tripStops(catalog, trip);
+  const requestedStops = tripStops(catalog, trip);
+  const stops = canonicalPassengerStops(requestedStops, trip.tripType);
   const from = stops[0] ?? null;
   const to = stops.length > 1 ? stops[stops.length - 1]! : null;
   // The customer's own location never joins the route. It is asked for so the
   // fleet can be matched to them (§7) and so staff know where they are.
   const customer = resolvePlace(trip.customerPlace, catalog.locations);
 
+  const garage = garagePoint(catalog, car);
+  const vehiclePoints = routePoints({ stops: requestedStops, garage, tripType: trip.tripType });
+  // Legacy callers measured passenger stops only. A vehicle response must
+  // account for every transfer and return leg before it can price this trip.
+  const validRouted = isRoutedTripForStops(routed, routed?.scope === "vehicle" ? vehiclePoints.length : requestedStops.length)
+    ? routed : null;
   const published = buildKmOverrides(catalog.cityRoutes);
   // Spread order is the precedence: the router fills in, the published table
   // overwrites it where it has something to say.
-  const measured = routed?.legs.length
-    ? new Map([...buildRoutedOverrides(stops, routed.legs, catalog.settings.pricingRules.minimumLegKm), ...published])
+  const measured = validRouted && validRouted.scope !== "vehicle"
+    ? new Map([...buildRoutedOverrides(requestedStops, validRouted.legs, catalog.settings.pricingRules.minimumLegKm), ...published])
     : published;
 
   // Fewer than two stops is no distance. The package still has a price, and
   // the panel still shows it, but nothing pretends to know the route.
   const route = resolveRoute(
-    { stops, garage: garagePoint(catalog, car), tripType: trip.tripType },
+    { stops: requestedStops, garage, tripType: trip.tripType, routedLegs: validRouted?.scope === "vehicle" ? validRouted.legs : undefined },
     catalog.settings.circuityFactor,
     measured,
     catalog.settings.pricingRules.minimumLegKm,
@@ -153,6 +180,7 @@ export function resolveQuote(
     city,
     occasion,
     tripType: trip.tripType,
+    returnDistanceIncluded: Boolean(garage),
     km: route.km,
     haltHours: trip.haltHours,
     time: trip.time,
@@ -199,8 +227,8 @@ export function resolveQuote(
     legs: route.legs,
     itineraryKm: route.itineraryKm,
     transferKm: route.transferKm,
-    drivingMinutes: routed?.minutes ?? null,
-    routed: Boolean(routed?.legs.length),
+    drivingMinutes: validRouted?.minutes ?? null,
+    routed: Boolean(validRouted),
     trip,
     message,
     whatsappHref: whatsappLink(catalog.settings.whatsappNumber, message),

@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 import type { TripRequest } from "@/lib/types";
+import styles from "./Summary.module.css";
 
 
 export interface SendToWhatsAppProps {
@@ -39,6 +40,12 @@ export function SendToWhatsApp({
   const [note, setNote] = useState<string | null>(null);
   const fieldId = useId();
   const inFlight = useRef(false);
+  const feedback = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!note) return;
+    feedback.current?.focus({ preventScroll: true });
+    feedback.current?.scrollIntoView({ block: "center", behavior: "instant" });
+  }, [note]);
 
   const send = async () => {
     if (inFlight.current) return;
@@ -89,10 +96,9 @@ export function SendToWhatsApp({
     <>
       {withFields && (
         <>
-          <p className="mb-3 text-[11px] text-[var(--color-neutral-500)]">
-            Optional — leave a name and number and we can call you back if the chat goes quiet.
-          </p>
-          <div className="mb-4 grid grid-cols-[1fr_1fr] gap-3 max-md:grid-cols-1">
+          <h3 className={styles.contactTitle}>Your contact details</h3>
+          <p className={styles.contactHint}>Optional — add your details for a callback.</p>
+          <div className={styles.contactFields}>
             <div className="field">
               <label htmlFor={`${fieldId}-name`}>Your name</label>
               <input
@@ -126,7 +132,7 @@ export function SendToWhatsApp({
         {sending ? "Opening WhatsApp…" : label}
       </button>
 
-      {note && <output className="mt-3 block text-[12px] text-[var(--color-accent-300)]">{note}</output>}
+      {note && <div ref={feedback} tabIndex={-1} role="alert" className={styles.sendNote}>{note}</div>}
     </>
   );
 }

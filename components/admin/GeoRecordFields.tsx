@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { GeoKind } from "@/lib/geo/types";
+import { styles } from "@/app/admin/styles";
 
 interface Place { name: string; state: string; detail: string; lat: number; lng: number; kind: GeoKind }
 interface Props { name?: string; state?: string; lat?: number; lng?: number; includeState?: boolean; cityOnly?: boolean }
@@ -77,14 +78,14 @@ export function GeoRecordFields({ name: initialName = "", state: initialState = 
     }, (error) => { if (mounted.current) { setBusy(false); setNote(error.code === 1 ? "Location permission was declined. Search or enter coordinates." : "Could not locate this device. Search or enter coordinates."); } }, { timeout: 10_000, maximumAge: 60_000 });
   }
 
-  return <div className="mb-5">
-    <div className="mb-3 flex flex-wrap items-end gap-3">
-      <div className="field min-w-0 flex-1"><label htmlFor={`${id}-search`}>{cityOnly ? "Find a city on the map" : "Find a place on the map"}</label><input id={`${id}-search`} className="input" maxLength={200} value={query} onChange={(event) => { setQuery(event.target.value); setResults([]); }} placeholder="Search by place name or address" /></div>
+  return <div className={styles.geoPanel}>
+    <div className={styles.geoSearch}>
+      <div className="field min-w-0"><label htmlFor={`${id}-search`}>{cityOnly ? "Find a city on the map" : "Find a place on the map"}</label><input id={`${id}-search`} className="input" maxLength={200} value={query} onChange={(event) => { setQuery(event.target.value); setResults([]); }} placeholder="Search by place name or address" /></div>
       <button type="button" className="btn btn-secondary" onClick={locate} disabled={busy}>Use current coordinates</button>
     </div>
-    {results.length > 0 && <ul className="mb-3 max-h-60 list-none overflow-y-auto p-0">{results.map((place) => <li key={`${place.lat}:${place.lng}:${place.name}`}><button type="button" className="w-full rounded p-3 text-left text-sm hover:bg-[var(--color-accent-900)]" onClick={() => choose(place)}><strong>{place.name}</strong><span className="block text-xs">{place.detail || place.state} · {place.lat}, {place.lng}</span></button></li>)}</ul>}
+    {results.length > 0 && <ul className="scroll-shadows mb-3 max-h-60 list-none overflow-y-auto p-0">{results.map((place) => <li key={`${place.lat}:${place.lng}:${place.name}`}><button type="button" className="w-full rounded p-3 text-left text-sm hover:bg-[var(--color-accent-900)]" onClick={() => choose(place)}><strong>{place.name}</strong><span className="block text-xs">{place.detail || place.state} · {place.lat}, {place.lng}</span></button></li>)}</ul>}
     <output className="mb-3 block text-xs text-[var(--color-neutral-400)]">{busy ? "Looking up coordinates…" : note}</output>
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className={styles.grid4}>
       <div className="field"><label htmlFor={`${id}-name`}>Name</label><input id={`${id}-name`} name="name" className="input" value={name} onChange={(event) => setName(event.target.value)} required maxLength={200} /></div>
       {includeState && <div className="field"><label htmlFor={`${id}-state`}>State or region</label><input id={`${id}-state`} name="state" className="input" value={state} onChange={(event) => setState(event.target.value)} required maxLength={100} /></div>}
       <div className="field"><label htmlFor={`${id}-lat`}>Latitude</label><input id={`${id}-lat`} name="lat" className="input" type="number" step="any" min={-90} max={90} value={lat} onChange={(event) => setLat(event.target.value)} required /></div>

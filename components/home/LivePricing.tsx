@@ -14,6 +14,7 @@ import { resolveQuote, tripToParams } from "@/lib/quote";
 import type { TripRequest, TripType } from "@/lib/types";
 
 import { CarSearch } from "./CarSearch";
+import styles from "./LivePricing.module.css";
 
 
 export interface LivePricingProps {
@@ -57,7 +58,7 @@ export function LivePricing({ catalog, initialTrip }: LivePricingProps) {
   const calculatorHref = `/price-calculator?${tripToParams(trip).toString()}`;
 
   return (
-    <div className="grid grid-cols-[1fr_1fr] items-start gap-[56px] max-lg:grid-cols-1 max-lg:gap-12 max-md:gap-8">
+    <div className={styles.layout}>
       <div>
         <p className="kick">Transparent pricing</p>
         <h2 className="h2" style={{ marginBottom: "11.2px" }}>
@@ -143,7 +144,8 @@ export function LivePricing({ catalog, initialTrip }: LivePricingProps) {
         </Link>
       </div>
 
-      <div className="relative rounded-lg bg-bg p-8 shadow-[var(--shadow-md)] max-md:p-6">
+      <div className={styles.receipt}>
+        <p className={styles.label}><Icon name="ph-receipt" size={17} /> Your journey, itemised</p>
         <div className="mb-[4px] flex items-baseline justify-between gap-4">
           <span className="font-[family-name:var(--font-heading)] text-[17px]">
             {resolved.car.name}

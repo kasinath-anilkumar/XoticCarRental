@@ -1,135 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-
-import { Icon } from "@/components/ui/Icon";
+import { EditorialIntro, EditorialCTA, editorial } from "@/components/content/Editorial";
+import { HowItWorks } from "@/components/content/HowItWorks";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { getCatalog } from "@/lib/content";
 import { siteUrl } from "@/lib/site";
 
 export const revalidate = 3600;
-
-export const metadata: Metadata = {
-  title: "About Xotic",
-  description:
-    "Who Xotic is, where we operate, and how a chauffeur-driven booking actually works from enquiry to invoice.",
-  alternates: { canonical: "/about" },
-  openGraph: { url: `${siteUrl()}/about` },
-};
+export const metadata: Metadata = { title: "About Xotic", description: "Explore Xotic chauffeur services, our fleet and how a booking works.", alternates: { canonical: "/about" }, openGraph: { url: `${siteUrl()}/about` } };
 
 const PRINCIPLES = [
-  {
-    icon: "ph-receipt",
-    title: "The price is the price",
-    detail:
-      "Every charge is a line: the package, the driver's allowance, extra kilometres, the night charge, the tax. Nothing appears at the end of a trip that was not on the estimate at the start of it.",
-  },
-  {
-    icon: "ph-map-pin-line",
-    title: "Distance measured from the yard",
-    detail:
-      "A car has to leave a garage to reach you and return to one afterwards. We count that, and we show it — a quote that pretends the car materialises at your door is a quote that gets corrected later.",
-  },
-  {
-    icon: "ph-user-focus",
-    title: "Chauffeur arrangements confirmed",
-    detail:
-      "Tell us your timings and requirements. Our team confirms the chauffeur arrangements and any special requests with your booking.",
-  },
-  {
-    icon: "ph-clock-countdown",
-    title: "An enquiry you can track",
-    detail:
-      "Every saved enquiry gets a reference for follow-up. The reason the whole site is built around lead references is that a message lost in a WhatsApp thread is a customer lost with it.",
-  },
+  { title: "Know what goes into the price", detail: "See the package, chauffeur allowance, distance, time and tax as separate lines in your estimate. Review the details with our team before you confirm." },
+  { title: "A route that starts with the car", detail: "Your estimate includes the journey from the garage to your pickup and the return journey. The distance breakdown shows how it is calculated." },
+  { title: "Your plans shape the booking", detail: "Share your timings, itinerary and any special requests. Our team confirms the car and chauffeur arrangements with your booking." },
+  { title: "Keep the conversation together", detail: "Each saved enquiry has a reference for follow-up. The prepared WhatsApp message carries your trip details into the conversation." },
 ];
 
 export default async function AboutPage() {
   const catalog = await getCatalog();
-  const states = [...new Set(catalog.cities.map((city) => city.state))];
-
-  return (
-    <>
-      <section className="sec">
-        <p className="kick">About Xotic</p>
-        <h1 className="mb-3 max-w-[20ch] font-[family-name:var(--font-heading)] text-[32px] leading-tight sm:text-[40px]">
-          A luxury car company that answers the phone
-        </h1>
-        <p className="max-w-[68ch] text-[15px] text-[var(--color-neutral-400)]">
-          Xotic runs chauffeur-driven luxury cars for weddings, shoots, corporate travel, airport
-          runs and long tours. Browse the published fleet and service locations, compare package
-          rates, and share your itinerary for a confirmed quote.
-        </p>
-      </section>
-
-      <section className="sec">
-        <h2 className="h2 mb-5">How we work</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {PRINCIPLES.map((item) => (
-            <div
-              key={item.title}
-              className="rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-5"
-            >
-              <Icon name={item.icon} size={22} color="var(--color-accent)" />
-              <h3 className="mt-2 font-[family-name:var(--font-heading)] text-[18px]">
-                {item.title}
-              </h3>
-              <p className="mt-1 text-[13px] text-[var(--color-neutral-400)]">{item.detail}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="sec">
-        <h2 className="h2 mb-1">Where we operate</h2>
-        <p className="mb-5 max-w-[62ch] text-sm text-[var(--color-neutral-400)]">
-          The service area is {states.join(", ")}. Cars cross state lines on one booking, with the
-          permits paid and the same driver throughout — a tour does not change hands at a border.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {catalog.cities.map((city) => (
-            <Link
-              key={city.slug}
-              href={`/cities/${city.slug}`}
-              className="rounded-full border border-[var(--color-divider)] px-3 py-1.5 text-[13px] text-[var(--color-text)] no-underline hover:border-[var(--color-accent-solid)]"
-            >
-              {city.name}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="sec">
-        <h2 className="h2 mb-5">What happens after you enquire</h2>
-        <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["You send the details", "Through the form or on WhatsApp. You get a reference immediately."],
-            ["We check the real fleet", "Which cars are free on your date, and which yard is nearest to you."],
-            ["You get a firm rate", "The estimate, corrected for the actual car and the actual route."],
-            ["You confirm", "An advance holds the vehicle. The balance is due on the day."],
-          ].map(([title, detail], index) => (
-            <li
-              key={title}
-              className="rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-4"
-            >
-              <span className="font-[family-name:var(--font-heading)] text-[13px] text-[var(--color-accent)]">
-                Step {index + 1}
-              </span>
-              <p className="mt-1 text-[15px] font-medium">{title}</p>
-              <p className="mt-1 text-[13px] text-[var(--color-neutral-400)]">{detail}</p>
-            </li>
-          ))}
-        </ol>
-
-        <div className="mt-7 flex flex-wrap gap-2">
-          <Link href="/price-calculator" className="btn btn-primary">
-            <Icon name="ph-calculator" size={17} />
-            Price a trip
-          </Link>
-          <Link href="/contact" className="btn btn-ghost">
-            <Icon name="ph-phone-call" size={17} />
-            Talk to someone
-          </Link>
-        </div>
-      </section>
-    </>
-  );
+  return <div className={editorial.page}>
+    <EditorialIntro eyebrow="About Xotic" title="Your car. Your plans. Our chauffeur." description="Choose a chauffeur-driven car, compare the details and share your route. Our team helps you confirm the vehicle and arrangements for your trip." image={catalog.cars[0]?.images[0]?.url ?? catalog.cities[0]?.heroImage ?? null} imageLabel="A closer look at the Xotic fleet" actions={<Link href="/cars" className="btn btn-primary">View cars</Link>} />
+    <section className={editorial.section}><ResponsiveDisclosure title="How we plan your journey" hideTitleOnDesktop><div className={`${editorial.sectionHead} ${editorial.secondaryHeading}`}><div><p className={editorial.eyebrow}>Our approach</p><h2>Thoughtful planning, from the first detail.</h2></div></div><div className={editorial.twoColumns}>{PRINCIPLES.map((item, index) => <article className={editorial.card} key={item.title}><span className={editorial.number}>{String(index + 1).padStart(2, "0")}</span><h3>{item.title}</h3><p>{item.detail}</p></article>)}</div></ResponsiveDisclosure></section>
+    <section className={editorial.section}><HowItWorks settings={catalog.settings} /></section>
+    <section className={editorial.section}><div className={editorial.sectionHead}><div><p className={editorial.eyebrow}>Where we drive</p><h2>Find your starting point.</h2><p>Explore our service cities, local fleet and route estimates. Confirm your itinerary and travel requirements with the team.</p></div><Link href="/cities" className="btn btn-secondary">Explore all cities</Link></div><div className={editorial.pillList}>{catalog.cities.map((city) => <Link href={`/cities/${city.slug}`} key={city.slug}>{city.name}</Link>)}</div></section>
+    <section className={editorial.section}><EditorialCTA href="/contact" action="Start a conversation" title="A journey worth planning." description="Tell us what you have in mind. We will help you work through the car, the route and the details." /></section>
+  </div>;
 }

@@ -5,8 +5,8 @@ import { createLocation } from "../actions";
 import { styles } from "../styles";
 
 export function NewLocationForm() {
-  return <details className={styles.card}>
-    <summary className="cursor-pointer text-lg">Add a pickup point</summary>
+  return <details className={`${styles.card} ${styles.createCard}`}>
+    <summary className={styles.recordSummary}><span className={styles.recordName}>Add a pickup point</span><span className={styles.recordMeta}>Save a place your drivers know</span></summary>
     <p className={styles.cardHint}>Find the place, then choose the saved city that manages this pickup point.</p>
     <AdminForm action={createLocation} submitLabel="Add location">
       <GeoRecordFields />

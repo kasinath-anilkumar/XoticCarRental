@@ -1,5 +1,18 @@
 @layer theme, base, vendor, app, components, utilities; /* the order is set by whichever file loads first — app/globals.css
    explains the stack */
+/* The package CSS is unlayered, so its sizing and corner tokens need an
+ * unlayered override too. Otherwise its 44px cells overflow narrow screens. */
+.calendar:global(.rdp-root) {
+  --rdp-accent-color: var(--color-accent);
+  --rdp-day-width: min(36px, calc((100vw - 50px) / 7));
+  --rdp-day-height: 36px;
+  --rdp-day_button-width: var(--rdp-day-width);
+  --rdp-day_button-height: 34px;
+  --rdp-selected-border: 0;
+  --rdp-day_button-border-radius: var(--radius-sm);
+  --rdp-week_number-border-radius: var(--radius-sm);
+}
+
 /* In the components layer so a Tailwind utility can override it — see the
    layer order in app/globals.css. */
 @layer components {
@@ -32,7 +45,7 @@
   color: var(--color-text);
   background: var(--color-surface);
   border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 .trigger:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
@@ -48,18 +61,20 @@
   margin: 0;
   border: 1px solid var(--color-divider);
   color: var(--color-text);
-  position: absolute;
+  position: fixed;
   z-index: 60;
-  top: calc(100% + 4px);
+  top: 0;
   left: 0;
+  width: 304px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding: 12px;
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg);
 }
-
-/* Right-align when the field sits near the viewport edge. */
-.popoverEnd { left: auto; right: 0; }
 
 .shortcuts {
   display: flex;
@@ -83,16 +98,12 @@
 /* ── react-day-picker, pulled onto the palette ──────────────────────────── */
 
 .calendar {
-  --rdp-accent-color: var(--color-accent);
-  --rdp-day-width: 36px;
-  --rdp-day-height: 36px;
-  --rdp-day_button-width: 34px;
-  --rdp-day_button-height: 34px;
-  --rdp-day_button-border-radius: var(--radius-sm);
-  --rdp-selected-border: 0;
   font-size: 13px;
   margin: 0;
 }
+
+.calendar :global(.rdp-month_grid) { width: 100%; }
+.calendar :global(.rdp-day_button) { margin-inline: auto; }
 
 .calendar :global(.rdp-month_caption) {
   font-family: var(--font-heading);

@@ -16,6 +16,7 @@
     "migrate": "npm --prefix backend run migrate",
     "seed": "npm --prefix backend run seed",
     "create-admin": "npm --prefix backend run create-admin --",
+    "demo-photos": "npm --prefix backend run demo-photos --",
     "seed:services": "node backend/scripts/seed-services.js"
   },
   "dependencies": {

@@ -26,8 +26,8 @@ export function AvailabilityForm({ cars, today }: { cars?: Array<{ slug: string;
   const [state, formAction, pending] = useActionState(addAvailability, null);
 
   return (
-    <section className={styles.card}>
-      <h2 className={styles.cardTitle}>Hold a vehicle</h2>
+    <details className={`${styles.card} ${styles.createCard}`}>
+      <summary className={styles.recordSummary}><span className={styles.recordName}>Hold a vehicle</span><span className={styles.recordMeta}>Reserve dates or plan maintenance</span></summary>
       <p className={styles.cardHint}>
         The last day is inclusive: a car booked from the 14th to the 14th is unavailable for that
         one day and free on the 15th.
@@ -95,7 +95,7 @@ export function AvailabilityForm({ cars, today }: { cars?: Array<{ slug: string;
           </button>
         </div>
       </form>
-    </section>
+    </details>
   );
 }
 

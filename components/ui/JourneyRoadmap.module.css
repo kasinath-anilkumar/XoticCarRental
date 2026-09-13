@@ -1,0 +1,20 @@
+.roadmap { min-width: 0; width: 100%; padding: 8px; border: 1px solid #dfe4e0; border-radius: 3px; background: #fff; color: #171b18; }
+.steps { display: flex; align-items: stretch; list-style: none; margin: 0; padding: 0; }
+.step { position: relative; flex: 1 1 0; min-width: 0; }
+.step:not(:last-child)::after { position: absolute; content: ''; height: 1px; left: calc(50% + 17px); right: calc(-50% + 17px); top: 18px; background: #dfe4e0; pointer-events: none; }
+.step.complete::after { background: #ff7a00; }
+.link { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; min-width: 0; min-height: 44px; padding: 6px 8px; border-radius: 3px; color: #58615b; font-size: 13px; font-weight: 550; line-height: 1.35; text-align: center; text-decoration: none; }
+a.link:hover { color: #914100; }
+a.link:focus-visible { outline: 2px solid #914100; outline-offset: -2px; }
+.marker { position: relative; z-index: 1; display: grid; flex: none; place-items: center; width: 24px; height: 24px; border: 1px solid #cfd6d0; border-radius: 3px; background: #fff; color: #58615b; font-size: 12px; font-weight: 750; }
+.label { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.complete .marker { border-color: #ff7a00; color: #914100; }
+.current .marker { border-color: #ff7a00; background: #ff7a00; color: #171b18; }
+.current .link { color: #171b18; font-weight: 750; }
+@media (max-width: 767px) {
+  .roadmap { padding: 5px 3px; }
+  .link { flex-direction: row; align-items: center; justify-content: center; gap: 5px; min-height: 44px; padding: 5px 3px; font-size: 12px; }
+  .marker { width: 20px; height: 20px; font-size: 11px; }
+  .label { text-align: left; }
+  .step:not(:last-child)::after { top: 50%; left: auto; right: -2px; width: 4px; }
+}

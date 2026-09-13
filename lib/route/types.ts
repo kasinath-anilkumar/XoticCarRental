@@ -19,6 +19,8 @@ export interface RouteLeg {
 }
 
 export interface RoutedTrip {
+  /** Omitted by older callers that only routed the passenger itinerary. */
+  scope?: "vehicle" | "itinerary";
   /** One per pair of consecutive stops, in order. */
   legs: RouteLeg[];
   km: number;
@@ -28,6 +30,21 @@ export interface RoutedTrip {
    * like the road it follows, small enough to put in a JSON response.
    */
   path: LatLng[];
+}
+
+/** Reject partial or corrupt provider answers before using or caching them. */
+export function isRoutedTripForStops(value: unknown, stopCount: number): value is RoutedTrip {
+  if (!value || typeof value !== "object" || stopCount < 2) return false;
+  const trip = value as Partial<RoutedTrip>;
+  const distance = (number: unknown) => typeof number === "number" && Number.isFinite(number) && number >= 0;
+  return (trip.scope == null || trip.scope === "vehicle" || trip.scope === "itinerary") &&
+    distance(trip.km) && distance(trip.minutes) &&
+    Array.isArray(trip.legs) && trip.legs.length === stopCount - 1 &&
+    trip.legs.every((leg) => leg != null && distance(leg.km) && distance(leg.minutes)) &&
+    Array.isArray(trip.path) && trip.path.every((point) =>
+      Array.isArray(point) && point.length === 2 &&
+      Number.isFinite(point[0]) && Math.abs(point[0]) <= 90 &&
+      Number.isFinite(point[1]) && Math.abs(point[1]) <= 180);
 }
 
 export interface RouteProvider {

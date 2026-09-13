@@ -29,6 +29,8 @@ const RouteMapCanvas = dynamic(
 
 export interface RouteMapProps {
   stops: ResolvedPlace[];
+  /** Area to show before a passenger itinerary is selected; never a stop. */
+  previewCenter?: LatLng;
   /** The driven route, once `/api/directions` has answered. */
   path?: LatLng[];
   /** e.g. "260 km on route" */
@@ -38,9 +40,10 @@ export interface RouteMapProps {
   fill?: boolean;
 }
 
-export function RouteMap({ stops, path, chips = [], note, fill = false }: RouteMapProps) {
+export function RouteMap({ stops, previewCenter, path, chips = [], note, fill = false }: RouteMapProps) {
   const frame = useRef<HTMLDivElement | null>(null);
   const [nearViewport, setNearViewport] = useState(false);
+  const hasMapLocation = stops.length > 0 || previewCenter !== undefined;
 
   useEffect(() => {
     if (!frame.current) return;
@@ -61,12 +64,12 @@ export function RouteMap({ stops, path, chips = [], note, fill = false }: RouteM
   return (
     <div className={fill ? styles.fill : undefined}>
       <div ref={frame} className={`${styles.frame} ${fill ? styles.frameFill : ""}`}>
-        {stops.length > 0 && nearViewport ? (
-          <RouteMapCanvas stops={stops} path={path} />
+        {hasMapLocation && nearViewport ? (
+          <RouteMapCanvas stops={stops} previewCenter={previewCenter} path={path} />
         ) : (
           <div className={styles.fallback}>
             <Icon name="ph-map-pin-line" size={22} />
-            {stops.length > 0 ? "Loading the map…" : "Select a pickup location to see the route."}
+            {hasMapLocation ? "Loading the map…" : "Select a pickup location to see the route."}
           </div>
         )}
         {chips.length > 0 && (

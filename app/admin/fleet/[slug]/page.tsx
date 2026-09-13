@@ -52,11 +52,12 @@ export default async function AdminCarPage({ params }: { params: Params }) {
         </div>
       </AdminPageHead>
 
-      <AdminForm action={updateCar} submitLabel="Save car">
+      <nav className={styles.sectionNav} aria-label="Vehicle sections"><a href="#vehicle-details">Vehicle</a><a href="#vehicle-rates">Rate card</a><a href="#vehicle-visibility">Visibility</a><a href="#vehicle-areas">Service areas</a></nav>
+      <AdminForm action={updateCar} submitLabel="Save car" className={styles.editorForm}>
         <input type="hidden" name="id" value={car.id} />
         <input type="hidden" name="slug" value={car.slug} />
 
-        <section className={styles.card}>
+        <section id="vehicle-details" className={styles.card}>
           <h2 className={styles.cardTitle}>Vehicle</h2>
           <p className={styles.cardHint}>
             The slug is the URL and cannot be changed here — a live page&rsquo;s address should not
@@ -85,7 +86,7 @@ export default async function AdminCarPage({ params }: { params: Params }) {
           </div>
         </section>
 
-        <section className={styles.card}>
+        <section id="vehicle-rates" className={styles.card}>
           <h2 className={styles.cardTitle}>Rate card</h2>
           <p className={styles.cardHint}>
             Whole rupees, before the city multiplier. These are the numbers every quote is built
@@ -138,7 +139,7 @@ export default async function AdminCarPage({ params }: { params: Params }) {
           </div>
         </section>
 
-        <section className={styles.card}>
+        <section id="vehicle-visibility" className={styles.card}>
           <h2 className={styles.cardTitle}>Occasions and visibility</h2>
           <p className={styles.cardHint}>
             Tagged occasions decide which occasion pages feature this car and which browse filters
@@ -150,7 +151,7 @@ export default async function AdminCarPage({ params }: { params: Params }) {
           <Checkbox label="Live on the site" name="is_active" defaultChecked={car.is_active} />
         </section>
 
-        <section className={styles.card}>
+        <section id="vehicle-areas" className={styles.card}>
           <h2 className={styles.cardTitle}>Where it may be sent</h2>
           <p className={styles.cardHint}>
             Leave the selection empty for a car that travels anywhere the business serves — that is most of

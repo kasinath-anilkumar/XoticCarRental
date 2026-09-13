@@ -66,7 +66,9 @@ export async function POST(request: Request) {
       throw new EnquiryInputError("Choose valid pickup, drop and customer locations.");
     }
     const resolved = await resolveRoutedQuote(catalog, trip);
-    if (!resolved.from || !resolved.to || resolved.stops.length !== stops.length) {
+    // Each submitted token was validated above. Canonical passenger stops may
+    // additionally contain the inferred return to pickup on a two-stop round trip.
+    if (!resolved.from || !resolved.to) {
       throw new EnquiryInputError("Choose a pickup and a drop before sending the quote.");
     }
     if (!Number.isSafeInteger(resolved.quote.days) || resolved.quote.days < 1 || resolved.quote.days > MAX_TRIP_DAYS) {

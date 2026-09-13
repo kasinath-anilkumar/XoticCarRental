@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { Icon } from "@/components/ui/Icon";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { focusPageTarget } from "@/lib/navigation-focus";
+import styles from "./ServiceEnquiryForm.module.css";
 import { LocationCombobox } from "@/components/ui/LocationCombobox";
 import { businessDate } from "@/lib/dates";
 import { resolvePlace } from "@/lib/places";
-import type { Service } from "@/lib/services";
+import type { Service, ServiceField } from "@/lib/services";
 import type { LocationPoint } from "@/lib/types";
 
 const NO_LOCATIONS: LocationPoint[] = [];
@@ -33,6 +36,9 @@ export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { serv
   const [returnDate, setReturnDate] = useState<string>("");
   const [places, setPlaces] = useState<Record<string, string>>({});
   const fieldId = useId();
+  const [optionalDetailsAdded, setOptionalDetailsAdded] = useState(false);
+  const orderedFields = service.fields.map((field, index) => ({ field, index }));
+  const optionalFields = orderedFields.filter(({ field }) => !field.required);
   const inFlight = useRef(false);
   const [today, setToday] = useState<string>();
 
@@ -70,7 +76,7 @@ export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { serv
         if (typeof value !== "string" || !resolvePlace(value, locations)) {
           setError(`Select ${field.label.toLowerCase()} from the search results.`);
           setStatus("error");
-          document.getElementById(`${fieldId}-${field.name}`)?.focus();
+          focusPageTarget(`${fieldId}-${field.name}`);
           return;
         }
       }
@@ -132,71 +138,10 @@ export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { serv
     }
   }
 
-  if (status === "sent") {
+  function renderField(field: ServiceField, index: number) {
     return (
-      <div aria-live="polite" tabIndex={-1} ref={(element) => { element?.focus(); }}
-        className="rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-6 text-center">
-        <Icon name={recorded ? "ph-check-circle" : "ph-whatsapp-logo"} size={32} color="var(--color-accent)" />
-        <h3 className="mt-2 font-[family-name:var(--font-heading)] text-xl">
-          {recorded ? `Enquiry received${reference ? ` — reference ${reference}` : ""}` : "One more step: send your WhatsApp message"}
-        </h3>
-        <p className="mt-1 text-sm text-[var(--color-neutral-400)]">
-          {recorded
-            ? "Our team will contact you about availability. Keep your reference handy."
-            : "We could not save your enquiry. Send the prepared message on WhatsApp so our team receives your details."}
-        </p>
-        <p className="mt-2 text-[12px] text-[var(--color-neutral-400)]">
-          WhatsApp opens with the message written out. Nothing is sent until you tap send.
-        </p>
-        {href && (
-          <a className="btn wa mt-4" href={href} target="_blank" rel="noopener noreferrer">
-            <Icon name="ph-whatsapp-logo" size={16} />
-            Open the WhatsApp message
-          </a>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <form
-      onSubmit={onSubmit}
-      aria-busy={status === "sending"}
-      className="rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-5 sm:p-6"
-    >
-      <h2 className="font-[family-name:var(--font-heading)] text-xl">Ask about {service.short.toLowerCase()}</h2>
-      <p className="mt-1 mb-4 text-sm text-[var(--color-neutral-400)]">
-        The questions below are the ones we would ask on the phone. Answer what you know — a blank is
-        better than a guess.
-      </p>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="field">
-          <span>Your name</span>
-          <input name="customerName" className="input" autoComplete="name" placeholder="Name" maxLength={120} />
-        </label>
-
-        <label className="field">
-          <span>
-            Phone <span className="text-[var(--color-accent)]">*</span>
-          </span>
-          <input
-            name="customerPhone"
-            className="input"
-            type="tel"
-            required
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="+91"
-            maxLength={32}
-            minLength={7}
-            title="Enter a phone number, including the country code if outside India."
-          />
-        </label>
-
-        {service.fields.map((field) => (
           <div key={field.name} className="contents">
-            <div className={`field ${field.wide ? "sm:col-span-2" : ""}`}>
+            <div className={`field ${field.wide ? "sm:col-span-2" : ""}`} style={{ "--field-order": index * 2 } as CSSProperties}>
               {field.type !== "place" && <label id={`${fieldId}-${field.name}-label`} htmlFor={field.type === "select" ? undefined : `${fieldId}-${field.name}`}>
                 {field.label}
                 {field.required && <span className="text-[var(--color-accent)]"> *</span>}
@@ -236,7 +181,7 @@ export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { serv
                     {(field.options ?? []).map((option) => (
                       <label key={option} className="cursor-pointer">
                         <input type="radio" className="peer sr-only" name={field.name} value={option} required={field.required} />
-                        <span className="flex min-h-[40px] items-center rounded-lg border border-[var(--color-divider)] bg-well px-3 py-1.5 text-[12px] text-[var(--color-neutral-300)] transition-colors hover:border-[var(--color-accent)] peer-checked:border-[var(--color-accent)] peer-checked:bg-[var(--color-accent-800)] peer-checked:text-[var(--color-accent-100)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)] sm:text-[13px]">
+                        <span className="flex min-h-[44px] items-center rounded-lg border border-[var(--color-divider)] bg-well px-3 py-1.5 text-[13px] text-[var(--color-neutral-300)] transition-colors hover:border-[var(--color-accent)] peer-checked:border-[var(--color-accent)] peer-checked:bg-[var(--color-accent-800)] peer-checked:text-[var(--color-accent-100)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)]">
                           {option}
                         </span>
                       </label>
@@ -272,7 +217,7 @@ export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { serv
             </div>
 
             {field.type === "date" && (
-              <label className="field">
+              <label className="field" style={{ "--field-order": index * 2 + 1 } as CSSProperties}>
                 <span className="flex items-center justify-between">
                   <span>
                     Return date{" "}
@@ -288,6 +233,7 @@ export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { serv
                 </span>
                 <input
                   name="returnDate"
+                  id={`${fieldId}-returnDate`}
                   className="input"
                   type="date"
                   value={returnDate}
@@ -300,8 +246,106 @@ export function ServiceEnquiryForm({ service, locations = NO_LOCATIONS }: { serv
               </label>
             )}
           </div>
-        ))}
+    );
+  }
+
+  if (status === "sent") {
+    return (
+      <div aria-live="polite" tabIndex={-1} ref={(element) => { element?.focus(); }}
+        className={`${styles.panel} ${styles.confirmation}`}>
+        <Icon name={recorded ? "ph-check-circle" : "ph-whatsapp-logo"} size={32} color="var(--color-accent)" />
+        <h3 className="mt-2 font-[family-name:var(--font-heading)] text-xl">
+          {recorded ? `Enquiry received${reference ? ` — reference ${reference}` : ""}` : "One more step: send your WhatsApp message"}
+        </h3>
+        <p className="mt-1 text-sm text-[var(--color-neutral-400)]">
+          {recorded
+            ? "Our team will contact you about availability. Keep your reference handy."
+            : "We could not save your enquiry. Send the prepared message on WhatsApp so our team receives your details."}
+        </p>
+        <p className="mt-2 text-[12px] text-[var(--color-neutral-400)]">
+          WhatsApp opens with the message written out. Nothing is sent until you tap send.
+        </p>
+        {href && (
+          <a className="btn wa mt-4" href={href} target="_blank" rel="noopener noreferrer">
+            <Icon name="ph-whatsapp-logo" size={16} />
+            Open the WhatsApp message
+          </a>
+        )}
       </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      onInvalidCapture={(event) => {
+        const target = event.target as HTMLInputElement;
+        if (target.closest('[data-responsive-disclosure][data-open="false"]')) {
+          event.preventDefault();
+          setError(target.validationMessage);
+          setStatus("error");
+          if (target.id) focusPageTarget(target.id);
+        }
+      }}
+      aria-busy={status === "sending"}
+      className={styles.panel}
+    >
+      <div className={styles.header}>
+        <p className={styles.eyebrow}>Let’s make a plan</p>
+        <h2>Ask about {service.short.toLowerCase()}</h2>
+        <p>Share your plans for a quote. Fields marked * are required.</p>
+      </div>
+      <fieldset className={styles.group}>
+        <legend>01 / Your details</legend>
+        <div className={styles.fields}>
+        <label className="field">
+          <span>Your name</span>
+          <input name="customerName" className="input" autoComplete="name" placeholder="Name" maxLength={120} />
+        </label>
+
+        <label className="field">
+          <span>
+            Phone <span className="text-[var(--color-accent)]">*</span>
+          </span>
+          <input
+            name="customerPhone"
+            className="input"
+            type="tel"
+            required
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="+91"
+            maxLength={32}
+            minLength={7}
+            title="Enter a phone number, including the country code if outside India."
+          />
+        </label>
+
+        </div>
+      </fieldset>
+      <fieldset className={styles.group}>
+        <legend>02 / Your journey</legend>
+        <div className={`${styles.fields} ${styles.journeyFields}`}>
+        {orderedFields.filter(({ field }) => field.required).map(({ field, index }) => renderField(field, index))}
+        {optionalFields.length > 0 && <ResponsiveDisclosure
+          title={optionalDetailsAdded ? "Additional details (added)" : "Additional details (optional)"}
+          className={styles.optionalSection} contentClassName={styles.optionalContent}
+          headingLevel={3} hideTitleOnDesktop defaultOpen={optionalDetailsAdded}
+        >
+          <div className={styles.optionalFields} onChangeCapture={(event) => {
+            const form = event.currentTarget.closest("form");
+            if (!form) return;
+            const values = new FormData(form);
+            setOptionalDetailsAdded(optionalFields.some(({ field }) => {
+              const value = values.get(field.name);
+              return typeof value === "string" && Boolean(value.trim());
+            }));
+          }}>
+            {optionalFields.map(({ field, index }) => renderField(field, index))}
+          </div>
+        </ResponsiveDisclosure>}
+        </div>
+      </fieldset>
 
       {error && (
         <p className="mt-3 text-sm text-[var(--color-accent)]" role="alert">

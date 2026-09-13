@@ -9,13 +9,14 @@ import { RateCard } from "@/components/car/RateCard";
 import { MessagePreview } from "@/components/quote/MessagePreview";
 import { ChargesExplained } from "@/components/trust/ChargesExplained";
 import { CarBookingPanel, CarStickyBar } from "@/components/car/CarBookingPanel";
+import { CheckAvailability } from "@/components/car/CheckAvailability";
 import { PackageSelectionProvider } from "@/components/car/PackageSelection";
 import { BreadcrumbJsonLd, CarJsonLd, FaqJsonLd } from "@/components/seo/JsonLd";
 import { Icon } from "@/components/ui/Icon";
-import { Media } from "@/components/ui/Media";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { VehicleGallery } from "@/components/car/VehicleGallery";
+import styles from "@/components/car/CarDetail.module.css";
 import {
-  galleryImages,
-  heroImage,
   homeCity,
   servesCity,
   similarCars,
@@ -24,46 +25,14 @@ import {
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { formatINR } from "@/lib/format";
+import { businessDate } from "@/lib/dates";
 import { rateFor } from "@/lib/pricing";
 import { carFaq } from "@/lib/faq";
 import { tripToParams } from "@/lib/quote";
 import { carEnquiryMessage } from "@/lib/whatsapp";
 
 
-/**
- * The booking panel's classes.
- *
- * They live here rather than inside the panel because the panel is a client
- * component rendered from two places, and one map keeps both call sites and the
- * mobile bar in step.
- */
-const PANEL_CLASSES: Record<string, string> = {
-  panel: "sticky top-[90px] rounded-lg bg-surface p-8 shadow-[var(--shadow-md)] max-lg:static max-md:mt-8 max-md:p-6",
-  panelKicker: "text-[12px] text-[var(--color-neutral-500)]",
-  panelPriceRow: "flex items-baseline gap-3",
-  panelPrice: "font-[family-name:var(--font-heading)] text-[36px] text-[var(--color-accent-300)] max-md:text-[28px]",
-  panelUnit: "text-[12px] text-[var(--color-neutral-500)]",
-  panelExtras: "mt-2 text-[12px] text-[var(--color-neutral-400)]",
-  packageGroup: "my-6",
-  packageLabel: "mb-3 text-[11px] tracking-[0.1em] uppercase text-[var(--color-neutral-500)]",
-  packageList: "flex flex-col gap-2",
-  packageOption: "flex items-center justify-between gap-4 rounded-md border p-4 text-left text-text no-underline",
-  packageOptionIdle: "border-[var(--color-divider)] bg-well hover:border-[var(--color-accent)]",
-  packageOptionActive: "border-[var(--color-accent)] bg-[var(--color-accent-900)]",
-  packageName: "block font-[family-name:var(--font-heading)] text-[14px]",
-  packageSub: "text-[11px] text-[var(--color-neutral-500)]",
-  packagePrice: "font-[family-name:var(--font-heading)] text-[16px] text-[var(--color-neutral-300)]",
-  packagePriceActive: "font-[family-name:var(--font-heading)] text-[16px] text-[var(--color-accent-300)]",
-  reply: "mt-4 flex items-center justify-center gap-2 text-[11px] text-[var(--color-neutral-500)]",
-  driver: "mt-6 flex items-center gap-4 border-t border-[var(--color-divider)] pt-6 max-md:hidden",
-  driverAvatar: "size-[44px] flex-none rounded-full",
-  driverTitle: "font-[family-name:var(--font-heading)] text-[13px]",
-  driverBody: "text-[11px] text-[var(--color-neutral-500)]",
-  stickyPrice: "flex-1",
-  stickyPriceValue: "font-[family-name:var(--font-heading)] text-[19px] text-[var(--color-accent-300)]",
-  stickyPriceUnit: "block text-[10px] text-[var(--color-neutral-500)]",
-  stickyBar: "hidden max-md:flex",
-};
+const PANEL_CLASSES: Record<string, string> = styles;
 
 export const revalidate = 3600;
 
@@ -120,15 +89,14 @@ export default async function CarDetailPage({ params }: { params: Params }) {
 
   const enquiryMessage = carEnquiryMessage(car, city, catalog.packages[0]);
   const faq = carFaq(catalog, car);
+  const today = businessDate();
 
   const bookingProps = {
     car,
     city,
     whatsappNumber: catalog.settings.whatsappNumber,
+    gstPercent: catalog.settings.gstPercent,
     calculatorParams: calculatorParams.toString(),
-    // The availability check needs a floor for its date field, and the server's
-    // day is the one the calendar is written in.
-    today: new Date().toISOString().slice(0, 10),
     styles: PANEL_CLASSES,
   };
 
@@ -149,123 +117,59 @@ export default async function CarDetailPage({ params }: { params: Params }) {
         ]}
       />
 
-      <div className="px-[var(--gutter-desktop)] pt-12 pb-[56px] max-md:px-[var(--gutter-mobile)] max-md:pt-6 max-md:pb-0">
-        <p className="mb-6 text-[12px] text-[var(--color-neutral-600)] [&_a]:text-inherit [&_a]:no-underline [&_a:hover]:text-[var(--color-accent-300)]">
-          <Link href="/">Home</Link> / <Link href="/cars">Browse cars</Link> /{" "}
-          <span className="text-[var(--color-neutral-300)]">{car.name}</span>
-        </p>
-
-        <div className="grid grid-cols-[1fr_400px] items-start gap-12 max-lg:grid-cols-1">
+      <div className={styles.surface}><div className={styles.page}>
+        <p className={styles.breadcrumb}><Link href="/">Home</Link> / <Link href="/cars">Browse cars</Link> / {car.name}</p>
+        <header className={styles.heading}>
           <div>
-            <Media
-              src={heroImage(car)}
-              alt={car.name}
-              placeholder={`Drop ${car.name} photo`}
-              className="h-[420px] rounded-lg max-lg:h-[340px] max-md:h-[210px] max-md:rounded-md"
-              priority
-              sizes="(max-width: 1023px) 100vw, 60vw"
-            />
-            <div className="mt-4 grid grid-cols-[repeat(3,1fr)] gap-4 max-md:gap-2">
-              {galleryImages(car).map((image) => (
-                <Media
-                  key={image.label}
-                  src={image.url}
-                  alt={`${car.name} — ${image.label.toLowerCase()}`}
-                  placeholder={image.label}
-                  className="h-[104px] rounded-md max-md:h-[60px]"
-                  sizes="200px"
-                />
-              ))}
-            </div>
-
-            <div className="mt-12 flex flex-wrap items-start justify-between gap-8 max-md:mt-6 max-md:gap-3">
-              <div>
-                <h1 className="mb-2 text-[36px] max-md:text-[24px]">{car.name}</h1>
-                <p className="text-[13px] text-[var(--color-neutral-500)]">
-                  {car.year} · {car.type} · Home city {city.name}, {city.state}
-                </p>
-              </div>
-              <div className="flex flex-wrap justify-end gap-2 max-md:justify-start">
-                {catalog.occasions.filter((occasion) => car.occasions.includes(occasion.slug)).map((occasion) => (
-                  <span key={occasion.slug} className="tag tag-outline">
-                    {occasion.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-8 grid grid-cols-[repeat(4,1fr)] gap-4 max-lg:grid-cols-[repeat(2,1fr)] max-md:mt-6 max-md:gap-2">
-              {specs.map((spec) => (
-                <div key={spec.label} className="rounded-md bg-surface p-4">
-                  <Icon name={spec.icon} size={20} color="var(--color-accent)" />
-                  <p className="mt-2 text-[11px] text-[var(--color-neutral-500)]">{spec.label}</p>
-                  <p className="font-[family-name:var(--font-heading)] text-[15px]">{spec.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">
-              <RateCard
-                car={car}
-                cities={catalog.cities.filter((city) => servesCity(car, city.slug))}
-                packages={catalog.packages}
-                settings={catalog.settings}
-                homeCitySlug={city.slug}
-                occasions={catalog.occasions.filter((occasion) => car.occasions.includes(occasion.slug))}
-              />
-            </div>
-
-            <div className="mt-12 grid grid-cols-[1fr_1fr] gap-8 max-md:mt-8 max-md:grid-cols-1 max-md:gap-6">
-              <div>
-                <h3 style={{ marginBottom: "8.4px", fontSize: "20px" }}>Included</h3>
-                {catalog.settings.inclusions.map((item) => (
-                  <p key={item} className="flex gap-3 py-[4px] text-[13px] text-[var(--color-neutral-300)]">
-                    <Icon name="ph-check" size={16} color="var(--color-accent)" />
-                    {item}
-                  </p>
-                ))}
-              </div>
-              <div>
-                <h3 style={{ marginBottom: "8.4px", fontSize: "20px" }}>Not included</h3>
-                {catalog.settings.exclusions.map((item) => (
-                  <p key={item} className="flex gap-3 py-[4px] text-[13px] text-[var(--color-neutral-400)]">
-                    <Icon name="ph-minus" size={16} color="var(--color-neutral-600)" />
-                    {item}
-                  </p>
-                ))}
-              </div>
-            </div>
-
-            <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">What can change your price</h2>
-            <ChargesExplained
-              settings={catalog.settings}
-              car={car}
-              kicker={null}
-              heading={null}
-            />
-
-            <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">Before you message us</h2>
-            <MessagePreview message={enquiryMessage} defaultOpen />
-
-            <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">Questions</h2>
-            <FaqBlock items={faq} />
-
-            <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">Similar cars</h2>
-            <div className="grid-cars-3">
-              {similarCars(catalog, car).map((similar) => (
-                <CarCard
-                  key={similar.slug}
-                  catalog={catalog}
-                  car={similar}
-                  pkg={catalog.packages[0]}
-                />
-              ))}
-            </div>
+            <div className={styles.eyebrow}>{car.type} · {car.year} · With chauffeur</div>
+            <h1>{car.name}</h1>
+            <p>Home city {city.name}, {city.state}</p>
+            <ul className={styles.mobileSpecs} aria-label="Key vehicle specifications">{specs.map((spec) => <li key={spec.label}><Icon name={spec.icon} size={14} /><span>{spec.value}</span></li>)}</ul>
           </div>
+          <div className={styles.tags}>{catalog.occasions.filter((occasion) => car.occasions.includes(occasion.slug)).map((occasion) => <span key={occasion.slug}>{occasion.name}</span>)}</div>
+        </header>
 
+        <nav className={styles.sectionNav} aria-label="Vehicle details">
+          <a href="#rate-card">Packages &amp; rates</a>
+          <a href="#vehicle-availability">Availability</a>
+          <a href="#vehicle-inclusions">What&rsquo;s included</a>
+          <a href="#vehicle-questions">Questions</a>
+        </nav>
+
+        <div className={styles.layout}>
+          <div className={styles.showcase}><VehicleGallery images={car.images} name={car.name} /></div>
           <CarBookingPanel {...bookingProps} />
+          <div className={styles.details}>
+            <div className={styles.specs}>
+              {specs.map((spec) => <div key={spec.label}><Icon name={spec.icon} size={22} color="var(--color-accent-text)" /><p>{spec.label}</p><strong>{spec.value}</strong></div>)}
+            </div>
+            <RateCard car={car} cities={catalog.cities.filter((item) => servesCity(car, item.slug))} packages={catalog.packages} settings={catalog.settings} homeCitySlug={city.slug} occasions={catalog.occasions.filter((occasion) => car.occasions.includes(occasion.slug))} />
+
+            <div id="vehicle-availability" className={styles.jumpTarget} tabIndex={-1}><CheckAvailability carSlug={car.slug} today={today} /></div>
+
+            <ResponsiveDisclosure title="What’s included" id="vehicle-inclusions" hideTitleOnDesktop className={styles.inclusionsDisclosure}>
+            <div className={styles.inclusions}>
+              <div><h3>Included</h3>{catalog.settings.inclusions.map((item) => <p key={item}><Icon name="ph-check" size={15} color="var(--color-accent-text)" />{item}</p>)}</div>
+              <div><h3>Not included</h3>{catalog.settings.exclusions.map((item) => <p key={item}><Icon name="ph-minus" size={15} />{item}</p>)}</div>
+            </div>
+            <div className={styles.chauffeurNote}><Icon name="ph-user-circle-check" size={24} /><div><h3>Make the journey yours</h3><p>Share your language, timing and accessibility requirements when enquiring.</p></div></div>
+            <div className={styles.mobileOccasions}><h3>Available for</h3><div className={styles.tags}>{catalog.occasions.filter((occasion) => car.occasions.includes(occasion.slug)).map((occasion) => <span key={occasion.slug}>{occasion.name}</span>)}</div></div>
+            </ResponsiveDisclosure>
+
+            <ResponsiveDisclosure title="What can change your price" className={styles.contentSection}>
+              <ChargesExplained settings={catalog.settings} car={car} kicker={null} heading={null} />
+            </ResponsiveDisclosure>
+            <ResponsiveDisclosure title="Before you message us" className={styles.contentSection}>
+              <MessagePreview message={enquiryMessage} />
+            </ResponsiveDisclosure>
+            <ResponsiveDisclosure title="Questions" id="vehicle-questions" className={styles.contentSection}><FaqBlock items={faq} /></ResponsiveDisclosure>
+          </div>
         </div>
-      </div>
+
+        <ResponsiveDisclosure title="Similar cars" className={styles.similar}>
+          <div className={styles.similarGrid}>{similarCars(catalog, car).map((similar) => <CarCard key={similar.slug} catalog={catalog} car={similar} pkg={catalog.packages[0]} />)}</div>
+        </ResponsiveDisclosure>
+      </div></div>
 
       <CarStickyBar {...bookingProps} />
     </PackageSelectionProvider>

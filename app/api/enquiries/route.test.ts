@@ -65,6 +65,24 @@ describe("quote enquiry API", () => {
     expect(createLead).toHaveBeenCalledWith(expect.objectContaining({ total: 10_500, advance: 2_100 }));
     expect(listAvailability).toHaveBeenCalledWith("sedan", { from: date, to: date });
   });
+  it("saves and messages the return to pickup inferred for a two-stop round trip", async () => {
+    const resolved = await resolveRoutedQuote();
+    const stops = [{ name: "Pickup" }, { name: "Destination" }, { name: "Pickup" }];
+    resolveRoutedQuote.mockResolvedValue({ ...resolved, stops, from: stops[0], to: stops[2] });
+    const response = await POST(request({ ...valid, tripType: "round" }));
+    expect(response.status).toBe(200);
+    expect(createLead).toHaveBeenCalledWith(expect.objectContaining({
+      tripType: "round", stops: [
+        { name: "Pickup", role: "pickup" }, { name: "Destination", role: "stop" }, { name: "Pickup", role: "drop" },
+      ],
+    }));
+    const body = await response.json();
+    const message = new URL(body.whatsappHref).searchParams.get("text");
+    expect(message).toContain("Stop 1: Destination");
+    expect(message).toContain("Final drop: Pickup");
+    expect(message).not.toContain("Final drop: Destination");
+    expect(resolveRoutedQuote).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ stops: valid.stops }));
+  });
   it("rejects a stale quote for a vehicle that is now held", async () => {
     listAvailability.mockResolvedValue([{ carSlug: "sedan", startsOn: date, endsOn: date }]);
     const response = await POST(request(valid));

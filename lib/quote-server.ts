@@ -15,7 +15,7 @@
  * the same as everywhere else.
  */
 
-import { resolveQuote, tripStops, type ResolvedQuote } from "./quote";
+import { resolveQuote, vehicleRouteStops, type ResolvedQuote } from "./quote";
 import { routeThrough, type LatLng } from "./route";
 import type { Catalog } from "./catalog";
 import type { TripRequest } from "./types";
@@ -34,9 +34,9 @@ export async function resolveRoutedQuote(
   trip: TripRequest,
   options: { signal?: AbortSignal } = {},
 ): Promise<ResolvedQuote> {
-  const stops = tripStops(catalog, trip);
+  const stops = vehicleRouteStops(catalog, trip);
   const routed = await routeThrough(stops.map((stop): LatLng => [stop.lat, stop.lng]), {
     signal: options.signal ?? AbortSignal.timeout(DEADLINE_MS),
   });
-  return resolveQuote(catalog, trip, routed);
+  return resolveQuote(catalog, trip, routed ? { ...routed, scope: "vehicle" } : null);
 }

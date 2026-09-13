@@ -2,6 +2,7 @@ import { Icon } from "@/components/ui/Icon";
 import { formatChargePolicy, formatINR } from "@/lib/format";
 import { nightWindowLabel } from "@/lib/pricing";
 import type { Car, SiteSettings } from "@/lib/types";
+import styles from "@/components/content/Editorial.module.css";
 
 
 export interface ChargesExplainedProps {
@@ -49,8 +50,8 @@ export function ChargesExplained({
     },
     {
       icon: "ph-arrow-u-down-left",
-      title: "One-way drops",
-      body: `A one-way drop includes a driver return allowance of ${settings.pricingRules.oneWayReturnPercent}% of the trip distance at the car's extra-km rate.`,
+      title: "Garage travel",
+      body: "The distance includes the garage to your pickup, your journey, and the final drop back to the garage. Return kilometres are counted once, including on one-way bookings.",
     },
     {
       icon: "ph-road-horizon",
@@ -82,16 +83,16 @@ export function ChargesExplained({
         </h2>
       )}
 
-      <div className="grid grid-cols-[repeat(3,1fr)] gap-8 max-lg:grid-cols-[repeat(2,1fr)] max-lg:gap-4 max-md:grid-cols-1 max-md:gap-3">
+      <div className={styles.grid}>
         {charges.map((charge) => (
           <div
             key={charge.title}
-            className="rounded-md bg-surface p-6 shadow-[var(--shadow-sm)] max-md:px-[14px] max-md:py-4"
+            className={styles.card}
           >
             <Icon name={charge.icon} size={20} color="var(--color-accent)" />
-            <p className="mt-3 mb-[4px] font-[family-name:var(--font-heading)] text-[15px]">
+            <h3 className="mt-5!">
               {charge.title}
-            </p>
+            </h3>
             <p className="m-0 text-[13px] text-[var(--color-neutral-400)] [text-wrap:pretty]">
               {charge.body}
             </p>
@@ -99,7 +100,7 @@ export function ChargesExplained({
         ))}
       </div>
 
-      <p className="mt-8 mb-0 text-[13px] text-[var(--color-neutral-300)]">
+      <p className={styles.note}>
         GST at {settings.gstPercent}% applies to the quoted charges. Final pricing and availability require confirmation.
       </p>
     </div>

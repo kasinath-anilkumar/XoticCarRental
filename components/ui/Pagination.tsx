@@ -3,7 +3,7 @@ import Link from "next/link";
 import { pageBounds, pageHref } from "@/lib/pagination";
 
 export function Pagination({
-  total, page, pageSize, path, query = "", label = "results",
+  total, page, pageSize, path, query = "", label = "results", targetId,
 }: {
   total: number;
   page: number;
@@ -11,8 +11,10 @@ export function Pagination({
   path: string;
   query?: string;
   label?: string;
+  targetId?: string;
 }) {
   const bounds = pageBounds(total, page, pageSize);
+  const href = (number: number) => `${pageHref(path, query, number)}${targetId ? `#${encodeURIComponent(targetId)}` : ""}`;
   if (!total) return null;
   return (
     <nav aria-label={`${label} pagination`} className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-divider)] pt-5">
@@ -22,11 +24,11 @@ export function Pagination({
       {bounds.pageCount > 1 && (
         <div className="flex items-center gap-3">
           {bounds.page > 1 ? (
-            <Link prefetch={false} href={pageHref(path, query, bounds.page - 1)} className="btn btn-secondary" rel="prev">Previous</Link>
+            <Link prefetch={false} href={href(bounds.page - 1)} className="btn btn-secondary" rel="prev">Previous</Link>
           ) : <span className="btn btn-secondary pointer-events-none opacity-40" aria-disabled="true">Previous</span>}
           <span aria-current="page" className="text-[13px]">Page {bounds.page} of {bounds.pageCount}</span>
           {bounds.page < bounds.pageCount ? (
-            <Link prefetch={false} href={pageHref(path, query, bounds.page + 1)} className="btn btn-secondary" rel="next">Next</Link>
+            <Link prefetch={false} href={href(bounds.page + 1)} className="btn btn-secondary" rel="next">Next</Link>
           ) : <span className="btn btn-secondary pointer-events-none opacity-40" aria-disabled="true">Next</span>}
         </div>
       )}

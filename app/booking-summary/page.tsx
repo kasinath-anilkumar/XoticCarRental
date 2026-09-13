@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
+import { QuoteLines } from "@/components/quote/QuoteLines";
+import { RouteDistanceBreakdown } from "@/components/quote/RouteDistanceBreakdown";
+import { MessagePreview } from "@/components/quote/MessagePreview";
+import styles from "@/components/summary/Summary.module.css";
 
 import { SendToWhatsApp } from "@/components/summary/SendToWhatsApp";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
 import { Icon } from "@/components/ui/Icon";
 import { Media } from "@/components/ui/Media";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { JourneyRoadmap } from "@/components/ui/JourneyRoadmap";
 import { heroImage, tripDefaults } from "@/lib/catalog";
 import { getCatalog } from "@/lib/content";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
@@ -43,7 +48,7 @@ export default async function BookingSummaryPage({
   const defaults = tripDefaults(catalog, "");
   const trip = tripFromParams(params, defaults);
   const issue = bookingIssue(trip, catalog.locations, businessDate());
-  if (issue) return <section className="sec"><h1 className="mb-4">Complete your booking details</h1><p>{issue}</p><Link className="btn btn-primary mt-4" href={`/price-calculator?${tripToParams(trip)}`}>Continue in the calculator</Link></section>;
+  if (issue) return <section className="sec"><h1 className="mb-4">Complete your booking details</h1><p>{issue}</p><Link className="btn btn-primary mt-4" href={`/price-calculator?${tripToParams(trip)}#calc-route`}>Continue in the calculator</Link></section>;
   const resolved = await resolveRoutedQuote(catalog, trip);
   const { quote, car, pkg, city, occasion } = resolved;
 
@@ -52,6 +57,7 @@ export default async function BookingSummaryPage({
 
   // Built from the stops that resolved, in visiting order — a trip with no
   // drop yet shows a pickup and says so, rather than inventing the other end.
+  const passengerLegs = resolved.legs.filter((leg) => !leg.transfer);
   const stops = resolved.stops.map((stop, index) => ({
     role: index === 0 ? "Pickup" : index === resolved.stops.length - 1 ? "Drop" : `Stop ${index}`,
     icon: index === 0 ? "ph-map-pin-line" : index === resolved.stops.length - 1 ? "ph-flag" : "ph-path",
@@ -59,199 +65,77 @@ export default async function BookingSummaryPage({
     leg:
       index === 0
         ? `${formatDate(trip.date)} · ${formatTime(trip.time)}`
-        : `${resolved.legs[index - 1]?.km ?? 0} km`,
+        : `${passengerLegs[index - 1]?.km ?? 0} km`,
   }));
 
   return (
     <>
-      <div className="px-[var(--gutter-desktop)] pt-12 pb-[56px] max-md:px-[var(--gutter-mobile)] max-md:pt-[20px] max-md:pb-0">
-        <p className="mb-6 flex flex-wrap items-center gap-3 text-[12px] text-[var(--color-neutral-600)]">
-          <Link href={backHref} style={{ color: "inherit", textDecoration: "none" }}>
-            Calculator
-          </Link>
-          <Icon name="ph-caret-right" size={12} />
-          <span className="text-[var(--color-accent-300)]">Booking summary</span>
-          <Icon name="ph-caret-right" size={12} />
-          <span>WhatsApp confirmation</span>
-        </p>
+      <div className={styles.canvas}>
+      <div className={styles.page}>
+        <div className={styles.roadmap}><JourneyRoadmap label="Booking progress" steps={[
+          { label: "Your journey", href: `${backHref}#calc-route`, complete: true },
+          { label: "Car & package", href: `${backHref}#calc-vehicle`, complete: true },
+          { label: "Booking summary", current: true },
+        ]} /></div>
+        <header className={styles.heading}><p className={styles.kicker}>Review your booking request</p><h1>Review your booking</h1><p>Send your trip to our team on WhatsApp to confirm availability and the final price.</p></header>
 
-        <div className="grid grid-cols-[1fr_420px] items-start gap-12 max-lg:grid-cols-1">
-          <div>
-            <h1 className="mb-2 text-[34px] max-lg:text-[28px] max-md:text-[24px]">Check the details, then send it to us</h1>
-            <p className="mb-8 text-[14px] text-[var(--color-neutral-400)]">
-              One tap opens WhatsApp with this whole quote written out. Nothing is charged here.
-            </p>
-
-            <div className="flex gap-6 rounded-md bg-surface p-8 shadow-[var(--shadow-sm)] max-md:flex-col max-md:gap-4 max-md:p-6">
-              <Media
-                src={heroImage(car)}
-                alt={car.name}
-                placeholder={car.name}
-                className="h-[130px] w-[196px] flex-none rounded-md max-md:h-[160px] max-md:w-full"
-                sizes="(max-width: 767px) 100vw, 196px"
-              />
-              <div style={{ flex: 1 }}>
-                <p className="font-[family-name:var(--font-heading)] text-[22px]">{car.name}</p>
-                <p className="mb-4 text-[12px] text-[var(--color-neutral-500)]">
-                  {car.year} · {car.type} · {car.seats} seats · {city.name}
-                </p>
-                <div className="grid grid-cols-[1fr_1fr] gap-x-8 gap-y-3 text-[13px] max-md:text-[12px]">
-                  <p>
-                    <span className="block text-[var(--color-neutral-500)]">Package</span>
-                    {pkg.label}
-                  </p>
-                  <p>
-                    <span className="block text-[var(--color-neutral-500)]">Occasion</span>
-                    {occasion.name}
-                  </p>
-                  <p>
-                    <span className="block text-[var(--color-neutral-500)]">Pickup</span>
-                    {formatDate(trip.date)} at {formatTime(trip.time)}
-                    {trip.returnDate && <span className="block">Through {formatDate(trip.returnDate)}</span>}
-                  </p>
-                  <p>
-                    <span className="block text-[var(--color-neutral-500)]">Trip</span>
-                    {tripTypeLabel(trip.tripType)} · {quote.km} km · {quote.hours} hr
-                  </p>
-                </div>
+        <div className={styles.layout}>
+          <section className={styles.vehicle} aria-label="Selected vehicle and package">
+            <div className={styles.vehicleTop}>
+              <Media src={heroImage(car)} alt={car.name} placeholder={car.name} className={styles.photo} sizes="(max-width: 639px) 112px, 170px" />
+              <div className={styles.vehicleBody}>
+                <p className={styles.kicker}>Selected vehicle</p><h2>{car.name}</h2>
+                <p className={styles.vehicleMeta}>{car.year} · {car.type} · {city.name}</p>
+                <div className={styles.vehicleFeatures}><span><Icon name="ph-users" size={15} />{car.seats} seats</span><span>Chauffeur driven</span></div>
+                <Link className={styles.editLink} href={`${backHref}#calc-vehicle`}>Change car or package <Icon name="ph-arrow-right" size={14} /></Link>
               </div>
             </div>
+            <dl className={styles.specs}>
+              <div><dt><Icon name="ph-calendar-blank" size={16} />Pickup schedule</dt><dd>{formatDate(trip.date)}<span>{formatTime(trip.time)}{trip.returnDate && <> · Through {formatDate(trip.returnDate)}</>}</span></dd></div>
+              <div><dt><Icon name="ph-package" size={16} />Package</dt><dd>{pkg.label}<span>{occasion.name}</span></dd></div>
+              <div className={styles.tripSummary}><dt><Icon name="ph-path" size={16} />Journey</dt><dd>{tripTypeLabel(trip.tripType)}<span>{quote.km} km · {quote.hours} hr, including vehicle travel</span></dd></div>
+            </dl>
+          </section>
 
-            {!resolved.complete && (
-              <p className="mb-4 flex flex-wrap items-center gap-3 rounded-md bg-[var(--color-accent-900)] p-4 text-[13px] text-text [&_a]:text-accent-text">
-                <Icon name="ph-warning-circle" size={16} color="var(--color-accent)" />
-                This quote has no route yet — the price below is the package alone.{" "}
-                <Link href={backHref}>Add a pickup and drop</Link> to price the journey.
-              </p>
-            )}
-
-            <div className="mt-6 flex flex-col gap-4">
-              {stops.map((stop) => (
-                <div key={stop.role} className="flex items-center gap-4 rounded-md bg-surface px-6 py-4 max-md:px-4 max-md:py-3">
-                  <Icon name={stop.icon} size={20} color="var(--color-accent)" />
-                  <div>
-                    <p className="text-[11px] text-[var(--color-neutral-500)]">{stop.role}</p>
-                    <p className="text-[14px]">{stop.name}</p>
-                  </div>
-                  <span className="ml-auto text-[12px] whitespace-nowrap text-[var(--color-neutral-500)]">{stop.leg}</span>
-                </div>
-              ))}
+          <aside className={styles.receipt} aria-label="Booking price and contact">
+            <div className={styles.receiptHeading}><div><p className={styles.kicker}>Your booking estimate</p><h2>Price breakdown</h2></div><Icon name="ph-receipt" size={26} /></div>
+            <div className={styles.mobileOverview}><p>{car.name} · {pkg.label}</p><p>{formatDate(trip.date)} · {formatTime(trip.time)}</p><div><span>Estimated total</span><strong>{formatINR(quote.total)}</strong></div></div>
+            <p className={styles.receiptNote}>For your selected package and full vehicle journey.</p>
+            <div className={styles.quoteLines}>
+            <QuoteLines quote={quote} gstPercent={catalog.settings.gstPercent} showSubtotal totalLabel="Total payable" />
             </div>
-
-            <h2 className="mt-12 mb-4 max-md:mt-8 max-md:mb-3 max-md:text-[19px]">Price breakdown</h2>
-            <HorizontalScroll label="Booking price breakdown" controls="above">
-              <table className="table min-w-[420px]">
-                <tbody>
-                  {quote.lines.map((line) => (
-                    <tr key={line.label}>
-                      <td>
-                        {line.label}
-                        {line.note && <div className="text-[11px] text-[var(--color-neutral-600)]">{line.note}</div>}
-                      </td>
-                      <td className="text-right whitespace-nowrap">{formatINR(line.amount)}</td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td style={{ color: "var(--color-neutral-400)" }}>
-                      GST {catalog.settings.gstPercent}%
-                    </td>
-                    <td className="text-right whitespace-nowrap" style={{ color: "var(--color-neutral-400)" }}>
-                      {formatINR(quote.gst)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="font-[family-name:var(--font-heading)] text-[16px]">Total payable</td>
-                    <td className="text-right font-[family-name:var(--font-heading)] text-[20px] text-[var(--color-accent-300)]">{formatINR(quote.total)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </HorizontalScroll>
-
-            <div className="mt-8 flex flex-wrap gap-8">
-              <div className="min-w-[240px] flex-1">
-                <h3 style={{ marginBottom: "8.4px", fontSize: "20px" }}>Included</h3>
-                {catalog.settings.inclusions.map((item) => (
-                  <p key={item} className="flex gap-3 py-[3px] text-[13px] text-[var(--color-neutral-300)]">
-                    <Icon name="ph-check" size={16} color="var(--color-accent)" />
-                    {item}
-                  </p>
-                ))}
-              </div>
-              <div className="min-w-[240px] flex-1">
-                <h3 style={{ marginBottom: "8.4px", fontSize: "20px" }}>Paid at actuals</h3>
-                {catalog.settings.exclusions.map((item) => (
-                  <p key={item} className="flex gap-3 py-[3px] text-[13px] text-[var(--color-neutral-400)]">
-                    <Icon name="ph-minus" size={16} color="var(--color-neutral-600)" />
-                    {item}
-                  </p>
-                ))}
-              </div>
+            <div className={styles.advance}><div><span>Indicative advance</span><strong>{formatINR(quote.advance)}</strong></div><p>The team will confirm availability, the final price and payment arrangements before you book.</p></div>
+            <div id="summary-send" tabIndex={-1} className={styles.send}>
+              <SendToWhatsApp trip={trip} fallbackHref={resolved.whatsappHref} withFields className={`btn btn-solid ${styles.sendAction}`} />
             </div>
-          </div>
-
-          <aside className="sticky top-[90px] flex flex-col gap-6 max-lg:static">
-            <div className="rounded-lg bg-surface p-8 shadow-[var(--shadow-md)] max-md:p-6">
-              <p className="text-[12px] text-[var(--color-neutral-500)]">Total payable</p>
-              <p className="font-[family-name:var(--font-heading)] text-[42px] leading-[1.1] text-[var(--color-accent-300)] max-md:text-[32px]">{formatINR(quote.total)}</p>
-              <p className="mb-6 text-[12px] text-[var(--color-neutral-400)]">
-                {formatINR(quote.advance)} advance on WhatsApp confirms the car. Balance to the
-                driver.
-              </p>
-
-              <div className="max-md:hidden">
-                <SendToWhatsApp
-                  trip={trip}
-                  fallbackHref={resolved.whatsappHref}
-                  withFields
-                  className="btn wa btn-block"
-                />
-              </div>
-
-              <a className="btn btn-secondary btn-block" style={{ minHeight: "44px" }} href={telHref}>
-                <Icon name="ph-phone-call" size={17} />
-                Or call {catalog.settings.phoneDisplay}
-              </a>
-
-              <div className="mt-6 flex flex-col gap-2 text-[12px] text-[var(--color-neutral-400)]">
-                <span className="flex items-center gap-2">
-                  <Icon name="ph-clock-user" size={14} color="var(--color-accent)" />
-                  Our team will confirm availability and your final quote
-                </span>
-                <span className="flex items-center gap-2">
-                  <Icon name="ph-arrows-clockwise" size={14} color="var(--color-accent)" />
-                  Free cancellation up to 24 hours before
-                </span>
-                <span className="flex items-center gap-2">
-                  <Icon name="ph-seal-check" size={14} color="var(--color-accent)" />
-                  Driver details shared 12 hours before pickup
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-md bg-well p-6 shadow-[var(--shadow-sm)]">
-              <p className="mb-4 flex items-center gap-3 text-[12px] text-[var(--color-neutral-500)]">
-                <Icon name="ph-chat-teardrop-text" size={16} color="var(--color-whatsapp)" />
-                What we receive
-              </p>
-              <p className="m-0 rounded-md bg-[var(--color-whatsapp-bubble)] p-4 text-[12px] leading-[1.6] whitespace-pre-line text-[var(--color-whatsapp-tint)] [font-family:inherit] [overflow-wrap:anywhere]">{resolved.message}</p>
-            </div>
+            <p className={styles.confirmation}><Icon name="ph-lock-simple" size={17} />No payment is collected here. Send the message inside WhatsApp to complete your request.</p>
+            <a className={`btn btn-secondary ${styles.callAction}`} href={telHref}><Icon name="ph-phone-call" size={17} />Or call {catalog.settings.phoneDisplay}</a>
           </aside>
+
+          <ResponsiveDisclosure id="summary-itinerary" title="Trip itinerary & distance" hideTitleOnDesktop className={styles.itineraryDisclosure}>
+          <section className={styles.itinerary}>
+            <div className={styles.sectionTitle}><h2>Your itinerary</h2><Link href={`${backHref}#calc-route`}>Edit journey <Icon name="ph-pencil-simple" size={14} /></Link></div>
+            <ol className={styles.stops}>{stops.map((stop) => <li key={stop.role} className={styles.stop}><span className={styles.stopIcon}><Icon name={stop.icon} size={17} /></span><div><p className={styles.stopRole}>{stop.role}</p><p className={styles.stopName}>{stop.name}</p><span className={styles.stopLeg}>{stop.leg}</span></div></li>)}</ol>
+            <RouteDistanceBreakdown resolved={resolved} />
+          </section>
+          </ResponsiveDisclosure>
+
+          <div className={styles.details}>
+            <div className={styles.included}>
+              <div><h3>Included</h3>{catalog.settings.inclusions.map((item) => <p key={item}><Icon name="ph-check" size={15} color="var(--color-accent-text)" />{item}</p>)}</div>
+              <div><h3>Paid at actuals</h3>{catalog.settings.exclusions.map((item) => <p key={item}><Icon name="ph-minus" size={15} />{item}</p>)}</div>
+            </div>
+            <p className={styles.termsNote}>Our team will confirm cancellation terms and chauffeur details with your booking.</p>
+            <div className={styles.message}><MessagePreview message={resolved.message} label="What we receive" /></div>
+          </div>
         </div>
+      </div>
       </div>
 
-      <div className="stickybar hidden max-md:flex">
-        <div className="flex-1">
-          <span className="block text-[10px] text-[var(--color-neutral-500)]">Total payable</span>
-          <span className="font-[family-name:var(--font-heading)] text-[21px] text-[var(--color-accent-300)]">{formatINR(quote.total)}</span>
-        </div>
-        <SendToWhatsApp
-          trip={trip}
-          fallbackHref={resolved.whatsappHref}
-          className="btn wa"
-          label="Send on WhatsApp"
-          source="summary-mobile"
-        />
-      </div>
+      <section className={`stickybar hidden max-md:flex ${styles.mobileAction}`} aria-label="Booking action">
+        <div className="flex-1"><span className="block text-[10px] text-[var(--color-neutral-400)]">Total payable</span><span className="font-[family-name:var(--font-heading)] text-[23px] font-semibold">{formatINR(quote.total)}</span></div>
+        <a className="btn btn-solid" href="#summary-send"><Icon name="ph-whatsapp-logo" size={18} />Send on WhatsApp</a>
+      </section>
     </>
   );
 }

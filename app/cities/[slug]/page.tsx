@@ -9,7 +9,8 @@ import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/seo/JsonLd";
 import { ChargesExplained } from "@/components/trust/ChargesExplained";
 import { Icon } from "@/components/ui/Icon";
 import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
-import { Media } from "@/components/ui/Media";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { EditorialIntro, editorial } from "@/components/content/Editorial";
 import {
   airportFor,
   carsBasedIn,
@@ -81,7 +82,7 @@ export default async function CityPage({ params }: { params: Params }) {
     `/price-calculator?from=${fromSlug}&to=${toSlug}&pkg=${packageSlug}&trip=round`;
 
   return (
-    <>
+    <div className={`${editorial.page} ${editorial.cityPage}`}>
       <FaqJsonLd items={faq} />
       <BreadcrumbJsonLd
         trail={[
@@ -92,60 +93,17 @@ export default async function CityPage({ params }: { params: Params }) {
       />
 
       {/* ── hero ──────────────────────────────────────────────────────── */}
-      <section className="on-dark relative min-h-[calc(420px+var(--header-height))] bg-bg max-lg:h-auto max-lg:min-h-[calc(340px+var(--header-height))] max-md:min-h-[calc(300px+var(--header-height))]">
-        <Media
-          src={city.heroImage}
-          alt=""
-          placeholder={`Drop a ${city.name} photo`}
-          lighten
-          priority
-          className="absolute inset-0 bg-transparent"
-          icon="ph-map-pin"
-          sizes="100vw"
-        />
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(95deg,var(--color-bg)_18%,rgb(var(--color-bg-rgb)/0.78)_60%,rgb(var(--color-bg-rgb)/0.12))] max-md:bg-[linear-gradient(180deg,rgb(var(--color-bg-rgb)/0.52),rgb(var(--color-bg-rgb)/0.96))]" />
-        <div className="pointer-events-none relative flex min-h-[calc(420px+var(--header-height))] flex-col justify-center px-[var(--gutter-desktop)] pt-[calc(44.8px+var(--header-height))] pb-[44.8px] max-md:justify-end max-md:px-[var(--gutter-mobile)] max-md:pt-[calc(20px+var(--header-height))] max-md:pb-[20px]">
-          <p className="pointer-events-auto mt-0 mb-4 text-[12px] text-[var(--color-neutral-400)] [&_a]:text-inherit [&_a]:no-underline [&_a:hover]:text-[var(--color-accent-300)]">
-            <Link href="/">Home</Link> / <Link href="/cities">Cities</Link> / {city.name}
-          </p>
-          <p className="kick">Car rental with driver</p>
-          <h1 className="mt-0 mb-[4px] max-w-[18ch] text-[42px] max-lg:text-[32px] max-md:text-[25px]">Chauffeur-driven car rental in {city.name}</h1>
-          <p className="mt-0 mb-6 text-[14px] text-[var(--color-neutral-400)]">{city.state}</p>
-
-          <div className="mb-8 flex flex-wrap gap-8 text-[13px] text-[var(--color-neutral-300)] max-md:mb-6 max-md:gap-4 max-md:text-[12px]">
-            {fromPrice && (
-              <span className="inline-flex items-center gap-[6px] [&_strong]:font-[family-name:var(--font-heading)] [&_strong]:text-[17px] [&_strong]:text-text max-md:[&_strong]:text-[15px]">
-                <strong>{formatINR(fromPrice)}</strong> from, for {defaultPackage.label}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-[6px] [&_strong]:font-[family-name:var(--font-heading)] [&_strong]:text-[17px] [&_strong]:text-text max-md:[&_strong]:text-[15px]">
-              <strong>{based.length || catalog.cars.length}</strong> cars based here
-            </span>
-            <span className="inline-flex items-center gap-[6px] [&_strong]:font-[family-name:var(--font-heading)] [&_strong]:text-[17px] [&_strong]:text-text max-md:[&_strong]:text-[15px]">
-              <strong>{pickups.length}</strong> pickup points
-            </span>
-            {airport && (
-              <span className="inline-flex items-center gap-[6px] [&_strong]:font-[family-name:var(--font-heading)] [&_strong]:text-[17px] [&_strong]:text-text max-md:[&_strong]:text-[15px]">
-                <Icon name="ph-airplane-tilt" size={14} /> {airport.name}
-              </span>
-            )}
-          </div>
-
-          <div className="pointer-events-auto flex flex-wrap gap-3 max-md:[&_.btn]:flex-1">
-            <Link href="/price-calculator" className="btn btn-solid">
-              <Icon name="ph-calculator" size={17} />
-              Price my route
-            </Link>
-            <a className="btn wa" href={waHref} target="_blank" rel="noopener noreferrer">
-              <Icon name="ph-whatsapp-logo" size={17} />
-              Ask about {city.name}
-            </a>
-          </div>
-        </div>
-      </section>
+      <EditorialIntro eyebrow={city.state} title={`Car rental in ${city.name}`} description={`Find chauffeur-driven cars in ${city.name}. Compare the fleet, review route estimates and plan your pickup.`} image={city.heroImage} imageLabel={city.name} breadcrumb={[{label:"Cities", href:"/cities"}]} breadcrumbCurrent={city.name}
+        actions={<><Link href="#city-fleet" className="btn btn-primary">View cars <Icon name="ph-arrow-right" size={17} /></Link><a className="btn btn-secondary" href={waHref} target="_blank" rel="noopener noreferrer">Ask our team</a></>} />
+      <div className={editorial.facts}>
+        {fromPrice && <span><strong>{formatINR(fromPrice)}</strong><span>from / {defaultPackage.label}</span></span>}
+        <span><strong>{based.length}</strong><span>cars based here</span></span>
+        <span><strong>{pickups.length}</strong><span>pickup points</span></span>
+        {airport && <span><Icon name="ph-airplane-tilt" size={22} /><span>{airport.name}</span></span>}
+      </div>
 
       {/* ── city switcher rail ─────────────────────────────────────── */}
-      <nav className="border-b border-[var(--color-divider)] px-[var(--gutter-desktop)] py-3.5 max-md:px-[var(--gutter-mobile)]" aria-label="Cities">
+      <nav className={editorial.contextNav} aria-label="Cities">
         <HorizontalScroll label="Cities" contentClassName="flex items-center gap-2 py-1">
         <span className="mr-1 text-[11.5px] uppercase tracking-wider text-[var(--color-neutral-500)] max-md:hidden">Hubs:</span>
         {catalog.cities.map((item) => {
@@ -154,7 +112,7 @@ export default async function CityPage({ params }: { params: Params }) {
             <Link
               key={item.slug}
               href={`/cities/${item.slug}`}
-              className={`rounded-md border px-3 py-1.5 text-[12.5px] whitespace-nowrap no-underline transition-colors max-md:inline-flex max-md:min-h-[40px] max-md:items-center max-md:px-3 ${active ? "border-[var(--color-accent)] bg-[var(--color-accent-800)] font-medium text-[var(--color-accent-100)] shadow-xs" : "border-[var(--color-divider)] bg-well/60 text-[var(--color-neutral-300)] hover:border-[var(--color-accent)] hover:text-text"}`}
+              className={editorial.contextLink}
               aria-current={active ? "page" : undefined}
             >
               {item.name}
@@ -165,7 +123,7 @@ export default async function CityPage({ params }: { params: Params }) {
       </nav>
 
       {/* ── published fares ───────────────────────────────────────────── */}
-      <section className="sec">
+      <section id="city-routes" tabIndex={-1} className={`sec ${editorial.cityRoutes} ${editorial.enquiryTarget}`}>
         <div className="sec-head">
           <div>
             <p className="kick">Published fares</p>
@@ -288,6 +246,7 @@ export default async function CityPage({ params }: { params: Params }) {
       {/* ── airport ───────────────────────────────────────────────────── */}
       {airport && (
         <section className="sec sec-tight">
+          <ResponsiveDisclosure title={`Airport & pickup points in ${city.name}`} id="city-pickups" hideTitleOnDesktop>
           <div className="grid grid-cols-[1.2fr_1fr] items-start gap-12 max-lg:grid-cols-1 max-lg:gap-8">
             <div>
               <p className="kick">Airport transfers</p>
@@ -296,9 +255,9 @@ export default async function CityPage({ params }: { params: Params }) {
               </h2>
               <p className="mb-6 max-w-[60ch] text-[14px] text-[var(--color-neutral-400)] [text-wrap:pretty]">
                 Set {airport.name} as your pickup point in the calculator and the fare is worked out
-                from there like any other route. A one-way drop from the airport carries the
-                driver&rsquo;s return allowance — {catalog.settings.pricingRules.oneWayReturnPercent}% of the distance at the car&rsquo;s extra-km
-                rate — shown as its own line before you send anything.
+                from there like any other route. The distance includes the car coming from its
+                garage to collect you and returning to the garage after your final drop.
+                Those return kilometres are counted once, even on a one-way booking.
               </p>
               <Link href={`/price-calculator?from=${encodeURIComponent(airport.slug)}&trip=oneway`} className="btn btn-primary">
                 <Icon name="ph-airplane-tilt" size={16} />
@@ -324,14 +283,15 @@ export default async function CityPage({ params }: { params: Params }) {
               </p>
             </div>
           </div>
+          </ResponsiveDisclosure>
         </section>
       )}
 
       {/* ── occasions here ────────────────────────────────────────────── */}
       <section className="sec sec-tight">
-        <p className="kick">Why people book us</p>
+        <p className="kick">Made for your plans</p>
         <h2 className="h2" style={{ marginBottom: "22.4px" }}>
-          What a car in {city.name} gets used for
+          Find your occasion in {city.name}
         </h2>
         <div className="grid-4">
           {catalog.occasions.map((occasion) => (
@@ -340,7 +300,7 @@ export default async function CityPage({ params }: { params: Params }) {
               href={services.some((service) => service.occasionSlug === occasion.slug)
                 ? `/services/${services.find((service) => service.occasionSlug === occasion.slug)!.slug}/${city.slug}`
                 : "/services"}
-              className="block rounded-md bg-surface p-6 text-text no-underline shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]"
+              className={`${editorial.card} text-text no-underline hover:border-accent`}
             >
               <Icon name={occasion.icon} size={22} color="var(--color-accent)" />
               <p className="mt-4 mb-[4px] font-[family-name:var(--font-heading)] text-[16px]">
@@ -358,21 +318,23 @@ export default async function CityPage({ params }: { params: Params }) {
       </section>
 
       {/* ── fleet ─────────────────────────────────────────────────────── */}
-      <section className="sec sec-tight">
+      <section id="city-fleet" tabIndex={-1} className={`sec sec-tight ${editorial.cityFleet} ${editorial.enquiryTarget}`}>
         <div className="sec-head">
           <div>
-            <p className="kick">Available here</p>
+            <p className="kick">Explore the fleet</p>
             <h2 className="h2">Cars in {city.name}</h2>
           </div>
           <Link href={`/cars?city=${city.slug}`} className="inline-flex items-center gap-2 text-[13px] whitespace-nowrap">
             Browse with filters <Icon name="ph-arrow-right" size={14} />
           </Link>
         </div>
+        <HorizontalScroll label={`Cars in ${city.name}`} controls="above">
         <div className="grid-cars">
           {fleet.map((car) => (
             <CarCard key={car.slug} catalog={catalog} car={car} pkg={defaultPackage} />
           ))}
         </div>
+        </HorizontalScroll>
       </section>
 
       {/* ── charges ───────────────────────────────────────────────────── */}
@@ -382,23 +344,27 @@ export default async function CityPage({ params }: { params: Params }) {
 
       {/* ── faq ───────────────────────────────────────────────────────── */}
       <section className="sec sec-tight">
+        <ResponsiveDisclosure title={`Booking questions for ${city.name}`} id="city-questions" hideTitleOnDesktop>
+        <div className={editorial.secondaryHeading}>
         <p className="kick">Questions</p>
         <h2 className="h2" style={{ marginBottom: "16.8px" }}>
           Booking a car in {city.name}
         </h2>
+        </div>
         <FaqBlock items={faq} />
+        </ResponsiveDisclosure>
       </section>
 
       <div className="stickybar hidden max-md:flex max-md:[&_.btn]:min-h-[44px] max-md:[&_.btn]:flex-1">
-        <Link href="/price-calculator" className="btn btn-solid">
+        <Link href="#city-routes" className="btn btn-solid">
           <Icon name="ph-calculator" size={16} />
-          Price a route
+          Route prices
         </Link>
         <a className="btn wa" href={waHref} target="_blank" rel="noopener noreferrer">
           <Icon name="ph-whatsapp-logo" size={17} />
           WhatsApp
         </a>
       </div>
-    </>
+    </div>
   );
 }

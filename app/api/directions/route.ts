@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { clientKey, createRateLimiter } from "@/lib/net/rate-limit";
 import { routeThrough, type LatLng } from "@/lib/route";
-import { MAX_TRIP_STOPS } from "@/lib/trip-limits";
+import { MAX_ROUTE_POINTS, MAX_TRIP_STOPS } from "@/lib/trip-limits";
 
 /**
  * The driven route through a trip's stops.
@@ -26,10 +26,10 @@ import { MAX_TRIP_STOPS } from "@/lib/trip-limits";
  */
 const allow = createRateLimiter(120, 60_000);
 
-function parseStops(value: string | null): LatLng[] {
-  if (!value || value.length > 500) return [];
+function parseStops(value: string | null, maxStops: number): LatLng[] {
+  if (!value || value.length > 600) return [];
   const pairs = value.split(";");
-  if (pairs.length < 2 || pairs.length > MAX_TRIP_STOPS) return [];
+  if (pairs.length < 2 || pairs.length > maxStops) return [];
   const stops: LatLng[] = [];
   for (const pair of pairs) {
     const parts = pair.split(",");
@@ -42,7 +42,12 @@ function parseStops(value: string | null): LatLng[] {
 }
 
 export async function GET(request: Request) {
-  const stops = parseStops(new URL(request.url).searchParams.get("stops"));
+  const params = new URL(request.url).searchParams;
+  const scope = params.get("scope") ?? "itinerary";
+  if (scope !== "vehicle" && scope !== "itinerary") {
+    return NextResponse.json({ error: "Unknown route scope." }, { status: 400 });
+  }
+  const stops = parseStops(params.get("stops"), scope === "vehicle" ? MAX_ROUTE_POINTS : MAX_TRIP_STOPS);
 
   if (stops.length < 2) {
     return NextResponse.json({ error: "Two or more stops are required." }, { status: 400 });
@@ -67,7 +72,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json(
-    { routed: true, km: trip.km, minutes: trip.minutes, legs: trip.legs, path: trip.path },
+    { routed: true, scope, km: trip.km, minutes: trip.minutes, legs: trip.legs, path: trip.path },
     // Roads do not move. This is the same answer tomorrow.
     { headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" } },
   );

@@ -220,6 +220,11 @@ export function LocationCombobox({
     selectItem,
   } = useCombobox({
     items,
+    // Native scrolling keeps the active option inside both the menu and the
+    // viewport, honoring document scroll padding for the persistent actions.
+    // Downshift's boundary-only calculation can leave an off-screen menu's
+    // final option clipped even after it becomes aria-activedescendant.
+    scrollIntoView: (node) => node?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" }),
     inputValue: query,
     itemToString: (item) => item?.name ?? "",
     onInputValueChange: ({ inputValue, type }) => {
@@ -318,7 +323,7 @@ export function LocationCombobox({
 
         <ul
           {...getMenuProps()}
-          className={`absolute inset-x-0 top-[calc(100%+4px)] z-50 m-0 max-h-[300px] list-none overflow-y-auto rounded-md bg-surface p-[4px] shadow-[var(--shadow-lg)] ${isOpen && (items.length > 0 || nothingFound) ? "" : "hidden"}`}
+          className={`scroll-shadows absolute inset-x-0 top-[calc(100%+4px)] z-50 m-0 max-h-[300px] list-none overflow-y-auto rounded-md bg-surface p-[4px] shadow-[var(--shadow-lg)] ${isOpen && (items.length > 0 || nothingFound) ? "" : "hidden"}`}
         >
           {isOpen && (
             <>

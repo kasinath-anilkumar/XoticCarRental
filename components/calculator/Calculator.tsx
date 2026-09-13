@@ -3,20 +3,26 @@
 import { MAX_TRIP_DAYS, MAX_TRIP_STOPS } from "@/lib/trip-limits";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CarSearch } from "@/components/home/CarSearch";
 import { RouteMap } from "@/components/map/RouteMap";
 import { QuoteLines } from "@/components/quote/QuoteLines";
+import { RouteDistanceBreakdown } from "@/components/quote/RouteDistanceBreakdown";
 import { Icon } from "@/components/ui/Icon";
+import { Media } from "@/components/ui/Media";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { JourneyRoadmap } from "@/components/ui/JourneyRoadmap";
+import styles from "./Calculator.module.css";
 import { LocationCombobox } from "@/components/ui/LocationCombobox";
-import { carPrice, type Catalog } from "@/lib/catalog";
+import { carPrice, garagePoint, heroImage, type Catalog } from "@/lib/catalog";
 import { bookingIssue } from "@/lib/booking-readiness";
-import { addDays, isISODate } from "@/lib/dates";
+import { addDays, isISODate, isTime } from "@/lib/dates";
+import { resolvePlace } from "@/lib/places";
+import { focusPageTarget } from "@/lib/navigation-focus";
 import { formatDuration, formatINR, shortPlace } from "@/lib/format";
-import { tripTypeLabel } from "@/lib/pricing";
-import { resolveQuote, tripStops, tripToParams } from "@/lib/quote";
+import { nightWindowLabel, tripTypeLabel } from "@/lib/pricing";
+import { resolveQuote, tripToParams, vehicleRouteStops } from "@/lib/quote";
 import type { RoutedTrip } from "@/lib/route/types";
 import type { TripRequest, TripType } from "@/lib/types";
 
@@ -32,26 +38,18 @@ const TRIP_OPTIONS: Array<{ key: TripType; label: string }> = [
   { key: "round", label: "Round trip" },
 ];
 
-type MobileTab = "route" | "vehicle" | "map";
-
 /**
- * The price calculator. Everything recalculates on change, and the trip is
- * mirrored into the URL so a quote is a link someone can send to whoever is
- * paying.
- *
- * Mobile UX:
- * - On small to medium screens (< 1024px), uses a clean step/tab workflow:
- *   1. Route & Stops -> 2. Car & Package -> 3. Map & Quote Breakdown.
- * - Integrated real-time CarSearch with visual cards, live filters, and photo thumbnails.
- * - Sticky bottom bar with one-tap quote inspection and instant booking actions.
- *
- * Desktop UX:
- * - Unified 2-column layout with real-time map, full itinerary, and sticky quote card.
+ * One continuous calculator at every screen size. Trip changes recalculate
+ * the quote and update its URL; section links leave all fields available.
  */
 export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
-  const router = useRouter();
-  const [trip, setTrip] = useState<TripRequest>(initialTrip);
-  const [mobileTab, setMobileTab] = useState<MobileTab>("route");
+  const [trip, setTrip] = useState<TripRequest>(() => ({
+    ...initialTrip,
+    // A cleared share link still needs editable pickup and drop fields.
+    stops: [initialTrip.stops[0] ?? "", initialTrip.stops[1] ?? "", ...initialTrip.stops.slice(2)],
+  }));
+  const lastSyncedTrip = useRef(trip);
+  const [activeStep, setActiveStep] = useState("route");
 
   const update = <K extends keyof TripRequest>(key: K, value: TripRequest[K]) =>
     setTrip((current) => ({ ...current, [key]: value }));
@@ -83,35 +81,37 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
 
   const stopLabel = (index: number, total: number) => {
     if (index === 0) return "Pickup location";
+    if (total === 2 && trip.tripType === "round") return "Destination";
     if (index === total - 1) return "Final drop";
     return `Stop ${index}`;
   };
 
-  const stops = useMemo(() => tripStops(catalog, trip), [catalog, trip]);
-  const stopsKey = useMemo(
-    () => stops.map((stop) => `${stop.lat.toFixed(5)},${stop.lng.toFixed(5)}`).join(";"),
-    [stops],
+  const vehicleStops = useMemo(() => vehicleRouteStops(catalog, trip), [catalog, trip]);
+  const routePointsKey = useMemo(
+    () => vehicleStops.map((stop) => `${stop.lat.toFixed(5)},${stop.lng.toFixed(5)}`).join(";"),
+    [vehicleStops],
   );
+  const routingKey = `${trip.carSlug}:${trip.tripType}:${routePointsKey}`;
 
   const [directions, setDirections] = useState<{ key: string; trip: RoutedTrip } | null>(null);
   const [routing, setRouting] = useState(false);
-  const routed = directions?.key === stopsKey ? directions.trip : null;
+  const routed = directions?.key === routingKey ? directions.trip : null;
 
   useEffect(() => {
-    if (stopsKey.split(";").length < 2) return;
+    if (routePointsKey.split(";").length < 2) return;
 
     let cancelled = false;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setRouting(true);
       try {
-        const response = await fetch(`/api/directions?stops=${encodeURIComponent(stopsKey)}`, {
+        const response = await fetch(`/api/directions?stops=${encodeURIComponent(routePointsKey)}&scope=vehicle`, {
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12_000)]),
         });
         if (!response.ok) throw new Error("Route lookup failed.");
         const data = (await response.json()) as { routed?: boolean } & RoutedTrip;
         if (cancelled) return;
-        setDirections(data.routed ? { key: stopsKey, trip: data } : null);
+        setDirections(data.routed ? { key: routingKey, trip: data } : null);
       } catch {
         if (!cancelled) setDirections(null);
       } finally {
@@ -124,102 +124,84 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [stopsKey]);
+  }, [routePointsKey, routingKey]);
 
   const resolved = useMemo(() => resolveQuote(catalog, trip, routed), [catalog, trip, routed]);
   const { quote } = resolved;
+  const garage = garagePoint(catalog, resolved.car);
+  const returnsToPickup = trip.stops.length === 2 && resolved.stops.length === 3;
 
   useEffect(() => {
+    // Preserve the incoming fragment until the customer edits the trip. The
+    // shared navigation handler needs it to reveal/focus a linked section.
+    if (lastSyncedTrip.current === trip) return;
+    lastSyncedTrip.current = trip;
     const params = tripToParams(trip);
     window.history.replaceState(null, "", `/price-calculator?${params.toString()}`);
   }, [trip]);
 
   const routeLine = resolved.complete
-    ? stops.map((stop) => shortPlace(stop.name)).join(" → ")
-    : "Add a pickup and a drop";
+    ? resolved.stops.map((stop) => shortPlace(stop.name)).join(" → ")
+    : trip.tripType === "round" && trip.stops.length === 2 ? "Add a pickup and a destination" : "Add a pickup and a drop";
   const summaryHref = `/booking-summary?${tripToParams(trip).toString()}`;
   const bookingPrompt = bookingIssue(trip, catalog.locations, minDate);
   const activePackage = catalog.packages.find((pkg) => pkg.slug === trip.packageSlug);
+  const focusMissingDetail = () => {
+    const missingStop = trip.stops.findIndex((stop) => !resolvePlace(stop, catalog.locations));
+    const id = missingStop >= 0 ? `calc-stop-${missingStop}`
+      : !isISODate(trip.date) || trip.date < minDate ? "calc-date"
+        : !isTime(trip.time) ? "calc-time" : "calc-return-date";
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
+    focusPageTarget(id);
+  };
 
   const mapNote = !resolved.complete
-    ? "Nothing is priced until both ends of the trip are set."
+    ? trip.tripType === "round" && trip.stops.length === 2
+      ? "Select pickup and destination to include your round trip in the estimate."
+      : "Select pickup and drop to include your route in the estimate."
     : resolved.routed
-      ? "Driven route on real roads. Billed distance also covers vehicle transfer from its garage."
+      ? "Road route includes the car’s trip to pickup and return after drop-off."
       : routing
         ? "Finding the driving route…"
-        : "Estimated road routing distance between your selected stops.";
+        : "Estimated distance, including pickup and return travel. Final distance and pricing will be confirmed.";
 
   return (
     <>
-      <div className="px-[var(--gutter-desktop)] pt-[28px] pb-[48px] max-md:px-[var(--gutter-mobile)] max-md:pt-[16px] max-md:pb-[72px]">
+      <div className={styles.page}>
         {/* Header Title */}
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-4 max-md:mb-3">
+        <div className={styles.header}>
           <div>
-            <p className="kick">Price calculator</p>
-            <h1 className="m-0 text-[28px] font-medium max-lg:text-[24px] max-md:text-[22px]">
-              Build your trip, see the exact price
+            <p className={styles.eyebrow}>Chauffeur-driven travel / Price calculator</p>
+            <h1>
+              Plan your journey
             </h1>
           </div>
-          <p className="max-w-[48ch] text-[12.5px] text-[var(--color-neutral-400)] max-md:hidden">
-            Everything recalculates as you change it. Transparent pricing itemised before you book.
-          </p>
+          <div className={styles.headerAside}>
+            <p>Add your route and dates to see the full journey estimate.</p>
+            <a href="#calc-map" className={styles.mapLink}><Icon name="ph-map-trifold" size={17} />Route map<Icon name="ph-arrow-up-right" size={15} /></a>
+          </div>
         </div>
 
-        {/* Mobile & Tablet Step Navigator (< 1024px) */}
-        <div className="mb-4 hidden rounded-lg border border-[var(--color-divider)] bg-surface p-1.5 shadow-xs max-lg:flex">
-          <button
-            type="button"
-            onClick={() => setMobileTab("route")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-[12px] font-medium transition-all ${
-              mobileTab === "route"
-                ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
-                : "text-[var(--color-neutral-400)] hover:text-text"
-            }`}
-          >
-            <Icon name="ph-path" size={15} />
-            <span>1. Route &amp; Stops</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab("vehicle")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-[12px] font-medium transition-all ${
-              mobileTab === "vehicle"
-                ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
-                : "text-[var(--color-neutral-400)] hover:text-text"
-            }`}
-          >
-            <Icon name="ph-car" size={15} />
-            <span>2. Car &amp; Package</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab("map")}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-[12px] font-medium transition-all ${
-              mobileTab === "map"
-                ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
-                : "text-[var(--color-neutral-400)] hover:text-text"
-            }`}
-          >
-            <Icon name="ph-receipt" size={15} />
-            <span>3. Map &amp; Quote</span>
-          </button>
-        </div>
-
-        {/* Main Grid: Forms on left, Sticky Quote Panel on right */}
-        <div className="grid grid-cols-[minmax(0,1fr)_380px] items-start gap-8 max-lg:grid-cols-1">
-          <div className="min-w-0 overflow-hidden rounded-md bg-surface shadow-[var(--shadow-sm)] [&_.field>label]:mb-[4px] [&_.field>label]:text-[11.5px] [&_.input]:min-h-[38px] [&_.input]:text-[13.5px] max-md:[&_.field>label]:text-[12px] max-md:[&_.input]:min-h-[44px] max-md:[&_.input]:text-[15px]">
-            {/* ── SECTION 1: ROUTE & ITINERARY ─────────────────────── */}
+        {/* The map stays alongside a continuous, editable journey roadmap. */}
+        <div className={styles.layout}>
+          <div id="calc-journey" className={styles.journey}>
+            <div className={styles.roadmap}>
+              <JourneyRoadmap label="Calculator sections" steps={[
+                { label: "Route & schedule", href: "#calc-route", current: activeStep === "route", complete: !bookingPrompt },
+                { label: "Car & package", href: "#calc-vehicle", current: activeStep === "vehicle", complete: !bookingPrompt && Boolean(activePackage && resolved.car) },
+                { label: "Your quote", href: "#calc-quote", current: activeStep === "quote" },
+              ]} />
+            </div>
+            <div className={styles.roadmapSteps}>
             <section
-              className={`p-6 not-first:border-t not-first:border-[var(--color-divider)] max-md:p-4 ${
-                mobileTab !== "route" ? "max-lg:hidden" : ""
-              }`}
+              id="calc-route" className={`${styles.step} ${styles.routeSection}`} data-current={activeStep === "route"} onFocusCapture={() => setActiveStep("route")} tabIndex={-1} aria-labelledby="calc-route-heading"
             >
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="grid size-5 place-items-center rounded-full bg-[var(--color-accent-900)] text-[11px] font-bold text-[var(--color-accent-300)]">
+              <div className={styles.sectionHeader}>
+                <div className={styles.sectionTitle}>
+                  <span className={styles.stepNumber} aria-hidden="true">
                     1
                   </span>
-                  <h2 className="font-[family-name:var(--font-heading)] text-[13px] tracking-[0.08em] uppercase text-[var(--color-neutral-400)]">
+                  <h2 id="calc-route-heading">
                     Route &amp; Schedule
                   </h2>
                 </div>
@@ -242,26 +224,9 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
-                {/* Optional Customer Current Location */}
-                <LocationCombobox
-                  id="calc-customer"
-                  label="Your location (optional)"
-                  icon="ph-user-circle-check"
-                  value={trip.customerPlace}
-                  onChange={(token) => update("customerPlace", token ?? "")}
-                  locations={catalog.locations}
-                  placeholder="Where are you currently located?"
-                  clearable
-                  clearLabel="Not now"
-                />
-
-                <p className="mt-1 flex items-center gap-3 text-[10.5px] font-medium tracking-[0.08em] uppercase text-[var(--color-neutral-500)] after:h-px after:flex-1 after:bg-[var(--color-divider)] after:content-['']">
-                  Itinerary Stops
-                </p>
-
+              <div className={styles.routeFields}>
                 {trip.stops.map((token, index) => (
-                  <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+                  <div key={index} className={`${styles.stopRow} ${trip.stops.length > 2 ? styles.multipleStops : ""}`}>
                     <LocationCombobox
                       id={`calc-stop-${index}`}
                       label={stopLabel(index, trip.stops.length)}
@@ -276,7 +241,7 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                       onChange={(next) => setStop(index, next ?? "")}
                       locations={catalog.locations}
                     />
-                    <div className="flex gap-[2px] pb-[2px] [&_.btn-icon]:h-[38px] [&_.btn-icon]:w-[32px] max-md:[&_.btn-icon]:size-[44px]">
+                    <div className={styles.stopActions}>
                       <button
                         type="button"
                         className="btn btn-ghost btn-icon"
@@ -308,9 +273,15 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                   </div>
                 ))}
 
+                {trip.tripType === "round" && trip.stops.length === 2 && (
+                  <p className={styles.routeNote}>
+                    {returnsToPickup ? "Your round trip returns to the pickup location after the destination." : "Two-stop round trips return to your pickup location after the destination."}
+                  </p>
+                )}
+
                 <button
                   type="button"
-                  className="btn btn-ghost mt-1 min-h-[42px] self-start text-[13px] max-md:w-full max-md:justify-center"
+                  className={`btn btn-secondary ${styles.addStop}`}
                   onClick={addStop}
                   disabled={trip.stops.length >= MAX_TRIP_STOPS}
                 >
@@ -318,11 +289,11 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                   {trip.stops.length >= MAX_TRIP_STOPS ? `Maximum ${MAX_TRIP_STOPS} stops` : "Add another stop"}
                 </button>
 
-                <p className="mt-2 flex items-center gap-3 text-[10.5px] font-medium tracking-[0.08em] uppercase text-[var(--color-neutral-500)] after:h-px after:flex-1 after:bg-[var(--color-divider)] after:content-['']">
-                  Date &amp; Timing
+                <p className={styles.fieldDivider}>
+                  Your travel schedule
                 </p>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className={styles.dateFields}>
                   <div className="field">
                     <label htmlFor="calc-date">Pickup date</label>
                     <input
@@ -338,12 +309,6 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                     />
                   </div>
                   <div className="field">
-                    <label htmlFor="calc-return-date">Return date (optional)</label>
-                    <input id="calc-return-date" className="input" type="date" min={trip.date || minDate}
-                      max={isISODate(trip.date) ? addDays(trip.date, MAX_TRIP_DAYS - 1) : undefined}
-                      value={trip.returnDate ?? ""} onChange={(event) => update("returnDate", event.target.value)} />
-                  </div>
-                  <div className="field">
                     <label htmlFor="calc-time">Pickup time</label>
                     <input
                       id="calc-time"
@@ -353,6 +318,14 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                       onChange={(event) => update("time", event.target.value)}
                     />
                   </div>
+                  <div className={`field ${styles.returnField}`}>
+                    <label htmlFor="calc-return-date">Return date (optional)</label>
+                    <input id="calc-return-date" className="input" type="date" min={trip.date || minDate}
+                      max={isISODate(trip.date) ? addDays(trip.date, MAX_TRIP_DAYS - 1) : undefined}
+                      value={trip.returnDate ?? ""} onChange={(event) => update("returnDate", event.target.value)} />
+                  </div>
+                </div>
+                <ResponsiveDisclosure id="calc-options" title="Additional trip details" headingLevel={3} defaultOpen={Boolean(trip.customerPlace || trip.haltHours)} className={styles.options}>
                   <div className="field">
                     <label htmlFor="calc-halt">Halt duration</label>
                     <div className="relative flex items-center">
@@ -370,119 +343,48 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                       </span>
                     </div>
                   </div>
+                <div className={styles.optionalField}>
+                  <LocationCombobox
+                    id="calc-customer"
+                    label="Your location (optional)"
+                    icon="ph-user-circle-check"
+                    value={trip.customerPlace}
+                    onChange={(token) => update("customerPlace", token ?? "")}
+                    locations={catalog.locations}
+                    placeholder="Where are you currently located?"
+                    clearable
+                    clearLabel="Not now"
+                  />
                 </div>
-
-                {/* Mobile Tab Next Action */}
-                <div className="mt-4 hidden max-lg:block">
-                  <button
-                    type="button"
-                    onClick={() => setMobileTab("vehicle")}
-                    className="btn btn-primary w-full min-h-[44px]"
-                  >
-                    <span>Next: Select Car &amp; Package</span>
-                    <Icon name="ph-arrow-right" size={15} />
-                  </button>
-                </div>
+                </ResponsiveDisclosure>
               </div>
             </section>
 
+
+
             {/* ── SECTION 2: VEHICLE & PACKAGE ─────────────────────── */}
             <section
-              className={`p-6 not-first:border-t not-first:border-[var(--color-divider)] max-md:p-4 ${
-                mobileTab !== "vehicle" ? "max-lg:hidden" : ""
-              }`}
+              id="calc-vehicle" className={`${styles.step} ${styles.vehicleSection}`} data-current={activeStep === "vehicle"} onFocusCapture={() => setActiveStep("vehicle")} tabIndex={-1} aria-labelledby="calc-vehicle-heading"
             >
-              <div className="mb-4 flex items-center gap-2">
-                <span className="grid size-5 place-items-center rounded-full bg-[var(--color-accent-900)] text-[11px] font-bold text-[var(--color-accent-300)]">
+              <div className={styles.sectionTitle}>
+                <span className={styles.stepNumber} aria-hidden="true">
                   2
                 </span>
-                <h2 className="font-[family-name:var(--font-heading)] text-[13px] tracking-[0.08em] uppercase text-[var(--color-neutral-400)]">
-                  Vehicle &amp; Package Selection
+                <h2 id="calc-vehicle-heading">
+                  Car &amp; package
                 </h2>
               </div>
 
-              {/* Package Selection */}
-              <div className="mb-6">
-                <div className="mb-2.5 flex items-center justify-between">
-                  <span className="text-[12px] font-medium text-[var(--color-neutral-400)]">
-                    Select package:
-                  </span>
-                  <span className="text-[11.5px] text-[var(--color-accent-300)]">
-                    {activePackage?.sub}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                  {catalog.packages.map((pkg) => {
-                    const active = pkg.slug === trip.packageSlug;
-                    const price = carPrice(catalog, resolved.car, pkg);
-                    return (
-                      <button
-                        key={pkg.slug}
-                        type="button"
-                        onClick={() => update("packageSlug", pkg.slug)}
-                        aria-pressed={active}
-                        className={`group relative flex min-w-0 cursor-pointer flex-col justify-between rounded-lg border p-3.5 text-left transition-all max-md:p-3 ${
-                          active
-                            ? "border-[var(--color-accent)] bg-[var(--color-accent-900)]/40 text-text shadow-xs"
-                            : "border-[var(--color-divider)] bg-well text-text hover:border-[var(--color-accent)]"
-                        }`}
-                      >
-                        {/* Top: Icon + Label + Active Checkmark */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span
-                              className={`grid size-7 shrink-0 place-items-center rounded-md ${
-                                active
-                                  ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)]"
-                                  : "bg-[var(--color-neutral-800)] text-[var(--color-neutral-400)] group-hover:text-text"
-                              }`}
-                            >
-                              <Icon name={pkg.icon} size={15} />
-                            </span>
-                            <div className="min-w-0">
-                              <span className="block truncate font-[family-name:var(--font-heading)] text-[13.5px] font-semibold text-text">
-                                {pkg.label}
-                              </span>
-                              <span className="block truncate text-[11px] text-[var(--color-neutral-500)]">
-                                {pkg.sub}
-                              </span>
-                            </div>
-                          </div>
-
-                          {active && (
-                            <span className="grid size-4 shrink-0 place-items-center rounded-full bg-[var(--color-accent)] text-[var(--color-accent-ink)]">
-                              <Icon name="ph-check" size={10} />
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Bottom Price Strip */}
-                        <div className="mt-3 flex items-baseline justify-between border-t border-[var(--color-divider)] pt-2.5">
-                          <span className="text-[10px] uppercase tracking-wider text-[var(--color-neutral-500)]">
-                            Base rate
-                          </span>
-                          <span
-                            className={`font-[family-name:var(--font-heading)] text-[14px] font-semibold tabular-nums ${
-                              active
-                                ? "text-[var(--color-accent-300)]"
-                                : "text-[var(--color-neutral-300)]"
-                            }`}
-                          >
-                            {formatINR(price)}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className={styles.vehiclePreview}>
+                <Media src={heroImage(resolved.car)} alt={resolved.car.name} placeholder={resolved.car.name} className={styles.vehiclePhoto} sizes="(max-width: 639px) 96px, 130px" />
+                <div className={styles.vehicleCaption}><strong>{resolved.car.name}</strong><span>{resolved.car.seats} seats / {resolved.car.transmission}</span></div>
               </div>
 
               {/* Searchable Car Combobox */}
-              <div className="mb-4">
+              <div className={styles.vehicleSearch}>
                 <label
                   htmlFor="calc-car"
-                  className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-[var(--color-neutral-400)]"
+                  className={styles.vehicleLabel}
                 >
                   <Icon name="ph-car" size={14} color="var(--color-accent)" />
                   Select luxury vehicle:
@@ -497,192 +399,105 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
                 />
               </div>
 
+              {/* Package Selection */}
+              <div className={styles.packageSection}>
+                <p className={styles.fieldDivider}>Choose your package</p>
+                <div className={styles.packages}>
+                  {catalog.packages.map((pkg) => {
+                    const active = pkg.slug === trip.packageSlug;
+                    const price = carPrice(catalog, resolved.car, pkg);
+                    return (
+                      <button
+                        key={pkg.slug}
+                        type="button"
+                        onClick={() => update("packageSlug", pkg.slug)}
+                        aria-pressed={active}
+                        className={`${styles.package} ${active ? styles.packageActive : ""}`}
+                      >
+                        <span className={styles.packageHeading}><Icon name={pkg.icon} size={18} /><span>{active ? "Selected" : "Select package"}</span><Icon name={active ? "ph-check-circle" : "ph-circle"} size={17} /></span>
+                        <strong className={styles.packageName}>{pkg.label}</strong>
+                        <span className={styles.packageDescription}>{pkg.sub}</span>
+                        <span className={styles.packagePrice}>{formatINR(price)}<small>Base package rate</small></span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Night Charge Advisory */}
-              <div className="flex items-center gap-2 rounded-md bg-well px-3 py-2.5 text-[12px] text-[var(--color-neutral-400)]">
+              <div className={styles.nightNote}>
                 <Icon name="ph-moon-stars" size={16} color="var(--color-accent)" />
                 <span>
-                  {quote.nightStart
-                    ? "Night pickup charge applies (between 10:00 PM and 6:00 AM)."
-                    : "No night charge applies for this pickup time."}
+                  {!trip.time ? "Choose a pickup time to check night charges." : quote.nightStart
+                    ? `Night pickup charge applies (${nightWindowLabel(catalog.settings.pricingRules)}).`
+                    : "No pickup-time night charge applies."}
                 </span>
               </div>
 
-              {/* Mobile Tab Next Action */}
-              <div className="mt-5 hidden max-lg:flex max-lg:gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMobileTab("route")}
-                  className="btn btn-ghost flex-1 min-h-[44px]"
-                >
-                  <Icon name="ph-arrow-left" size={15} />
-                  <span>Back to Route</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMobileTab("map")}
-                  className="btn btn-primary flex-[1.4] min-h-[44px]"
-                >
-                  <span>Next: View Map &amp; Quote</span>
-                  <Icon name="ph-arrow-right" size={15} />
-                </button>
-              </div>
             </section>
 
-            {/* ── SECTION 3: ROUTE MAP & BREAKDOWN ─────────────────── */}
-            <section
-              className={`p-6 not-first:border-t not-first:border-[var(--color-divider)] max-md:p-4 ${
-                mobileTab !== "map" ? "max-lg:hidden" : ""
-              }`}
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="grid size-5 place-items-center rounded-full bg-[var(--color-accent-900)] text-[11px] font-bold text-[var(--color-accent-300)]">
-                    3
-                  </span>
-                  <h2 className="font-[family-name:var(--font-heading)] text-[13px] tracking-[0.08em] uppercase text-[var(--color-neutral-400)]">
-                    Route Map &amp; Live Distance
-                  </h2>
-                </div>
-                {resolved.complete && (
-                  <span className="text-[12px] text-[var(--color-accent-300)]">
-                    {quote.km} km on route
-                  </span>
-                )}
-              </div>
-
-              <div className="flex min-w-0 flex-col overflow-hidden rounded-md border border-[var(--color-divider)]">
-                <RouteMap
-                  fill
-                  stops={stops}
-                  path={routed?.path}
-                  chips={
-                    resolved.complete
-                      ? [
-                          `${quote.km} km route`,
-                          resolved.drivingMinutes
-                            ? `${formatDuration(resolved.drivingMinutes)} drive`
-                            : `${quote.hours} hr with halts`,
-                        ]
-                      : []
-                  }
-                  note={mapNote}
-                />
-              </div>
-
-              {/* On mobile (< 1024px), also show full quote breakdown right below the map */}
-              <div className="mt-6 hidden max-lg:block">
-                <div className="rounded-lg border border-[var(--color-divider)] bg-well p-4">
-                  <div className="mb-3 flex items-baseline justify-between border-b border-[var(--color-divider)] pb-2">
-                    <span className="font-[family-name:var(--font-heading)] text-[16px] font-semibold text-text">
-                      Itemised Quote Breakdown
-                    </span>
-                    <span className="tag tag-accent">{tripTypeLabel(trip.tripType)}</span>
-                  </div>
-
-                  <p className="mb-3 text-[12px] text-[var(--color-neutral-400)]">
-                    {resolved.car.name} · {routeLine}
-                  </p>
-
-                  <div className="mb-3 grid grid-cols-3 gap-2">
-                    <div className="rounded bg-surface p-2 text-center">
-                      <p className="text-[9.5px] uppercase text-[var(--color-neutral-500)]">Distance</p>
-                      <p className="font-[family-name:var(--font-heading)] text-[14px] font-medium text-text">
-                        {resolved.complete ? `${quote.km} km` : "—"}
-                      </p>
-                    </div>
-                    <div className="rounded bg-surface p-2 text-center">
-                      <p className="text-[9.5px] uppercase text-[var(--color-neutral-500)]">Duration</p>
-                      <p className="font-[family-name:var(--font-heading)] text-[14px] font-medium text-text">
-                        {quote.hours} hr
-                      </p>
-                    </div>
-                    <div className="rounded bg-surface p-2 text-center">
-                      <p className="text-[9.5px] uppercase text-[var(--color-neutral-500)]">Allowance</p>
-                      <p className="font-[family-name:var(--font-heading)] text-[14px] font-medium text-text">
-                        {quote.includedKm} km
-                      </p>
-                    </div>
-                  </div>
-
-                  <QuoteLines
-                    quote={quote}
-                    gstPercent={catalog.settings.gstPercent}
-                    showSubtotal
-                    totalLabel="Total payable"
-                  />
-
-                  <div className="mt-4">
-                    {!bookingPrompt ? <Link
-                      href={summaryHref}
-                      className="btn btn-primary w-full min-h-[44px]"
-                    >
-                      <span>Review &amp; Confirm on WhatsApp</span>
-                      <Icon name="ph-arrow-right" size={16} />
-                    </Link> : <p className="text-[13px] text-[var(--color-neutral-400)]">{bookingPrompt}</p>}
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* ── DESKTOP STICKY QUOTE PANEL (>= 1024px) ───────────────── */}
-          <aside className="sticky top-[90px] rounded-lg bg-surface p-6 shadow-[var(--shadow-md)] max-lg:hidden">
-            <div className="flex items-baseline justify-between gap-4">
-              <span className="font-[family-name:var(--font-heading)] text-[19px]">Your quote</span>
-              <span className="tag tag-accent">{tripTypeLabel(trip.tripType)}</span>
+          <aside id="calc-quote" className={styles.quote} data-current={activeStep === "quote"} onFocusCapture={() => setActiveStep("quote")} tabIndex={-1} aria-label="Live journey estimate">
+            <div className={styles.quoteHeader}>
+              <div className={styles.sectionTitle}><span className={styles.stepNumber} aria-hidden="true">3</span><div><p className={styles.quoteHeading}>Live estimate</p><h2>Your quote</h2></div></div>
+              <Media src={heroImage(resolved.car)} alt={resolved.car.name} placeholder={resolved.car.name} className={styles.quotePhoto} sizes="76px" />
             </div>
-            <p className="mt-2 mb-4 text-[12px] text-[var(--color-neutral-500)]">
-              {resolved.car.name} · {routeLine}
+            <div className={styles.quoteType}><span>{resolved.car.name}</span><span className="tag tag-accent">{tripTypeLabel(trip.tripType)}</span></div>
+            <div className={styles.mobileTotal}><span>Estimated total</span><strong>{formatINR(quote.total)}</strong></div>
+            <p className={styles.quoteRoute}>
+              {routeLine}
             </p>
+            <p className={styles.selectedPackage}>{activePackage?.label} <span>· {resolved.city.name} base</span></p>
 
-            <div className="mb-4 grid grid-cols-3 gap-2.5">
-              <div className="rounded-sm bg-well p-3">
-                <p className="text-[10px] text-[var(--color-neutral-500)]">Distance</p>
-                <p className="font-[family-name:var(--font-heading)] text-[16px]">
+            <div className={styles.quoteMetrics}>
+              <div>
+                <span>Full distance</span>
+                <strong>
                   {resolved.complete ? `${quote.km} km` : "—"}
-                </p>
+                </strong>
                 {resolved.complete && resolved.transferKm > 0 && (
-                  <p className="mt-[2px] text-[10px] text-[var(--color-neutral-500)]">
+                  <small>
                     incl. {Math.round(resolved.transferKm)} km transfer
-                  </p>
+                  </small>
                 )}
               </div>
-              <div className="rounded-sm bg-well p-3">
-                <p className="text-[10px] text-[var(--color-neutral-500)]">Duration</p>
-                <p className="font-[family-name:var(--font-heading)] text-[16px]">{quote.hours} hr</p>
+              <div>
+                <span>Trip duration</span>
+                <strong>{resolved.complete ? `${quote.hours} hr` : "—"}</strong>
               </div>
-              <div className="rounded-sm bg-well p-3">
-                <p className="text-[10px] text-[var(--color-neutral-500)]">Package covers</p>
-                <p className="font-[family-name:var(--font-heading)] text-[16px]">
+              <div>
+                <span>Package covers</span>
+                <strong>
                   {quote.includedKm} km / {quote.includedHours} hr
-                </p>
+                </strong>
               </div>
             </div>
-
+            <div className={styles.quoteLines}>
             <QuoteLines
               quote={quote}
               gstPercent={catalog.settings.gstPercent}
               showSubtotal
-              totalLabel="Total payable"
+              totalLabel="Estimated total"
             />
+            </div>
 
-            <p className="mt-4 flex items-start gap-2 rounded-sm bg-[var(--color-accent-900)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text">
+            <p className={styles.quoteNotice}>
               <Icon name="ph-info" size={15} color="var(--color-accent)" />
               <span>
                 This is an <strong>estimated rate</strong>. Final pricing and car availability
-                confirmed instantly by our team.
+                confirmed by our team.
               </span>
             </p>
 
-            <p className="mt-2.5 text-[11px] leading-normal text-[var(--color-neutral-500)]">
-              Tolls, parking and state permits at actuals, paid directly. Fuel and chauffeur included.
+            <p className={styles.quoteHelp}>
+              Review the inclusions and charges in your booking summary before sending.
             </p>
 
-            <div className="mt-4">
+            <div className={styles.quoteActions}>
               {!bookingPrompt ? (
                 <Link
                   href={summaryHref}
-                  className="btn btn-primary btn-block min-h-[44px]"
+                  prefetch={false}
+                  className={`btn btn-solid ${styles.reviewAction}`}
                 >
                   Review &amp; confirm on WhatsApp
                   <Icon name="ph-arrow-right" size={16} />
@@ -690,63 +505,93 @@ export function Calculator({ catalog, initialTrip, minDate }: CalculatorProps) {
               ) : (
                 <button
                   type="button"
-                  className="btn btn-primary btn-block min-h-[44px]"
+                  className={`btn btn-solid ${styles.reviewAction}`}
+                  aria-describedby="calc-booking-guidance"
                   disabled
                 >
-                  {bookingPrompt}
+                  Review &amp; confirm on WhatsApp
                 </button>
               )}
+              {bookingPrompt && <p id="calc-booking-guidance" className={styles.bookingGuidance}>{bookingPrompt}</p>}
 
-              <div className="mt-3 flex flex-wrap justify-center gap-5 text-[11px] text-[var(--color-neutral-500)]">
+              <div className={styles.confirmationTerms}>
                 <span className="inline-flex items-center gap-1">
                   <Icon name="ph-lock-simple" size={13} />
                   No payment on site
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <Icon name="ph-currency-inr" size={13} />
-                  {formatINR(quote.advance)} advance to confirm
+                  Indicative advance {formatINR(quote.advance)}
                 </span>
               </div>
             </div>
           </aside>
+            </div>
+          {resolved.complete && <ResponsiveDisclosure id="calc-distance" title="How the distance is calculated" hideTitleOnDesktop className={styles.distancePanel}><RouteDistanceBreakdown resolved={resolved} /></ResponsiveDisclosure>}
+          </div>
+            <ResponsiveDisclosure id="calc-map" title="Route map & live distance" hideTitleOnDesktop className={styles.mapDisclosure}>
+            <section
+              className={`${styles.step} ${styles.mapPanel}`} tabIndex={-1} aria-labelledby="calc-map-heading"
+            >
+              <div className={styles.mapHeading}>
+                <div>
+                  <p className={styles.mapKicker}>Your journey at a glance</p>
+                  <h2 id="calc-map-heading">Route Map &amp; Live Distance</h2>
+                </div>
+                <span className={styles.mapStatus}>
+                  <Icon name="ph-path" size={14} />
+                  {resolved.complete && routing ? "Updating route" : resolved.routed ? "Road route" : "Route preview"}
+                </span>
+              </div>
+
+              <div className={styles.map}>
+                <RouteMap
+                  fill
+                  stops={resolved.stops}
+                  previewCenter={garage ? [garage.lat, garage.lng] : undefined}
+                  path={routed?.path}
+                />
+              </div>
+
+              <div className={styles.mapSummary}>
+                <div><span>Full journey</span><strong>{resolved.complete ? `${quote.km.toLocaleString("en-IN")} km` : "Add your route"}</strong></div>
+                <div><span>{resolved.drivingMinutes ? "Driving time" : "Vehicle base"}</span><strong>{resolved.drivingMinutes ? formatDuration(resolved.drivingMinutes) : resolved.city.name}</strong></div>
+              </div>
+              <p className={styles.mapNote}>{mapNote}</p>
+            </section>
+            </ResponsiveDisclosure>
         </div>
       </div>
 
       {/* Mobile Fixed Action Bar (< 1024px) */}
-      <div className="stickybar hidden max-lg:flex">
+      <section className={`stickybar hidden max-lg:flex ${styles.mobileAction}`} aria-label="Journey action">
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-wider text-[var(--color-neutral-500)]">
-              Total payable
+              Estimated total
             </span>
-            <button
-              type="button"
-              onClick={() => setMobileTab("map")}
+            <a
+              href="#calc-quote"
               className="inline-flex items-center gap-0.5 text-[10.5px] text-[var(--color-accent-300)] underline"
             >
               Details
-            </button>
+            </a>
           </div>
           <span className="font-[family-name:var(--font-heading)] text-[20px] font-semibold text-[var(--color-accent-300)]">
             {formatINR(quote.total)}
           </span>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-primary min-h-[44px] px-5"
-          onClick={() => {
-            if (bookingPrompt) {
-              setMobileTab("route");
-            } else {
-              router.push(summaryHref);
-            }
-          }}
+        <Link
+          href={bookingPrompt ? "#calc-route" : summaryHref}
+          prefetch={false}
+          className="btn btn-solid min-h-[44px] px-5"
+          onClick={(event) => { if (bookingPrompt) { event.preventDefault(); focusMissingDetail(); } }}
         >
           <span>{!bookingPrompt ? "Review & send" : "Complete trip details"}</span>
           <Icon name="ph-arrow-right" size={15} />
-        </button>
-      </div>
+        </Link>
+      </section>
     </>
   );
 }

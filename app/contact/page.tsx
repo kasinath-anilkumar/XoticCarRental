@@ -1,125 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-
+import { EditorialIntro, editorial } from "@/components/content/Editorial";
 import { ServiceEnquiryForm } from "@/components/services/ServiceEnquiryForm";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { Icon } from "@/components/ui/Icon";
 import { getCatalog } from "@/lib/content";
 import { getService, getServicePage } from "@/lib/service-content";
 import { siteUrl } from "@/lib/site";
 import { GENERAL_ENQUIRY_MESSAGE, whatsappLink } from "@/lib/whatsapp";
+import styles from "./page.module.css";
 
 export const revalidate = 3600;
+export const metadata: Metadata = { title: "Contact", description: "Call, WhatsApp or share your plans with the Xotic team through a service enquiry.", alternates: { canonical: "/contact" }, openGraph: { url: `${siteUrl()}/contact` } };
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description:
-    "Call, WhatsApp or send an enquiry. Every message gets a reference and a response from our team.",
-  alternates: { canonical: "/contact" },
-  openGraph: { url: `${siteUrl()}/contact` },
-};
-
-/**
- * Contact (§26).
- *
- * Three ways to reach Xotic, in the order people actually use them from a
- * phone: call, WhatsApp, then a form for anyone who would rather write it out.
- * Visitors choose a published service so the enquiry asks relevant questions.
- */
 export default async function ContactPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
   const params = await searchParams;
   const [catalog, choices, service] = await Promise.all([getCatalog(), getServicePage(1, 100), params.service ? getService(params.service) : undefined]);
-  const serviceChoices = service && !choices.data.some((item) => item.slug === service.slug)
-    ? [service, ...choices.data] : choices.data;
+  const serviceChoices = service && !choices.data.some((item) => item.slug === service.slug) ? [service, ...choices.data] : choices.data;
   const wa = whatsappLink(catalog.settings.whatsappNumber, GENERAL_ENQUIRY_MESSAGE);
   const tel = `tel:${catalog.settings.phoneDisplay.replace(/[^\d+]/g, "")}`;
-
-  return (
-    <section className="sec">
-      <p className="kick">Contact</p>
-      <h1 className="mb-1 font-[family-name:var(--font-heading)] text-[32px] leading-tight sm:text-[38px]">
-        Talk to someone who knows the fleet
-      </h1>
-      <p className="mb-7 max-w-[62ch] text-sm text-[var(--color-neutral-400)]">
-        Calls are answered by the people who dispatch the cars, not a call centre. Every enquiry gets
-        a reference the moment it arrives and a response from our team.
-      </p>
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.1fr]">
-        <div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <a
-              href={tel}
-              className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-4 no-underline"
-            >
-              <Icon name="ph-phone-call" size={22} color="var(--color-accent)" />
-              <span>
-                <span className="block text-[13px] text-[var(--color-neutral-400)]">Call us</span>
-                <span className="block font-[family-name:var(--font-heading)] text-[19px] text-[var(--color-text)]">
-                  {catalog.settings.phoneDisplay}
-                </span>
-              </span>
-            </a>
-
-            <a
-              href={wa}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-4 no-underline"
-            >
-              <Icon name="ph-whatsapp-logo" size={22} color="#25d366" />
-              <span>
-                <span className="block text-[13px] text-[var(--color-neutral-400)]">WhatsApp</span>
-                <span className="block font-[family-name:var(--font-heading)] text-[19px] text-[var(--color-text)]">
-                  Message us
-                </span>
-              </span>
-            </a>
-
-            <a
-              href={`mailto:${catalog.settings.email}`}
-              className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-4 no-underline"
-            >
-              <Icon name="ph-envelope-simple" size={22} color="var(--color-accent)" />
-              <span>
-                <span className="block text-[13px] text-[var(--color-neutral-400)]">Email</span>
-                <span className="block font-[family-name:var(--font-heading)] text-[17px] break-all text-[var(--color-text)]">
-                  {catalog.settings.email}
-                </span>
-              </span>
-            </a>
-          </div>
-
-          <div className="mt-5 rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-surface)] p-5">
-            <h2 className="font-[family-name:var(--font-heading)] text-[17px]">Where the cars are</h2>
-            <p className="mt-1 mb-3 text-[13px] text-[var(--color-neutral-400)]">
-              We dispatch from yards in each city we serve. The nearest one to you is chosen when we
-              quote — it is what the distance is measured from.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {catalog.cities.slice(0, 12).map((city) => (
-                <Link
-                  key={city.slug}
-                  href={`/cities/${city.slug}`}
-                  prefetch={false}
-                  className="rounded-full border border-[var(--color-divider)] px-3 py-1 text-[12px] text-[var(--color-text)] no-underline hover:border-[var(--color-accent-solid)]"
-                >
-                  {city.name}
-                </Link>
-              ))}
-            </div>
-            {catalog.cities.length > 12 && <Link href="/cities" className="mt-3 inline-block text-sm">Browse all cities</Link>}
-          </div>
-        </div>
-
-        <div>
-          <form className="mb-6 space-y-3" action="/contact">
-            <div className="field"><label htmlFor="contact-service">What can we help with?</label><select className="input" id="contact-service" name="service" required defaultValue={service?.slug ?? ""}><option value="" disabled>Choose a service</option>{serviceChoices.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></div>
-            <button className="btn btn-secondary" type="submit">Continue</button>
-            {choices.total > choices.data.length && <Link href="/services" className="block text-sm">Browse all services</Link>}
-          </form>
-          {service && <ServiceEnquiryForm service={service} />}
-        </div>
-      </div>
-    </section>
-  );
+  const selector = <form className={styles.selector} action="/contact#contact-enquiry"><p className={editorial.eyebrow}>Plan with us</p><h2>What can we help with?</h2><p>Choose a service to share the details for your trip.</p><div className="field"><label htmlFor="contact-service">Choose a service</label><select className="input" id="contact-service" name="service" required defaultValue={service?.slug ?? ""}><option value="" disabled>Choose a service</option>{serviceChoices.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></div><button className="btn btn-primary" type="submit">Continue <Icon name="ph-arrow-right" size={17} /></button>{choices.total > choices.data.length && <Link href="/services" className="block text-sm">Browse all services</Link>}</form>;
+  return <div className={editorial.page}>
+    <EditorialIntro eyebrow="Contact" title="Let’s talk about your journey." mobileTitle="Talk to our team" description="A date, a destination, or just an idea. Share what you have in mind and our team will help with the details." />
+    <section className={`${editorial.section} ${styles.content}`}><div className={`${editorial.twoColumns} ${editorial.enquiryLayout}`}>
+      <div><h2 className={styles.heading}>A conversation starts here.</h2><div className={styles.channels}>
+        <a href={tel}><Icon name="ph-phone-call" size={25} /><span><small>Call us</small><strong>{catalog.settings.phoneDisplay}</strong></span><Icon name="ph-arrow-up-right" size={18} /></a>
+        <a href={wa} target="_blank" rel="noopener noreferrer"><Icon name="ph-whatsapp-logo" size={25} /><span><small>WhatsApp</small><strong>Message our team</strong></span><Icon name="ph-arrow-up-right" size={18} /></a>
+        <a href={`mailto:${catalog.settings.email}`}><Icon name="ph-envelope-simple" size={25} /><span><small>Email</small><strong>{catalog.settings.email}</strong></span><Icon name="ph-arrow-up-right" size={18} /></a>
+      </div><ResponsiveDisclosure title="Our service cities" className={styles.locations} hideTitleOnDesktop><h3 className={editorial.secondaryHeading}>Find us along your route.</h3><p>Explore our service cities and the cars available to enquire about in each location.</p><div className={editorial.pillList}>{catalog.cities.slice(0, 12).map((city) => <Link key={city.slug} href={`/cities/${city.slug}`} prefetch={false}>{city.name}</Link>)}</div>{catalog.cities.length > 12 && <Link href="/cities" className="mt-4 inline-block">Browse all cities</Link>}</ResponsiveDisclosure></div>
+      <div id="contact-enquiry" tabIndex={-1} className={editorial.enquiryTarget}>{service ? <><ResponsiveDisclosure title={`Change service: ${service.short}`} hideTitleOnDesktop>{selector}</ResponsiveDisclosure><ServiceEnquiryForm service={service} /></> : selector}</div>
+    </div></section>
+  </div>;
 }

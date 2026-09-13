@@ -1,0 +1,59 @@
+.fields { min-width: 0; }
+.group { border-bottom: 1px solid #e4e8e5; }
+.group:last-child { border-bottom: 0; }
+.group > summary { display: flex; align-items: center; gap: 10px; min-height: 68px; padding: 14px 0; cursor: pointer; list-style: none; }
+.group > summary::-webkit-details-marker, .picker > summary::-webkit-details-marker { display: none; }
+.group > summary:hover .groupLabel > span { color: #9a4300; }
+.groupIcon { display: grid; place-items: center; flex: 0 0 32px; height: 32px; border: 1px solid #e4e8e5; border-radius: var(--radius-sm); background: #fff; color: #626a65; }
+.groupActive { color: #9a4300; background: #fff3e8; border-color: #efcfb5; }
+.groupLabel { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: 4px; }
+.groupLabel > span { font-family: var(--font-heading); font-size: 14px; font-weight: 650; letter-spacing: -.02em; }
+.groupLabel > small { color: #626a65; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.chevron { color: #626a65; flex: none; transition: transform .18s ease; }
+.group[open] > summary .chevron { transform: rotate(180deg); }
+.groupBody { padding: 0 0 22px; display: flex; flex-direction: column; gap: 13px; }
+.help { margin: 0; color: #626a65; font-size: 11px; line-height: 1.65; }
+.field { display: flex; flex-direction: column; min-width: 0; gap: 8px; }
+.field > span:first-child, .field > label { font-size: 11px; color: #515b54; font-weight: 500; }
+.field select, .field input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 46px; margin: 0; padding: 11px 12px; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); background: #fff; color: #171b18; font: inherit; font-size: 13px; }
+.field input:disabled { background: #f6f7f8; color: #626a65; cursor: not-allowed; }
+.field input:focus-visible, .field select:focus-visible { outline: 2px solid #a94b00; outline-offset: 2px; }
+.field input::-webkit-calendar-picker-indicator { opacity: .65; cursor: pointer; }
+.field input[aria-invalid="true"] { border-color: #a32d24; }
+.picker { border: 1px solid #dfe3e1; border-radius: var(--radius-sm); min-width: 0; }
+.picker > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; list-style: none; cursor: pointer; font-size: 13px; }
+.picker > summary > span { display: flex; flex-direction: column; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.picker > summary small { font-size: 10px; color: #626a65; }
+.pickerBody { padding: 4px 8px 8px; }
+.search { display: flex; align-items: center; gap: 9px; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); background: #fff; padding-inline: 10px; color: #626a65; }
+.search > svg { flex: none; }
+.search input { width: 100%; min-width: 0; min-height: 44px; border: 0; padding: 10px 0; font: inherit; font-size: 12px; background: transparent; color: #171b18; outline-offset: 3px; }
+.options { min-width: 0; border: 0; margin: 0; padding: 6px 0 0; }
+.option { display: flex; align-items: center; min-height: 46px; gap: 10px; padding: 10px; border-radius: var(--radius-sm); cursor: pointer; }
+.option:hover { background: #f6f7f8; }
+.option input { width: 16px; height: 16px; margin: 0; flex: none; accent-color: #171b18; cursor: pointer; }
+.optionLabel { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.optionLabel > small { color: #626a65; font-size: 10px; }
+.selected { background: #fff3e8; color: #171b18; }
+.selected:hover { background: #ffebdb; }
+.optionCount { color: #515b54; min-width: 22px; padding: 4px 6px; border-radius: var(--radius-sm); background: #f0f2f1; font-size: 10px; text-align: center; }
+.more { display: flex; width: 100%; align-items: center; gap: 8px; min-height: 44px; margin-top: 6px; padding: 8px; background: transparent; border: 0; color: #9a4300; font: inherit; font-size: 11px; cursor: pointer; text-align: left; }
+.more > span { margin-left: auto; font-size: 10px; color: #626a65; }
+.more > svg { flex: none; }
+.empty { display: block; margin: 12px 8px; font-size: 12px; line-height: 1.6; color: #626a65; }
+.seats { min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; border: 0; padding: 0; }
+.seat, .seatSelected { position: relative; min-width: 0; min-height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 9px; padding: 10px 2px; background: #fff; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); color: #626a65; font-size: 10px; cursor: pointer; }
+.seatSelected { background: #171b18; color: #fff; border-color: #171b18; }
+.seat input, .seatSelected input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+.seat:has(input:focus-visible), .seatSelected:has(input:focus-visible) { outline: 2px solid #a94b00; outline-offset: 2px; }
+.currencyInput { position: relative; display: flex; align-items: center; }
+.currencyInput > span { position: absolute; left: 14px; color: #626a65; font-size: 16px; }
+.currencyInput > input { padding-left: 35px; font-size: 17px; font-family: var(--font-heading); letter-spacing: -.02em; }
+.textButton { min-height: 36px; align-self: flex-start; border: 0; padding: 4px 0; background: transparent; color: #9a4300; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; font: inherit; font-size: 11px; text-align: left; }
+.dateFields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.presets button { min-height: 36px; padding: 7px 12px; background: #fff; border: 1px solid #dfe3e1; border-radius: var(--radius-sm); color: #515b54; cursor: pointer; font: inherit; font-size: 11px; }
+.error { font-size: 11px; color: #952e26; margin: 0; line-height: 1.6; }
+@media (max-width: 1023px) { .group > summary { min-height: 82px; } .groupLabel > span { font-size: 15px; } .groupLabel > small, .help, .field > span:first-child { font-size: 12px; } .field input, .field select { min-height: 48px; font-size: 16px; } .search input { font-size: 16px; } .optionLabel { font-size: 14px; } .optionLabel > small { font-size: 11px; } .option { min-height: 50px; } .presets button, .textButton { min-height: 44px; } .seat, .seatSelected { font-size: 12px; min-height: 76px; } .currencyInput > input { font-size: 19px; } }
+@media (prefers-reduced-motion: reduce) { .chevron { transition: none; } }
+@media (max-width: 1023px) { .field > label { font-size: 12px; } }

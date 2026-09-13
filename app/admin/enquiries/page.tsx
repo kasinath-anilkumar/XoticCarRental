@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Pagination } from "@/components/ui/Pagination";
+import { Icon } from "@/components/ui/Icon";
 
 import { requireAdmin } from "@/lib/admin/auth";
 import { formatINR } from "@/lib/format";
@@ -60,8 +61,8 @@ export default async function AdminEnquiriesPage({
   return (
     <AdminShell email={admin.email}>
       <AdminPageHead
-        title="Leads"
-        lede="Every enquiry sent to WhatsApp, with the reference the customer is holding. Totals were recomputed on the server before being stored, so these are the numbers we stand behind."
+        title="Enquiry desk"
+        lede="Keep every conversation moving. Review requests, assign an owner and plan the next follow-up."
       />
 
       {isLocalStore() && (
@@ -79,7 +80,13 @@ export default async function AdminEnquiriesPage({
         </p>
       )}
 
-      <div className={styles.actions} style={{ marginTop: 0, marginBottom: "16.8px" }}>
+      <div className={styles.stats}>
+        <Link href="/admin/enquiries?view=overdue" className={styles.stat}><p className={styles.statLabel}>Follow-ups due</p><p className={styles.statValue}>{counts.overdue}</p><p className={styles.statHint}>Ready for your attention</p></Link>
+        <Link href="/admin/enquiries?view=open" className={styles.stat}><p className={styles.statLabel}>Open conversations</p><p className={styles.statValue}>{counts.open}</p><p className={styles.statHint}>Enquiries still in progress</p></Link>
+        <Link href="/admin/enquiries?view=all" className={styles.stat}><p className={styles.statLabel}>All enquiries</p><p className={styles.statValue}>{counts.all}</p><p className={styles.statHint}>Your complete enquiry history</p></Link>
+      </div>
+
+      <nav className={styles.filterTabs} aria-label="Enquiry status">
         {FILTERS.map((option) => {
           const label =
             option === "overdue"
@@ -94,13 +101,14 @@ export default async function AdminEnquiriesPage({
               key={option}
               prefetch={false}
               href={`/admin/enquiries?view=${option}`}
-              className={`btn ${view === option ? "btn-primary" : "btn-secondary"}`}
+              className={view === option ? styles.filterTabActive : styles.filterTab}
+              aria-current={view === option ? "page" : undefined}
             >
               {label}
             </Link>
           );
         })}
-      </div>
+      </nav>
 
       <div>
         {leads.map((lead) => (
@@ -140,11 +148,15 @@ export default async function AdminEnquiriesPage({
         ))}
 
         {leads.length === 0 && (
+          <div className={`${styles.card} ${styles.empty}`}>
+          <span className={styles.emptyIcon}><Icon name="ph-check" size={25} /></span>
+          <h2 className={styles.cardTitle}>{view === "overdue" ? "You're up to date" : "No enquiries in this view"}</h2>
           <p className={styles.cardHint}>
             {view === "overdue"
               ? "No follow-ups are due. Check open leads for enquiries without a follow-up date."
               : `No leads in "${view}".`}
           </p>
+          </div>
         )}
       </div>
       <Pagination total={result.total} page={result.page} pageSize={result.pageSize} path="/admin/enquiries" query={`view=${view}`} label="leads" />

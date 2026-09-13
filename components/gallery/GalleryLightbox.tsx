@@ -56,7 +56,7 @@ export function GalleryLightbox({ items, index, onIndexChange, onClose, whatsapp
           <button
             type="button"
             onClick={onClose}
-            className="grid size-9 cursor-pointer place-items-center rounded-full bg-neutral-800/80 text-white transition-colors hover:bg-neutral-700"
+            className="grid size-9 cursor-pointer place-items-center rounded-sm bg-neutral-800/80 text-white transition-colors hover:bg-neutral-700 max-md:size-[44px]"
             aria-label="Close photo preview (Escape)"
           >
             <Icon name="ph-x" size={18} />
@@ -70,7 +70,7 @@ export function GalleryLightbox({ items, index, onIndexChange, onClose, whatsapp
         <button
           type="button"
           onClick={showPrev}
-          className="absolute left-2 z-10 grid size-11 cursor-pointer place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-[var(--color-accent)] hover:text-[var(--color-accent-ink)] max-md:left-1 max-md:size-9"
+          className="absolute left-2 z-10 grid size-11 cursor-pointer place-items-center rounded-sm bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-[var(--color-accent)] hover:text-[var(--color-accent-ink)] max-md:left-1 max-md:size-[44px]"
           aria-label="Previous photo (Arrow Left)"
         >
           <Icon name="ph-caret-left" size={20} />
@@ -92,7 +92,7 @@ export function GalleryLightbox({ items, index, onIndexChange, onClose, whatsapp
         <button
           type="button"
           onClick={showNext}
-          className="absolute right-2 z-10 grid size-11 cursor-pointer place-items-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-[var(--color-accent)] hover:text-[var(--color-accent-ink)] max-md:right-1 max-md:size-9"
+          className="absolute right-2 z-10 grid size-11 cursor-pointer place-items-center rounded-sm bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-[var(--color-accent)] hover:text-[var(--color-accent-ink)] max-md:right-1 max-md:size-[44px]"
           aria-label="Next photo (Arrow Right)"
         >
           <Icon name="ph-caret-right" size={20} />
@@ -114,7 +114,7 @@ export function GalleryLightbox({ items, index, onIndexChange, onClose, whatsapp
           <div className="flex items-center gap-2 max-md:w-full">
             <Link
               href={activeLightboxItem.carHref}
-              className="btn btn-primary min-h-[40px] flex-1 text-[12px] justify-center"
+              className="btn btn-primary min-h-[40px] flex-1 text-[12px] justify-center max-md:min-h-[44px]"
             >
               <span>View this car</span>
               <Icon name="ph-arrow-right" size={13} />
@@ -126,7 +126,7 @@ export function GalleryLightbox({ items, index, onIndexChange, onClose, whatsapp
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-ghost min-h-[40px] flex-1 text-[12px] justify-center text-white"
+              className="btn btn-ghost min-h-[40px] flex-1 text-[12px] justify-center text-white max-md:min-h-[44px]"
             >
               <Icon name="ph-whatsapp-logo" size={15} color="#25D366" />
               <span>WhatsApp</span>

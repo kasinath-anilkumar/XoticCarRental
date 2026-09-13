@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 
 import { Icon } from "@/components/ui/Icon";
@@ -59,12 +60,58 @@ export function DateField({
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  const calendar = useRef<HTMLDialogElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !trigger.current || !calendar.current) return;
+    const popup = calendar.current;
+    const anchor = trigger.current;
+    let frame = 0;
+    const position = () => {
+      const bounds = availableViewport(popup);
+      const anchorBox = anchor.getBoundingClientRect();
+      popup.style.maxWidth = `${bounds.right - bounds.left}px`;
+      popup.style.maxHeight = `${bounds.bottom - bounds.top}px`;
+      const popupBox = popup.getBoundingClientRect();
+      const preferredLeft = align === "end" ? anchorBox.right - popupBox.width : anchorBox.left;
+      const left = Math.max(bounds.left, Math.min(preferredLeft, bounds.right - popupBox.width));
+      const below = anchorBox.bottom + 6;
+      const above = anchorBox.top - popupBox.height - 6;
+      const preferredTop = below + popupBox.height <= bounds.bottom ? below : above;
+      const top = Math.max(bounds.top, Math.min(preferredTop, bounds.bottom - popupBox.height));
+      popup.style.left = `${left}px`;
+      popup.style.top = `${top}px`;
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(position);
+    };
+    position();
+    // Reposition after the lazy calendar loads, its month height changes, or
+    // the trigger moves. The portal also escapes transformed hero containers.
+    const observer = new ResizeObserver(schedule);
+    observer.observe(popup);
+    observer.observe(anchor);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    window.visualViewport?.addEventListener("resize", schedule);
+    window.visualViewport?.addEventListener("scroll", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      window.visualViewport?.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("scroll", schedule);
+    };
+  }, [open, align]);
 
   useEffect(() => {
     if (!open) return;
 
     const onPointerDown = (event: PointerEvent) => {
-      if (!wrap.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!wrap.current?.contains(target) && !calendar.current?.contains(target)) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -108,7 +155,7 @@ export function DateField({
     <div className="field">
       <label htmlFor={fieldId}>{label}</label>
       <div className={styles.wrap} ref={wrap} onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        if (!event.currentTarget.contains(event.relatedTarget) && !calendar.current?.contains(event.relatedTarget)) setOpen(false);
       }}>
         <button
           type="button"
@@ -129,9 +176,10 @@ export function DateField({
           <Icon name="ph-caret-down" size={13} color="var(--color-neutral-500)" />
         </button>
 
-        {open && (
+        {open && createPortal(
           <dialog
-            className={`${styles.popover} ${align === "end" ? styles.popoverEnd : ""}`}
+            ref={calendar}
+            className={styles.popover}
             id={`${fieldId}-calendar`}
             open
             aria-label={label}
@@ -164,11 +212,36 @@ export function DateField({
               showOutsideDays
               autoFocus
             />
-          </dialog>
+          </dialog>,
+          document.body,
         )}
       </div>
     </div>
   );
+}
+
+/** Measure edge bars instead of assuming a particular header or mobile footer. */
+function availableViewport(popup: HTMLElement) {
+  const viewport = window.visualViewport;
+  const left = viewport?.offsetLeft ?? 0;
+  const top = viewport?.offsetTop ?? 0;
+  const width = viewport?.width ?? document.documentElement.clientWidth;
+  const height = viewport?.height ?? window.innerHeight;
+  const bounds = { left: left + 12, right: left + width - 12, top: top + 12, bottom: top + height - 12 };
+  for (const edge of ["top", "bottom"] as const) {
+    const y = edge === "top" ? top + 1 : top + height - 1;
+    for (const element of document.elementsFromPoint(left + width / 2, y)) {
+      if (element === popup || popup.contains(element)) continue;
+      const position = getComputedStyle(element).position;
+      if (position !== "fixed" && position !== "sticky") continue;
+      const box = element.getBoundingClientRect();
+      // Full-screen overlays are separate interactions, not persistent bars.
+      if (box.height > height / 2 || box.width < width / 2) continue;
+      if (edge === "top") bounds.top = Math.max(bounds.top, box.bottom + 12);
+      else bounds.bottom = Math.min(bounds.bottom, box.top - 12);
+    }
+  }
+  return bounds;
 }
 
 /** YYYY-MM-DD → a local Date at midnight, with no timezone shift. */

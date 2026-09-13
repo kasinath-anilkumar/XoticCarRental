@@ -4,10 +4,9 @@
  * a server component.
  */
 export const NAV_LINKS = [
-  { href: "/", label: "Home" },
   { href: "/cars", label: "Browse cars" },
   { href: "/services", label: "Services" },
   { href: "/cities", label: "Cities" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/price-calculator", label: "Price calculator" },
+  { href: "/about", label: "Our story" },
 ] as const;

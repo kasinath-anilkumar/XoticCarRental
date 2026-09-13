@@ -25,6 +25,9 @@ import { getDistance } from "geolib";
 import type { ResolvedPlace } from "./places";
 import type { CityRoute, TripType } from "./types";
 
+/** Internal endpoint marker; transfer positions distinguish it from customer stops. */
+export const GARAGE_ROUTE_KEY = "#vehicle-garage";
+
 export interface Coordinates {
   lat: number;
   lng: number;
@@ -101,7 +104,7 @@ export function roadKm(
   overrides?: KmOverrides,
   minimumLegKm = 0,
 ): number {
-  if (from.key === to.key) return 0;
+  if (samePoint(from, to)) return 0;
   // A measured distance — published by staff, or handed over by the router for
   // this particular trip — always beats the estimate.
   const measured = overrides?.get(overrideKey(from.key, to.key));
@@ -116,6 +119,29 @@ export interface RouteInput {
   /** Where the vehicle is based. Null prices the trip without transfer legs. */
   garage: Coordinates | null;
   tripType: TripType;
+  /** Road measurements for the complete vehicle route, in consecutive order. */
+  routedLegs?: ReadonlyArray<{ km: number }>;
+}
+
+function samePoint(from: ResolvedPlace, to: ResolvedPlace): boolean {
+  return from.lat === to.lat && from.lng === to.lng;
+}
+
+/** The exact points sent to the router and priced, including an explicit return. */
+export function routePoints({ stops, garage, tripType }: RouteInput): ResolvedPlace[] {
+  if (stops.length < 2) return [];
+  const itinerary = [...stops];
+  // A third stop is already an explicit final drop. Only a two-stop round
+  // trip leaves its return destination unstated.
+  if (tripType === "round" && stops.length === 2 && !samePoint(stops[0]!, stops[1]!)) {
+    itinerary.push(stops[0]!);
+  }
+  if (!garage) return itinerary;
+  const yard: ResolvedPlace = {
+    key: GARAGE_ROUTE_KEY, name: "Garage", lat: garage.lat, lng: garage.lng,
+    citySlug: "", isAirport: false, served: false,
+  };
+  return [yard, ...itinerary, yard];
 }
 
 export interface RouteLeg {
@@ -147,9 +173,8 @@ export interface RouteResult {
  * Kottayam wedding drives to Kottayam empty and comes home empty, and pricing
  * only the middle of that was quoting away two dead-head legs.
  *
- * A round trip with no distinct final drop still doubles back over its own
- * itinerary, as it always did — the difference is that the doubling now
- * happens inside the itinerary, and the transfer legs are counted once.
+ * Every distance belongs to an actual consecutive leg. A two-stop round trip
+ * adds a return to pickup; a longer itinerary already specifies its final drop.
  */
 export function resolveRoute(
   input: RouteInput,
@@ -157,52 +182,35 @@ export function resolveRoute(
   overrides?: KmOverrides,
   minimumLegKm = 0,
 ): RouteResult {
-  const { stops, garage, tripType } = input;
+  const points = routePoints(input);
   const legs: RouteLeg[] = [];
-
-  if (stops.length < 2) {
+  if (points.length < 2) {
     return { legs, km: 0, itineraryKm: 0, transferKm: 0 };
   }
-
-  const km = (from: ResolvedPlace, to: ResolvedPlace) =>
-    roadKm(from, to, circuityFactor, overrides, minimumLegKm);
-
-  for (let i = 0; i < stops.length - 1; i += 1) {
+  const routedLegs = input.routedLegs?.length === points.length - 1 ? input.routedLegs : undefined;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const from = points[i]!;
+    const to = points[i + 1]!;
+    const routedKm = routedLegs?.[i]?.km;
+    const transfer = Boolean(input.garage) && (i === 0 || i === points.length - 2);
+    // Keep measurements indexed by leg: visiting the same pair twice need
+    // not produce the same route. Published distances retain precedence.
+    // Published routes describe customer places, not our synthetic yard marker.
+    const measured = transfer ? undefined : overrides?.get(overrideKey(from.key, to.key));
+    const km = samePoint(from, to) ? 0 : measured ?? (
+      routedKm != null && Number.isFinite(routedKm) && routedKm >= 0
+        ? Math.max(minimumLegKm, Math.round(routedKm))
+        : roadKm(from, to, circuityFactor, undefined, minimumLegKm)
+    );
     legs.push({
-      fromSlug: stops[i]!.key,
-      toSlug: stops[i + 1]!.key,
-      km: km(stops[i]!, stops[i + 1]!),
+      fromSlug: from.key,
+      toSlug: to.key,
+      km,
+      ...(transfer ? { transfer: true } : {}),
     });
   }
-
-  let itineraryKm = legs.reduce((sum, leg) => sum + leg.km, 0);
-
-  // A round trip that does not name its own end comes back the way it went.
-  const first = stops[0]!;
-  const last = stops[stops.length - 1]!;
-  if (tripType === "round" && first.key !== last.key) itineraryKm *= 2;
-
-  // The transfer legs run from the yard to the first stop and back from the
-  // last — or from the first, on a round trip that returns there.
-  let transferKm = 0;
-  if (garage) {
-    const yard: ResolvedPlace = {
-      key: "garage",
-      name: "Garage",
-      lat: garage.lat,
-      lng: garage.lng,
-      citySlug: "",
-      isAirport: false,
-      served: false,
-    };
-    const home = tripType === "round" && first.key !== last.key ? first : last;
-    const out = km(yard, first);
-    const back = km(home, yard);
-    transferKm = out + back;
-    legs.unshift({ fromSlug: yard.key, toSlug: first.key, km: out, transfer: true });
-    legs.push({ fromSlug: home.key, toSlug: yard.key, km: back, transfer: true });
-  }
-
+  const itineraryKm = legs.reduce((sum, leg) => sum + (leg.transfer ? 0 : leg.km), 0);
+  const transferKm = legs.reduce((sum, leg) => sum + (leg.transfer ? leg.km : 0), 0);
   const total = itineraryKm + transferKm;
   return { legs, km: total, itineraryKm, transferKm };
 }

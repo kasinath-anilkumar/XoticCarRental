@@ -14,6 +14,7 @@ import type { LocationPoint, Package } from "@/lib/types";
 
 import { StatePicker, type StateCity } from "./StatePicker";
 import { saveCustomerLocation, useCustomerLocation } from "@/lib/userLocation";
+import styles from "./HomeSearch.module.css";
 
 export interface HomeSearchProps {
   /** Only used to name a pickup point that arrived in a link. */
@@ -113,7 +114,7 @@ export function HomeSearch({
 
     if (place?.served && place.citySlug) params.set("city", place.citySlug);
 
-    router.push(`/cars?${params.toString()}`);
+    router.push(`/cars?${params.toString()}#fleet-results`);
   };
 
   /**
@@ -152,18 +153,19 @@ export function HomeSearch({
     if (from) params.set("from", from);
     if (date) params.set("date", date);
     if (returnDate) params.set("returnDate", returnDate);
-    router.push(`/cars?${params}`);
+    router.push(`/cars?${params}#fleet-results`);
   };
 
   const activePackage = packages.find((p) => p.slug === pkg);
 
   return (
-    <div className="overflow-visible rounded-lg bg-surface shadow-[var(--shadow-lg)] max-md:p-6">
+    <div className={styles.card}>
+      <div className={styles.heading}><p>Where are you headed?</p><Icon name="ph-map-pin" size={22} /></div>
       <form
-        className="grid grid-cols-[1.5fr_1fr_1fr_1.1fr_auto] items-end gap-4 p-7 [&_.input]:min-h-[46px] [&_button[aria-haspopup]]:min-h-[46px] max-xl:grid-cols-2 max-lg:grid-cols-2 max-lg:gap-4 max-md:flex max-md:flex-col max-md:items-stretch max-md:gap-4 max-md:p-0"
+        className={styles.form}
         onSubmit={submit}
       >
-        <div className="min-w-0 max-xl:col-span-full max-lg:col-span-full">
+        <div className={styles.pickup}>
           <LocationCombobox
             id="home-from"
             label="Pickup location"
@@ -199,21 +201,14 @@ export function HomeSearch({
           />
         </div>
 
-        <div className="min-w-0">
-          <span
-            className="mb-[5px] block text-[12px] text-[color-mix(in_srgb,var(--color-text)_70%,transparent)]"
-            id="home-package-label"
-          >
-            Package
-          </span>
-          <div className="grid min-h-[46px] grid-cols-[repeat(auto-fit,minmax(70px,1fr))] gap-[4px] rounded-md border border-[var(--color-divider)] bg-well p-[4px]">
+        <fieldset className={styles.packages}>
+          <legend>Choose a package</legend>
+          <div className={styles.packageChoices}>
             {packages.map((item) => (
               <label
                 key={item.slug}
                 title={item.sub}
-                className={`relative grid min-w-0 cursor-pointer place-items-center rounded-sm border-0 px-[6px] font-[family-name:var(--font-heading)] text-[12px] whitespace-nowrap max-md:min-h-[44px] [&_input]:pointer-events-none [&_input]:absolute [&_input]:size-0 [&_input]:opacity-0 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[var(--color-accent)] ${
-                  item.slug === pkg ? "bg-surface text-accent-text shadow-[var(--shadow-sm)]" : "bg-transparent text-[var(--color-neutral-500)] hover:text-text"
-                }`}
+                className={styles.packageChoice}
               >
                 {/* A real radio, visually hidden: arrow-key behaviour, form
                     semantics and screen-reader announcement come free. */}
@@ -228,18 +223,18 @@ export function HomeSearch({
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <button
           type="submit"
-          className="btn btn-solid h-[46px] px-[26px] text-[15px] whitespace-nowrap max-lg:col-span-full max-md:min-h-[50px] max-md:w-full"
+          className={`btn btn-solid ${styles.submit}`}
         >
           <Icon name="ph-magnifying-glass" size={17} />
           See cars &amp; prices
         </button>
       </form>
 
-      <div className="flex flex-wrap items-center justify-between gap-6 px-8 pb-6 text-[12px] text-[var(--color-neutral-500)] max-md:mt-[4px] max-md:justify-center max-md:border-t max-md:border-[var(--color-divider)] max-md:px-0 max-md:pt-[12px] max-md:pb-0">
+      <div className={styles.options}>
         <button
           type="button"
           className="flex cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent p-0 text-inherit [font:inherit] hover:text-accent-text disabled:cursor-progress disabled:opacity-70 max-md:min-h-[44px]"

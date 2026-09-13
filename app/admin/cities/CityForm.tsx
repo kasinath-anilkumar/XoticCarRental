@@ -9,8 +9,8 @@ export interface CityRecord {
 }
 
 export function CityForm({ city }: { city?: CityRecord }) {
-  return <details className={styles.card}>
-    <summary className="cursor-pointer text-lg">{city ? `${city.name} ? ${city.state} ? ${city.is_active ? "Live" : "Hidden"}` : "Add a city"}</summary>
+  return <details className={`${styles.card} ${city ? "" : styles.createCard}`}>
+    <summary className={styles.recordSummary}><span className={styles.recordName}>{city?.name ?? "Add a city"}</span><span className={styles.recordMeta}>{city?.state ?? "Expand your service area"}</span>{city && <span className={city.is_active ? styles.statusConfirmed : styles.status}>{city.is_active ? "Live" : "Draft"}</span>}</summary>
     <p className={styles.cardHint}>{city ? `/cities/${city.slug}` : "Find a city to fill its state and coordinates, then review its pricing before publishing."}</p>
     <AdminForm action={city ? updateCity : createCity} submitLabel={city ? "Save city" : "Add city"}>
       {city && <><input type="hidden" name="id" value={city.id} /><input type="hidden" name="slug" value={city.slug} /></>}

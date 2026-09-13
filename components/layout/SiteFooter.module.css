@@ -1,0 +1,46 @@
+@layer theme, base, vendor, app, components, utilities;
+@layer components {
+  .invitation { display: flex; align-items: center; justify-content: space-between; gap: 50px; padding: 48px var(--gutter-desktop); background: #fff; border-top: 1px solid #dad7cd; }
+  .invitation h2 { margin: 0 0 20px; font-size: clamp(28px, 3vw, 40px); font-weight: 650; letter-spacing: -.045em; line-height: 1.12; }
+  .invitation h2 em { font-family: inherit; font-style: normal; font-weight: inherit; }
+  .mobileInvitation { display: none; }
+  .invitation p:last-child { max-width: 430px; color: #585a51; font-size: 14px; line-height: 1.8; }
+  .chat { min-height: 62px; flex: none; gap: 16px; padding: 18px 24px; border-radius: var(--radius-sm); background: #202b21; color: #fff; }
+  .chat:hover { background: #344834; }
+  .footer { padding: 40px var(--gutter-desktop) 24px; border-top: 1px solid #000; background: #000; color: #fff; }
+  .intro { display: flex; justify-content: space-between; gap: 30px; align-items: center; padding-bottom: 28px; border-bottom: 1px solid rgb(255 255 255 / .15); }
+  .wordmark { color: #fff; font-family: var(--font-heading); font-weight: 800; font-size: 42px; line-height: 1; letter-spacing: -.07em; text-decoration: none; }
+  .wordmark > span { color: #ff7a00; }
+  .intro > p { margin: 0; font-family: var(--font-heading); font-size: 17px; line-height: 1.4; color: #fff; letter-spacing: -.03em; }
+  .intro > p > span { color: rgb(255 255 255 / .7); }
+  .columns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(180px, 1.4fr); gap: 32px; padding: 32px 0; }
+  .column { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 13px; }
+  .group > h3 { margin: 0 0 12px; font: 500 10px/1.5 var(--font-body); text-transform: uppercase; letter-spacing: .15em; color: #fff; }
+  .column > span { margin-bottom: 12px; font-size: 10px; text-transform: uppercase; letter-spacing: .15em; color: #fff; }
+  .column > a { display: flex; align-items: center; min-height: 32px; overflow-wrap: anywhere; }
+  .bottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid rgb(255 255 255 / .15); padding-top: 24px; font-size: 11px; }
+  .bottom > a { color: #fff; min-height: 44px; display: inline-flex; align-items: center; }
+  @media (max-width: 1023px) { .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); } .invitation { gap: 30px; } }
+  @media (max-width: 767px) {
+    .invitation { padding-block: 24px; flex-direction: column; align-items: flex-start; gap: 12px; }
+    .invitation h2 { margin-bottom: 8px; font-size: 22px; }
+    .invitation p:first-child, .desktopInvitation { display: none; }
+    .mobileInvitation { display: inline; }
+    .invitation p:last-child { margin: 0; font-size: 13px; line-height: 1.6; }
+    .chat { min-height: 44px; padding: 10px 16px; gap: 10px; font-size: 13px; }
+    .footer { padding: 24px var(--gutter-mobile) 16px; }
+    .intro { align-items: center; padding-bottom: 16px; gap: 0; }
+    .intro > p { display: none; }
+    .wordmark { font-size: 30px; }
+    .columns { grid-template-columns: minmax(0, 1fr); padding-block: 8px 16px; gap: 0; }
+    .group { border-top: 0; border-bottom-color: rgb(255 255 255 / .15); }
+    .group > h3 { margin: 0; text-transform: none; letter-spacing: 0; }
+    .group > h3 button { font-size: 14px; color: #fff; }
+    .columns > .column:last-child { padding-top: 16px; }
+    .column:last-child { grid-column: 1 / -1; }
+    .column > a { min-height: 44px; }
+    .bottom { flex-wrap: wrap; gap: 8px 20px; }
+    .bottom > span:first-child { width: 100%; }
+    .bottom > a { margin-left: auto; }
+  }
+}

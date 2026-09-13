@@ -1,6 +1,8 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
+  ArrowDownRight,
   ArrowsClockwise,
   ArrowUDownLeft,
   Calculator,
@@ -108,6 +110,8 @@ const ICONS = {
   "ph-squares-four": SquaresFour,
   "ph-airplane-takeoff": AirplaneTakeoff,
   "ph-arrow-right": ArrowRight,
+  "ph-arrow-up-right": ArrowUpRight,
+  "ph-arrow-down-right": ArrowDownRight,
   "ph-briefcase": Briefcase,
   "ph-camera": Camera,
   "ph-car-simple": CarSimple,

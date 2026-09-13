@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Manrope } from "next/font/google";
 
 import { Analytics } from "@/components/analytics/Analytics";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -8,19 +8,20 @@ import { ScrollFlag } from "@/components/layout/ScrollFlag";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { LocalBusinessJsonLd } from "@/components/seo/JsonLd";
 import { WhatsAppBanner } from "@/components/layout/WhatsAppBanner";
+import { SiteChrome } from "@/components/layout/SiteChrome";
 import { getCatalog } from "@/lib/content";
 import { getServicePage } from "@/lib/service-content";
 
 import "./globals.css";
 
-// The Nocturne system specifies Inter for both heading and body; globals.css
-// maps --font-heading / --font-body onto this.
+// Self-hosted fonts keep the public site and operations workspace consistent.
 const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-inter",
   display: "swap",
 });
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://xoticcarrental.com"),
@@ -64,16 +65,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [catalog, services] = await Promise.all([getCatalog(), getServicePage(1, 5)]);
 
   return (
-    <html lang="en-IN" className={inter.variable} data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html lang="en-IN" className={`${inter.variable} ${manrope.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <a className="skip-link" href="#main">Skip to content</a>
         <ScrollFlag />
         <LocalBusinessJsonLd settings={catalog.settings} cities={catalog.cities} />
-        <SiteHeader settings={catalog.settings} />
-        <main id="main" tabIndex={-1}>{children}</main>
-        <WhatsAppBanner settings={catalog.settings} />
-        <SiteFooter settings={catalog.settings} cities={catalog.cities} carTypes={catalog.carTypes} services={services.data} />
-        <StickyActions settings={catalog.settings} />
+        <SiteChrome
+          header={<SiteHeader settings={catalog.settings} />}
+          footer={<><WhatsAppBanner settings={catalog.settings} /><SiteFooter settings={catalog.settings} cities={catalog.cities} carTypes={catalog.carTypes} services={services.data} /></>}
+          actions={<StickyActions settings={catalog.settings} />}
+        >{children}</SiteChrome>
         <Analytics />
       </body>
     </html>

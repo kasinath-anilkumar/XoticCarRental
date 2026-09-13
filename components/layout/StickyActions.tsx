@@ -6,18 +6,9 @@ import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { GENERAL_ENQUIRY_MESSAGE, whatsappLink } from "@/lib/whatsapp";
 import type { SiteSettings } from "@/lib/types";
+import styles from "./StickyActions.module.css";
 
-/**
- * The persistent CTAs (§22, §23).
- *
- * On a phone this is the three actions the brief names — Call, WhatsApp, Get
- * Quote — pinned to the bottom, because most of this traffic arrives from
- * Instagram and WhatsApp on a phone held in one hand. On a wider screen the bar
- * would be noise, so only the floating WhatsApp button survives.
- *
- * It hides itself in the admin, where a customer CTA is worse than useless, and
- * on the calculator, where its own actions are already the point of the page.
- */
+/** Mobile contact shortcuts and a primary action relevant to the current page. */
 export function StickyActions({ settings }: { settings: SiteSettings }) {
   const pathname = usePathname();
 
@@ -25,6 +16,13 @@ export function StickyActions({ settings }: { settings: SiteSettings }) {
 
   const wa = whatsappLink(settings.whatsappNumber, GENERAL_ENQUIRY_MESSAGE);
   const tel = `tel:${settings.phoneDisplay.replace(/[^\d+]/g, "")}`;
+  const primary = pathname === "/"
+    ? { href: "#journey-search", label: "Find a car", icon: "ph-magnifying-glass" }
+    : pathname === "/cars"
+      ? { href: "#fleet-results", label: "View cars", icon: "ph-car" }
+      : pathname === "/contact"
+        ? { href: "#contact-enquiry", label: "Send an enquiry", icon: "ph-chat-circle" }
+        : { href: "/price-calculator#calc-route", label: "Plan my trip", icon: "ph-calculator" };
 
   return (
     <>
@@ -41,31 +39,32 @@ export function StickyActions({ settings }: { settings: SiteSettings }) {
       */}
       <nav
         aria-label="Quick actions"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-[var(--color-divider)] bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)] md:hidden [body:has(.stickybar)_&]:hidden"
-        style={{ boxShadow: "0 -6px 20px rgb(0 0 0 / 0.08)" }}
+        className={`${styles.bar} [body:has(.stickybar)_&]:hidden`}
       >
         <a
           href={tel}
-          className="flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] text-[var(--color-text)] no-underline"
+          className={styles.secondary}
+          aria-label="Call Xotic"
         >
           <Icon name="ph-phone-call" size={19} />
-          Call
+          <span>Call</span>
         </a>
         <a
           href={wa}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex min-h-[56px] flex-col items-center justify-center gap-0.5 border-x border-[var(--color-divider)] text-[11px] text-[var(--color-text)] no-underline"
+          className={styles.secondary}
+          aria-label="Chat on WhatsApp"
         >
-          <Icon name="ph-whatsapp-logo" size={19} color="#25d366" />
-          WhatsApp
+          <Icon name="ph-whatsapp-logo" size={19} color="#246d39" />
+          <span>Chat</span>
         </a>
         <Link
-          href="/price-calculator"
-          className="flex min-h-[56px] flex-col items-center justify-center gap-0.5 bg-[var(--color-accent-solid)] text-[11px] text-[var(--color-accent-ink)] no-underline"
+          href={primary.href}
+          className={styles.primary}
         >
-          <Icon name="ph-calculator" size={19} />
-          Get quote
+          <Icon name={primary.icon} size={18} />
+          {primary.label}
         </Link>
       </nav>
 
@@ -75,8 +74,8 @@ export function StickyActions({ settings }: { settings: SiteSettings }) {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Message Xotic on WhatsApp"
-        className="fixed right-6 bottom-6 z-40 hidden size-14 items-center justify-center rounded-full bg-[#25d366] text-white no-underline transition-transform hover:scale-105 md:flex"
-        style={{ boxShadow: "0 10px 30px rgb(37 211 102 / 0.35)" }}
+        className="fixed right-[24px] bottom-[24px] z-40 hidden size-[52px] items-center justify-center rounded-sm border border-[#43563f] bg-[#223521] text-[#fff] no-underline motion-safe:transition-transform motion-safe:hover:scale-105 md:flex"
+        style={{ boxShadow: "0 8px 24px rgb(24 40 22 / 0.18)" }}
       >
         <Icon name="ph-whatsapp-logo" size={28} />
       </a>

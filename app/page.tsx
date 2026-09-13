@@ -1,5 +1,4 @@
 import Link from "next/link";
-
 import { CarCard } from "@/components/CarCard";
 import { HowItWorks } from "@/components/content/HowItWorks";
 import { PricingUnavailable } from "@/components/content/PricingUnavailable";
@@ -10,179 +9,107 @@ import { LivePricing } from "@/components/home/LivePricing";
 import { WholeFleet } from "@/components/home/WholeFleet";
 import { ScrollHero } from "@/components/home/ScrollHero";
 import { Icon } from "@/components/ui/Icon";
+import { Media } from "@/components/ui/Media";
+import { Reveal } from "@/components/ui/Reveal";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import { featuredCars, tripDefaults } from "@/lib/catalog";
 import { businessDate } from "@/lib/dates";
 import { isPricingAvailable } from "@/lib/catalog-readiness";
 import { getCatalog } from "@/lib/content";
 import { getHeroFrames } from "@/lib/hero-frames";
 import { getServicePage } from "@/lib/service-content";
+import styles from "@/components/home/Home.module.css";
 
-
-// Content changes rarely and every visitor sees the same page; regenerate
-// hourly rather than on every request.
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [catalog, heroFrames, services] = await Promise.all([getCatalog(), getHeroFrames(), getServicePage(1, 8)]);
-  const packages = catalog.packages;
-  const defaultPackage = packages[0];
+  const [catalog, heroFrames, services] = await Promise.all([getCatalog(), getHeroFrames(), getServicePage(1, 4)]);
   const pricingAvailable = isPricingAvailable(catalog);
-
-  // Published packages can be previewed before a visitor chooses a schedule.
   const seedTrip = tripDefaults(catalog, "");
-  const today = businessDate();
+  const defaultPackage = catalog.packages[0];
+  const featured = featuredCars(catalog).slice(0, 3);
 
   return (
     <>
       <ScrollHero frames={heroFrames} />
 
-      {/* The pickup starts empty on purpose: the visitor's own location is one
-          tap away inside the field, and a prefilled Kochi is a wrong answer for
-          everyone who is not in Kochi. */}
-      <div id="journey-search" tabIndex={-1} className="relative z-2 scroll-mt-[calc(var(--header-height)+20px)] -mt-[24px] px-[var(--gutter-desktop)] max-md:mt-0 max-md:px-[var(--gutter-mobile)] max-md:pb-[20px]">
+      <div id="journey-search" tabIndex={-1} className={styles.journeySearch}>
         {pricingAvailable ? <HomeSearch
           locations={catalog.locations}
-          cities={catalog.cities.map((city) => ({
-            slug: city.slug,
-            name: city.name,
-            state: city.state,
-          }))}
-          packages={packages.map((p) => ({ slug: p.slug, label: p.label, sub: p.sub }))}
+          cities={catalog.cities.map(({ slug, name, state }) => ({ slug, name, state }))}
+          packages={catalog.packages.map(({ slug, label, sub }) => ({ slug, label, sub }))}
           defaults={{ from: "", date: "", packageSlug: seedTrip.packageSlug }}
-          minDate={today}
+          minDate={businessDate()}
         /> : <PricingUnavailable />}
       </div>
 
-      {/* ── services ──────────────────────────────────────────────────── */}
-      <section className="sec">
-        <div className="sec-head">
-          <div>
-            <p className="kick">What we drive for</p>
-            <h2 className="h2">What is the journey for?</h2>
-          </div>
-          <Link href="/services" className="inline-flex items-center gap-2 text-[13px] whitespace-nowrap">
-            All {services.total} services <Icon name="ph-arrow-right" size={14} />
-          </Link>
-        </div>
-        <div className="grid-4">
-          {services.data.map((service) => (
-            <ServiceCard
-              key={service.slug}
-              service={service}
-              // The photograph belongs to the occasion the service is priced on.
-              image={
-                catalog.occasions.find((o) => o.slug === service.occasionSlug)?.heroImage ?? null
-              }
-            />
-          ))}
-        </div>
-      </section>
+      {pricingAvailable && <div className={styles.proof} aria-label="Explore Xotic">
+        <div><Icon name="ph-car" size={24} /><span><strong>{catalog.cars.length} vehicles to explore</strong><small>Compare cars and package rates</small></span></div>
+        <div><Icon name="ph-map-pin" size={24} /><span><strong>{catalog.cities.length} service cities</strong><small>Find your local starting point</small></span></div>
+        <div><Icon name="ph-steering-wheel" size={24} /><span><strong>Travel with a chauffeur</strong><small>Plan the trip. Enjoy the journey.</small></span></div>
+      </div>}
 
-      {/* ── cities ────────────────────────────────────────────────────── */}
-      <section className="on-dark bg-[linear-gradient(135deg,#100804_0%,#010101_48%,#160802_100%)] px-[var(--gutter-desktop)] py-[56px] max-lg:py-10 max-md:px-[var(--gutter-mobile)] max-md:py-7">
-        <div className="mb-7 flex items-end justify-between gap-6 max-md:mb-5 max-md:flex-col max-md:items-start max-md:gap-4">
-          <div>
-            <p className="kick">Where you need us</p>
-            <h2 className="h2">Popular cities</h2>
-          </div>
-          <Link href="/cities" className="inline-flex items-center gap-2 text-[13px] whitespace-nowrap">
-            All cities <Icon name="ph-arrow-right" size={14} />
-          </Link>
-        </div>
-        <div className="grid-6">
-          {catalog.cities.slice(0, 12).map((city) => (
-            <CityCard key={city.slug} city={city} />
-          ))}
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[var(--color-neutral-800)] bg-surface/40 px-5 py-3.5 max-md:p-4">
-          <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent-300)]">
-              <Icon name="ph-map-pin" size={18} />
-            </span>
-            <div>
-              <p className="font-[family-name:var(--font-heading)] text-[14px] font-semibold text-text">
-                Serving {catalog.cities.length} cities across {new Set(catalog.cities.map((city) => city.state)).size} states and territories
-              </p>
-              <p className="text-[12px] text-[var(--color-neutral-400)]">
-                Explore published locations, local packages and touring options.
-              </p>
-            </div>
-          </div>
-          <Link href="/cities" className="btn btn-ghost text-[13px] max-md:w-full">
-            <span>Explore all {catalog.cities.length} cities & rates</span>
-            <Icon name="ph-arrow-right" size={14} />
-          </Link>
-        </div>
-      </section>
-
-      {/* ── featured cars ─────────────────────────────────────────────── */}
-      {pricingAvailable && <section className="sec sec-tight mt-4">
-        <div className="sec-head">
-          <div>
-            <p className="kick">Ready now</p>
-            <h2 className="h2">Featured cars</h2>
-          </div>
-          <Link href="/cars" className="inline-flex items-center gap-2 text-[13px] whitespace-nowrap">
-            Browse all cars <Icon name="ph-arrow-right" size={14} />
-          </Link>
-        </div>
-        <div className="grid-cars">
-          {featuredCars(catalog).map((car) => (
-            <CarCard key={car.slug} catalog={catalog} car={car} pkg={defaultPackage} />
-          ))}
-        </div>
+      {pricingAvailable && featured.length > 0 && <section className="sec">
+        <Reveal className="sec-head">
+          <div><p className="kick">Explore the fleet</p><h2 className="h2">Find your next ride</h2></div>
+          <div className={styles.sectionAside}><p>Compare vehicles, seats and package rates.</p><Link href="/cars" className={styles.textLink}>Browse all cars <Icon name="ph-arrow-up-right" size={18} /></Link></div>
+        </Reveal>
+        <HorizontalScroll label="Featured cars" controls="above" contentClassName={styles.featured}>{featured.map((car) => <CarCard key={car.slug} catalog={catalog} car={car} pkg={defaultPackage} />)}</HorizontalScroll>
       </section>}
 
-      {/* ── how it works ──────────────────────────────────────────────── */}
-      <section className="sec sec-tight">
-        <HowItWorks settings={catalog.settings} />
-      </section>
-
-      {/* ── transparent pricing, live ─────────────────────────────────── */}
-      {pricingAvailable && <section className="on-dark bg-[linear-gradient(120deg,var(--color-band-from),var(--color-band-to))] px-[var(--gutter-desktop)] py-[56px] max-md:px-[var(--gutter-mobile)] max-md:py-[28px]">
-        <LivePricing catalog={catalog} initialTrip={seedTrip} />
+      {services.data.length > 0 && <section className={`sec ${styles.occasions}`}>
+        <Reveal className="sec-head">
+          <div><p className="kick">Choose your journey</p><h2 className="h2">A ride for every plan</h2></div>
+          <Link href="/services" className={styles.textLink}>Explore all {services.total} services <Icon name="ph-arrow-up-right" size={18} /></Link>
+        </Reveal>
+        <div className={styles.services}>{services.data.map((service) => <ServiceCard
+          key={service.slug} service={service}
+          image={catalog.occasions.find((occasion) => occasion.slug === service.occasionSlug)?.heroImage ?? null}
+        />)}</div>
       </section>}
 
-      {/* ── the whole fleet ───────────────────────────────────────────── */}
-      {/*
-        The four above are a shop window; this is the stock list. Somebody who
-        scrolled this far has decided they are interested and now wants to know
-        what there IS — and the answer, in one screen, is more persuasive than
-        another band of copy about how the pricing works. That explanation now
-        lives on the fleet, vehicle and city pages, which is where a visitor is
-        actually deciding what a trip will cost.
-      */}
-      {pricingAvailable && <section className="sec sec-tight">
-        <div className="sec-head mb-6">
-          <div>
-            <p className="kick">The whole fleet</p>
-            <h2 className="h2 max-w-[620px]">A car for the entrance, the road and everything in between</h2>
-          </div>
-          <Link href="/cars" className="btn btn-solid min-h-[44px] shrink-0 text-[13px]">
-            Browse all vehicles <Icon name="ph-arrow-right" size={15} />
-          </Link>
+      <ResponsiveDisclosure title="About Xotic" className={styles.story} contentClassName={styles.storyContent} hideTitleOnDesktop>
+        <Reveal className={styles.storyImage}><Media src="/brand/xotic_hero.png" alt="Wedding cars outside a palm-lined resort at sunset" placeholder="The Xotic journey" sizes="(max-width: 767px) 100vw, 58vw" className={styles.storyMedia} /></Reveal>
+        <div className={styles.storyCopy}>
+          <p className="kick">The journey is part of the occasion</p>
+          <h2 id="home-story-title">You make the plans.<br />We’ll take the wheel.</h2>
+          <p>From an airport pickup to a wedding arrival, find a car that suits the occasion. Build your route, review the estimate and confirm the details with our team.</p>
+          <Link href="/about" className={styles.textLink}>Discover Xotic <Icon name="ph-arrow-up-right" size={18} /></Link>
         </div>
+      </ResponsiveDisclosure>
 
+      {catalog.cities.length > 0 && <section className={`sec ${styles.destinations}`}>
+        <Reveal className="sec-head">
+          <div><p className="kick">Start closer to home</p><h2 className="h2">Explore cars by city</h2></div>
+          <Link href="/cities" className={styles.textLink}>Explore all {catalog.cities.length} cities <Icon name="ph-arrow-up-right" size={18} /></Link>
+        </Reveal>
+        <div className={styles.cities}>{catalog.cities.slice(0, 6).map((city) => <CityCard key={city.slug} city={city} />)}</div>
+        <p className={styles.coverage}><Icon name="ph-map-pin" size={18} /> Discover local fleets, package rates, and journeys beyond the city.</p>
+      </section>}
+
+      <section className="sec"><HowItWorks settings={catalog.settings} /></section>
+
+      {pricingAvailable && <section className={`sec ${styles.pricing}`}><ResponsiveDisclosure title="Explore package pricing" id="home-pricing" hideTitleOnDesktop><LivePricing catalog={catalog} initialTrip={seedTrip} /></ResponsiveDisclosure></section>}
+
+      {pricingAvailable && <section className="sec">
+        <ResponsiveDisclosure title="Browse by vehicle type" id="home-fleet" hideTitleOnDesktop>
+        <Reveal className={`sec-head ${styles.disclosureHead}`}>
+          <div><p className="kick">More choice, less searching</p><h2 className={`h2 ${styles.fleetHeading}`}>Browse by vehicle type</h2></div>
+          <Link href="/cars" className="btn btn-secondary">Browse all vehicles <Icon name="ph-arrow-up-right" size={17} /></Link>
+        </Reveal>
         <WholeFleet catalog={catalog} defaultPackage={defaultPackage} />
+        </ResponsiveDisclosure>
       </section>}
 
-      {/* ── why ───────────────────────────────────────────────────────── */}
-      <section className="sec">
-        <p className="kick">Why Xotic</p>
-        <h2 className="h2" style={{ marginBottom: "22.4px" }}>
-          Built for occasions that cannot go wrong
-        </h2>
-        <div className="grid-5">
-          {catalog.settings.whyItems.map((item) => (
-            <div key={item.title}>
-              <Icon name={item.icon} size={28} color="var(--color-accent)" />
-              <p className="mt-3 mb-[4px] font-[family-name:var(--font-heading)] text-[16px]">{item.title}</p>
-              <p className="text-[12px] text-[var(--color-neutral-500)] [text-wrap:pretty]">{item.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {catalog.settings.whyItems.length > 0 && <section className={`sec ${styles.why}`}>
+        <ResponsiveDisclosure title="Why choose Xotic" hideTitleOnDesktop>
+        <Reveal className={`sec-head ${styles.disclosureHead}`}><div><p className="kick">The details matter</p><h2 className="h2">Thoughtfully planned.<br /><em className={styles.serif}>From start to arrival.</em></h2></div></Reveal>
+        <div className={styles.promises}>{catalog.settings.whyItems.map((item) => <div key={item.title}>
+          <Icon name={item.icon} size={25} /><h3>{item.title}</h3><p>{item.body}</p>
+        </div>)}</div>
+        </ResponsiveDisclosure>
+      </section>}
     </>
   );
 }

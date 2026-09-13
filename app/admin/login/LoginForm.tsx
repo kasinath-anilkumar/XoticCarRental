@@ -34,8 +34,8 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={submit}>
-      {error && <p className={styles.messageError}>{error}</p>}
+    <form onSubmit={submit} aria-busy={busy}>
+      {error && <output className={styles.messageError}>{error}</output>}
 
       <div className={styles.loginFields}>
         <div className="field">
@@ -47,6 +47,7 @@ export function LoginForm() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="username"
+            placeholder="Your work email"
             required
           />
         </div>
@@ -60,6 +61,7 @@ export function LoginForm() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
+            placeholder="Enter your password"
             required
           />
         </div>

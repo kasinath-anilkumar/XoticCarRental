@@ -1,17 +1,8 @@
-/* ══════════════════════════════════════════════════════════════════════════
-   Nocturne — design-system tokens and component classes.
-
-   Ported verbatim from the Claude Design handoff:
-     design/project/_ds/nocturne-5e251597-41bc-49b9-9aa7-52559f0e28c5/styles.css
-
-   Do not re-derive these values. Every color, space, radius and shadow in the
-   app reads from the variables below. The one change from the source sheet is
-   the font: the original @imports Inter from Google Fonts, we load it through
-   next/font (app/layout.tsx) and map --font-heading / --font-body onto it.
-
-   Below the component layer sit the page-level helpers the prototype declared
-   inline in its <style> block (.sec, .kick, .h2, .navlink, .wa, .scroll-x …).
-   ══════════════════════════════════════════════════════════════════════════ */
+/* Xotic editorial system: bright white canvas, dark text, orange actions.
+ * Manrope headings and Inter body are self-hosted by next/font. Existing token
+ * names and the utility spacing scale keep data-heavy controls consistent.
+ * Route compositions live in scoped CSS Modules; see docs/redesign.md.
+ */
 
 /*
  * Tailwind v4, in three deliberate pieces.
@@ -46,6 +37,24 @@
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+
+/* Hide scrollbar tracks without changing scroll, touch, wheel, or keyboard behavior. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* Local covers reveal each edge shadow only when content continues in that
+ * direction. No JS scroll handlers or decorative overlays intercept input. */
+.scroll-shadows {
+  background-image:
+    linear-gradient(var(--scroll-surface, var(--color-surface)) 30%, transparent),
+    linear-gradient(transparent, var(--scroll-surface, var(--color-surface)) 70%),
+    radial-gradient(farthest-side at 50% 0, var(--scroll-shadow-color, rgb(32 39 36 / .2)), transparent),
+    radial-gradient(farthest-side at 50% 100%, var(--scroll-shadow-color, rgb(32 39 36 / .2)), transparent);
+  background-position: center top, center bottom, center top, center bottom;
+  background-size: 100% 36px, 100% 36px, 100% 12px, 100% 12px;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+}
 
 @layer base {
   /*
@@ -86,27 +95,17 @@
      two greys and one orange should not also ship `bg-fuchsia-400`. */
   --color-*: initial;
   --font-*: initial;
+  --radius-*: initial;
 
   /* The design rhythm is 2.8px, and its `--space-N` names are already the
      multiples Tailwind counts in: --space-4 is 11.2px and so is `p-4`. One
      line therefore maps the whole spacing scale onto the utilities without
      renaming a thing. */
   --spacing: 2.8px;
-  /* ── brand ────────────────────────────────────────────────────────────────
-     The palette is the logo's: a white page, black ink, orange accent — with
-     the header, heroes, feature bands and photo captions dropping to the logo's
-     own black plate via the .on-dark zone below.
-
-     The greys carry no hue at all. They used to hold a whisper of the accent,
-     which put a beige cast over every white on the site; the orange does all
-     the warming now, and only where it is actually used.
-
-     The ramps are GENERATED. Run `node scripts/palette.mjs` to reproduce this
-     block and `--report` for the OKLCH working and the full WCAG table. Retune
-     BRAND_ORANGE there and re-run; never hand-edit a ramp step. */
+  /* One bright white ground for pages, sections and cards. */
   --color-bg: #ffffff;
   --color-surface: #ffffff;
-  --color-text: #0f0f0f;
+  --color-text: #20221f;
 
   /* The brand orange is #ff7a00 and runs at full brightness on the black
      bands. On a white page it is 2.5:1 — too faint to draw an icon with — so
@@ -118,7 +117,7 @@
      allows. Too bright to draw a 1px icon with on white, and exactly right
      under black ink — a filled button is where a brand colour can be loud. */
   --color-accent-solid: #ff7a00;
-  --color-accent-text: #b15300;
+  --color-accent-text: #9b4800;
   /* Ink that sits ON a solid orange fill: black, at 7.6:1. White on this
      orange would be 2.6:1 — the brighter the fill, the darker its ink. */
   --color-accent-ink: #0a0a0a;
@@ -138,7 +137,7 @@
   --color-neutral-300: #3a3a3a;
   --color-neutral-400: #525252;
   --color-neutral-500: #636363;
-  --color-neutral-600: #717171;
+  --color-neutral-600: #686763;
   --color-neutral-700: #bebebe;
   --color-neutral-800: #dedede;
   --color-neutral-900: #f3f3f3;
@@ -163,8 +162,8 @@
   --color-accent-2-800: var(--color-accent-800);
   --color-accent-2-900: var(--color-accent-900);
 
-  --font-heading: var(--font-inter), "Inter", system-ui, sans-serif;
-  --font-heading-weight: 500;
+  --font-heading: var(--font-manrope), var(--font-inter), system-ui, sans-serif;
+  --font-heading-weight: 600;
   --font-body: var(--font-inter), "Inter", system-ui, sans-serif;
 
   --space-1: 2.8px;
@@ -174,9 +173,16 @@
   --space-6: 16.8px;
   --space-8: 22.4px;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
+  /* One corner treatment across component CSS and Tailwind utilities. */
+  --radius: 3px;
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
 
   /* Elevation, light idiom: a soft cast shadow plus a hairline. A ring alone
      barely reads on white — that is a dark-ground technique, and .on-dark
@@ -186,10 +192,10 @@
   --shadow-lg: 0 18px 44px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.09);
 
   /* Grounds beside the ramps. `slot` is an empty image well, `well` a recess. */
-  --color-slot: #e8e8e8;
-  --color-well: #f0f0f0;
-  --color-band-from: #f6f6f6;
-  --color-band-to: #fdfdfd;
+  --color-slot: #ffffff;
+  --color-well: #ffffff;
+  --color-band-from: #ffffff;
+  --color-band-to: #ffffff;
   --color-map-grid: #ebebeb;
   --color-map-road: #dcdcdc;
 
@@ -199,8 +205,8 @@
   /* Opaque enough to read against anything scrolling under it. It used to
      be 0.88 with an 8px backdrop blur behind it; the blur cost a compositor
      pass per frame and bought 12% of a view of the page underneath. */
-  --color-bar: rgb(255 255 255 / 0.96);
-  --color-bar-solid: rgb(255 255 255 / 0.97);
+  --color-bar: #ffffff;
+  --color-bar-solid: #ffffff;
   --color-chip: rgb(1 1 1 / 0.72);
   /* Always light: a chip over a photograph is dark in both zones. */
   --color-chip-ink: #f5f5f5;
@@ -224,13 +230,13 @@
   --color-whatsapp-bubble: #1d2a22;
 
   /* The prototype's two frame widths become the responsive gutters. */
-  --gutter-desktop: 80px;
+  --gutter-desktop: clamp(32px, 5.5vw, 104px);
   --gutter-mobile: 20px;
 
   /* The sticky header's height. Anything else that pins itself — the browse
      filter rail, the results bar — offsets by this, so the number lives in one
      place and the header enforces it rather than merely happening to match. */
-  --header-height: 70px;
+  --header-height: 80px;
 
   /* Computed from another token rather than being a literal. It stays in the
      theme so `border-divider` exists as a utility; because a plain @theme
@@ -262,10 +268,10 @@
      back would be holding it back from nothing. */
   --color-accent: #ff7a00;
   --color-accent-solid: #ff7a00;
-  --color-bg: #010101;
-  --color-surface: #161616;
+  --color-bg: #171b18;
+  --color-surface: #232924;
   --color-text: #f5f5f5;
-  --color-accent-text: #be5900;
+  --color-accent-text: #ffb47e;
   --color-bg-rgb: 1 1 1;
 
   --color-neutral-100: #f5f5f5;
@@ -452,8 +458,10 @@ figcaption {
   color: var(--color-text);
   background: transparent;
   border: 1px solid transparent;
-  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  min-height: 44px;
+  padding: 12px 18px;
   border-radius: var(--radius-md);
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
 }
 .btn svg { display: block; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -474,8 +482,8 @@ figcaption {
   color: var(--color-accent-ink);
   border-color: var(--color-accent-solid);
 }
-.btn-solid:hover { background: var(--color-accent-500); border-color: var(--color-accent-500); }
-.btn-solid:active { background: var(--color-accent-400); border-color: var(--color-accent-400); }
+.btn-solid:hover { background: #ff963b; border-color: #ff963b; }
+.btn-solid:active { background: #f28b2e; border-color: #f28b2e; }
 
 .btn-icon { width: 36px; height: 36px; padding: 0; }
 .btn-block { width: 100%; margin-top: var(--space-2); }
@@ -516,7 +524,8 @@ figcaption {
 .input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
 textarea.input { min-height: 90px; resize: vertical; }
 /* Native date/time pickers render a black glyph on a dark ground otherwise. */
-.input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.55); cursor: pointer; }
+.input::-webkit-calendar-picker-indicator { opacity: .7; cursor: pointer; }
+.on-dark .input::-webkit-calendar-picker-indicator { filter: invert(1); }
 
 .radio { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
 .radio input,
@@ -531,7 +540,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   width: 16px;
   height: 16px;
   flex: none;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-divider);
 }
 .radio:hover .dot { border-color: var(--color-accent); }
@@ -599,7 +608,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   font-size: 11px;
   letter-spacing: 0.02em;
   padding: 3px 10px;
-  border-radius: calc(var(--radius-md) * 0.75);
+  border-radius: var(--radius-sm);
 }
 .tag-accent { background: var(--color-accent-800); color: var(--color-accent-100); }
 .tag-accent-2 { background: var(--color-accent-2-800); color: var(--color-accent-2-100); }
@@ -690,7 +699,7 @@ textarea.input { min-height: 90px; resize: vertical; }
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* Section rhythm. `.sec` is the prototype's 56px/80px block. */
-.sec { padding: 56px var(--gutter-desktop); }
+.sec { padding: 52px var(--gutter-desktop); }
 .sec-tight { padding-top: 0; }
 
 /* The horizontal page gutter on its own, for full-bleed bands. */
@@ -706,9 +715,10 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 .h2 {
   font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 30px;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: clamp(26px, 2.4vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
   margin: 0;
 }
 
@@ -754,7 +764,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   align-items: flex-end;
   justify-content: space-between;
   gap: 16.8px;
-  margin-bottom: 22.4px;
+  margin-bottom: 32px;
 }
 
 /* Grids. The column counts collapse at the breakpoints below. */
@@ -783,8 +793,9 @@ textarea.input { min-height: 90px; resize: vertical; }
 /* ── Tablet ─────────────────────────────────────────────────────────────── */
 @media (max-width: 1023px) {
   :root { --gutter-desktop: 40px; }
-  .sec { padding-block: 40px; }
-  .h2 { font-size: 26px; }
+  .sec { padding-block: 44px; }
+  .sec-tight { padding-top: 0; }
+  .h2 { font-size: 30px; }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .grid-5 { grid-template-columns: repeat(3, 1fr); }
   .grid-6 { grid-template-columns: repeat(3, 1fr); }
@@ -797,16 +808,23 @@ textarea.input { min-height: 90px; resize: vertical; }
 @media (max-width: 767px) {
   :root {
     --gutter-desktop: var(--gutter-mobile);
-    --header-height: 58px;
+    --gutter-mobile: 16px;
+    --header-height: 60px;
   }
 
   /* `.msec` in the prototype: 28px block, 20px inline. */
   .sec { padding: 28px var(--gutter-mobile); }
+  .sec-tight { padding-top: 0; }
 
-  h1 { font-size: 30px; }
-  .h2 { font-size: 21px; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(24px, 6.7vw, 30px); text-wrap: balance; }
+  .h2 { font-size: clamp(21px, 5.6vw, 25px); line-height: 1.2; letter-spacing: -0.03em; text-wrap: balance; }
 
-  .sec-head { margin-bottom: 11.2px; }
+  .sec-head { margin-bottom: 16px; flex-wrap: wrap; gap: 8px 16px; }
+  .sec-head > :last-child { min-width: 0; }
+  html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .stickybar { position: fixed; inset-inline: 0; bottom: 0; z-index: 30; min-height: 64px; padding: 8px var(--gutter-mobile) calc(8px + env(safe-area-inset-bottom)); }
+  body:has(.stickybar) { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  :where(main [id]) { scroll-margin-top: calc(var(--header-height) + 56px); }
 
   .grid-2,
   .grid-3,
@@ -814,7 +832,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   .grid-5 { grid-template-columns: 1fr; gap: 16.8px; }
   .grid-6 { grid-template-columns: repeat(2, 1fr); gap: 8.4px; }
   .grid-cars,
-  .grid-cars-3 { grid-template-columns: 1fr; gap: 8.4px; }
+  .grid-cars-3 { grid-template-columns: 1fr; gap: 20px; }
 
   .table { font-size: 13px; }
 
@@ -835,7 +853,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   .btn-icon { width: 44px; height: 44px; }
   .input,
   select.input,
-  input.input { min-height: 44px; }
+  input.input { min-height: 44px; font-size: 16px; }
   .seg-opt { min-height: 44px; padding-inline: 14px; }
   .radio { min-height: 44px; }
 }
@@ -856,4 +874,11 @@ textarea.input { min-height: 90px; resize: vertical; }
   body:has(main > section:first-of-type.on-dark) main {
     margin-top: calc(var(--header-height) * -1);
   }
+  body:has(main[data-workspace="admin"]) { padding-bottom: 0; }
+  html:has(main[data-workspace="admin"]) { scroll-padding-bottom: 16px; }
+  .state-page { min-height: 65svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 64px var(--gutter-desktop); }
+  .state-page h1 { font-size: clamp(32px, 4.5vw, 64px); line-height: 1.1; letter-spacing: -.04em; margin: 12px 0; }
+  .state-page h1 em { font-family: Georgia, serif; font-weight: 400; }
+  .state-mark { display: grid; place-items: center; min-width: 76px; height: 76px; border: 1px solid #d3d1c6; border-radius: var(--radius-sm); color: #a75011; font-size: 24px; margin-bottom: 28px; }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 }

@@ -5,8 +5,10 @@ import { useId, useMemo, useState } from "react";
 
 import { CarCard } from "@/components/CarCard";
 import { Icon } from "@/components/ui/Icon";
+import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
 import type { Catalog } from "@/lib/catalog";
 import type { Package } from "@/lib/types";
+import styles from "./WholeFleet.module.css";
 
 export interface WholeFleetProps {
   catalog: Catalog;
@@ -49,9 +51,9 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
   }, [catalog.cars]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={styles.fleet}>
       {/* Fleet Stats Banner */}
-      <div className="grid grid-cols-3 divide-x divide-[var(--color-neutral-800)] border-y border-[var(--color-neutral-800)] max-md:grid-cols-3 max-md:divide-x">
+      <div className={styles.stats}>
         <div className="px-4 py-3.5 text-center max-md:px-2 max-md:py-2.5">
           <p className="font-[family-name:var(--font-heading)] text-[24px] font-semibold text-[var(--color-accent-300)] max-md:text-[18px]">
             {catalog.cars.length}
@@ -79,8 +81,8 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
       </div>
 
       {/* Interactive Category Filter Pills */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-divider)] pb-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <div className={styles.categories}>
+        <HorizontalScroll label="Fleet categories" contentClassName={styles.categoryChoices}>
           {categories.map((category) => {
             const isActive = activeCategory === category.key;
 
@@ -95,7 +97,7 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
                 }}
                 aria-pressed={isActive}
                 aria-controls={gridId}
-                className={`flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all ${
+                className={`flex max-w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-sm px-4 py-1.5 text-[13px] font-medium transition-all ${
                   isActive
                     ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
                     : "border border-[var(--color-divider)] bg-surface text-[var(--color-neutral-400)] hover:border-[var(--color-accent)] hover:text-text"
@@ -108,7 +110,7 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
               </button>
             );
           })}
-        </div>
+        </HorizontalScroll>
 
         <Link
           href={activeCategory === "all" ? "/cars" : `/cars?type=${encodeURIComponent(activeCategory)}`}
@@ -120,7 +122,7 @@ export function WholeFleet({ catalog, defaultPackage }: WholeFleetProps) {
       </div>
 
       {/* Responsive Luxury Fleet Grid */}
-      <div id={gridId} className="grid grid-cols-3 gap-6 max-lg:grid-cols-2 max-md:grid-cols-1 max-md:gap-4">
+      <div id={gridId} className={styles.grid}>
         {visibleCars.map((car) => (
           <CarCard
             key={car.slug}

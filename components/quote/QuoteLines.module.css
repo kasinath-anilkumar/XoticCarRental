@@ -1,0 +1,16 @@
+.line { display: flex; justify-content: space-between; gap: 18px; border-bottom: 1px solid var(--color-divider); padding-block: 13px; font-size: 12px; color: var(--color-text); }
+.tight { padding-block: 8px; }
+.label { min-width: 0; overflow-wrap: anywhere; }
+.note { display: block; margin-top: 4px; font-size: 10px; line-height: 1.6; color: var(--color-neutral-400); }
+.amount { flex-shrink: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.subtotal, .tax { display: flex; justify-content: space-between; gap: 18px; font-size: 11px; color: var(--color-neutral-400); padding-top: 13px; }
+.total { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px 20px; margin-top: 22px; padding-top: 21px; border-top: 1px solid var(--color-text); }
+.total span:first-child { font-size: 12px; font-weight: 600; }
+.total span:last-child { max-width: 100%; overflow-wrap: anywhere; font-family: var(--font-heading); font-size: clamp(26px, 3vw, 36px); letter-spacing: -.05em; font-weight: 600; color: var(--color-text); }
+@media (max-width: 767px) {
+  .line { gap: 12px; padding-block: 10px; font-size: 13px; }
+  .note { margin-top: 3px; font-size: 12px; line-height: 1.5; }
+  .subtotal, .tax { gap: 12px; padding-top: 10px; font-size: 12px; }
+  .total { margin-top: 14px; padding-top: 13px; gap: 8px 12px; }
+  .total span:last-child { font-size: 28px; }
+}

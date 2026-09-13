@@ -26,8 +26,6 @@ export function ScrollHero({ frames }: { frames: string[] }) {
     if (!root || !surface || !media) return;
 
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    // Short screens need a normally scrolling hero so every action stays reachable.
-    const compactViewport = window.matchMedia("(max-height: 699px) and (max-width: 767px), (max-height: 599px)");
     const connection = (navigator as Navigator & {
       connection?: EventTarget & { saveData?: boolean };
     }).connection;
@@ -42,7 +40,7 @@ export function ScrollHero({ frames }: { frames: string[] }) {
       if (copy.current) { copy.current.style.opacity = "1"; copy.current.style.transform = "none"; }
       if (actions.current) actions.current.inert = false;
       if (outro.current) outro.current.style.opacity = "0";
-      if (preference.matches || compactViewport.matches || connection?.saveData || frames.length < 2 || typeof createImageBitmap !== "function") return;
+      if (preference.matches || connection?.saveData || frames.length < 2 || typeof createImageBitmap !== "function") return;
 
       let visible = true;
       let scheduled = 0;
@@ -50,8 +48,10 @@ export function ScrollHero({ frames }: { frames: string[] }) {
       let prepared = false;
       let geometryDirty = true;
       let start = 0;
+      let leadIn = 0;
       let distance = 1;
       let mobile = false;
+      let overlay = true;
       let progress = 0;
       let previousTime = 0;
       const activate = () => {
@@ -79,8 +79,15 @@ export function ScrollHero({ frames }: { frames: string[] }) {
         const bounds = media.getBoundingClientRect();
         const stage = root.firstElementChild as HTMLElement;
         start = root.getBoundingClientRect().top + window.scrollY;
+        // Very short windows scroll through the stage before the image pins.
+        leadIn = Math.max(0, stage.offsetHeight - window.innerHeight);
         distance = Math.max(1, root.offsetHeight - stage.offsetHeight);
         mobile = window.innerWidth < 768;
+        // Copy that sits over the frames fades to reveal them; copy beside them stays.
+        const text = copy.current;
+        overlay = !!text && text.offsetTop < media.offsetTop + media.offsetHeight && media.offsetTop < text.offsetTop + text.offsetHeight
+          && text.offsetLeft < media.offsetLeft + media.offsetWidth && media.offsetLeft < text.offsetLeft + text.offsetWidth;
+        // Phones show a 9:16 portrait frame.
         player.resize(bounds.width, bounds.height, mobile);
       };
       const update = (time: number) => {
@@ -91,7 +98,7 @@ export function ScrollHero({ frames }: { frames: string[] }) {
           activate();
         }
         if (geometryDirty) measure();
-        const target = Math.min(1, Math.max(0, (window.scrollY - start) / distance));
+        const target = Math.min(1, Math.max(0, (window.scrollY - start - leadIn) / distance));
         // Ease coarse mouse-wheel steps over a short, frame-rate-independent
         // interval. Native page scrolling, touch and keyboard remain in charge.
         const elapsed = previousTime ? Math.min(64, time - previousTime) : 16;
@@ -101,10 +108,10 @@ export function ScrollHero({ frames }: { frames: string[] }) {
           : progress + (target - progress) * (1 - Math.exp(-elapsed / 80));
         player.seek(Math.round(progress * (frames.length - 1)));
         if (copy.current) {
-          copy.current.style.opacity = mobile ? "1" : Math.max(0, 1 - progress * 2.6).toFixed(3);
-          copy.current.style.transform = mobile ? "none" : `translate3d(0, ${(-progress * 48).toFixed(2)}px, 0)`;
+          copy.current.style.opacity = overlay ? Math.max(0, 1 - progress * 2.6).toFixed(3) : "1";
+          copy.current.style.transform = overlay ? `translate3d(0, ${(-progress * 48).toFixed(2)}px, 0)` : "none";
         }
-        const inert = !mobile && progress > 0.28;
+        const inert = overlay && progress > 0.28;
         if (actions.current && actions.current.inert !== inert) actions.current.inert = inert;
         if (outro.current) outro.current.style.opacity = mobile ? "0" : Math.min(1, Math.max(0, (progress - 0.55) * 4)).toFixed(3);
         if (progressBar.current) progressBar.current.style.transform = `scaleX(${progress.toFixed(4)})`;
@@ -144,12 +151,10 @@ export function ScrollHero({ frames }: { frames: string[] }) {
 
     configure();
     preference.addEventListener("change", configure);
-    compactViewport.addEventListener("change", configure);
     connection?.addEventListener("change", configure);
     return () => {
       stop?.();
       preference.removeEventListener("change", configure);
-      compactViewport.removeEventListener("change", configure);
       connection?.removeEventListener("change", configure);
     };
   }, [frames]);
@@ -178,7 +183,7 @@ export function ScrollHero({ frames }: { frames: string[] }) {
             Arrive in a car that makes the moment yours.
           </p>
           <div ref={actions} className={styles.actions}>
-            <Link href="/cars" className="btn btn-primary">Explore the fleet <Icon name="ph-arrow-right" size={17} /></Link>
+            <Link href="/cars#fleet-results" className="btn btn-solid">Explore the fleet <Icon name="ph-arrow-up-right" size={17} /></Link>
             <span className={styles.assurance}><Icon name="ph-steering-wheel" size={17} /> Your car. Our chauffeur.</span>
           </div>
         </div>

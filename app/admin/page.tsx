@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HorizontalScroll } from "@/components/ui/HorizontalScroll";
+import { Icon } from "@/components/ui/Icon";
 
 import { requireAdmin } from "@/lib/admin/auth";
 import { formatINR } from "@/lib/format";
@@ -47,9 +48,9 @@ export default async function AdminOverviewPage() {
   return (
     <AdminShell email={admin.email}>
       <AdminPageHead
-        title="Overview"
-        lede="Fleet, content and the enquiries coming in from the site."
-      />
+        title="Operations overview"
+        lede="A clear view of your fleet, service areas and the conversations that need your attention."
+      ><Link href="/admin/enquiries" className="btn btn-primary">Open enquiry desk <Icon name="ph-arrow-up-right" size={16} /></Link></AdminPageHead>
 
       {usingPlaceholderNumber && (
         <div className={styles.banner}>
@@ -65,17 +66,17 @@ export default async function AdminOverviewPage() {
       )}
 
       <div className={styles.stats}>
-        <Stat label="Cars" value={cars.count ?? 0} />
-        <Stat label="Cities" value={cities.count ?? 0} />
-        <Stat label="New enquiries" value={enquiries.count ?? 0} />
-        <Stat label="Signed in as" value={admin.fullName ?? admin.email ?? "—"} small />
+        <Stat label="New enquiries" value={enquiries.count ?? 0} hint="Ready for a first response" href="/admin/enquiries?view=new" icon="ph-chat-teardrop-text" />
+        <Stat label="Vehicles in your fleet" value={cars.count ?? 0} hint="Rates, images and vehicle details" href="/admin/fleet" icon="ph-car-profile" />
+        <Stat label="Service city records" value={cities.count ?? 0} hint="Manage live and draft service areas" href="/admin/cities" icon="ph-city" />
       </div>
 
+      <div className={styles.dashboardGrid}>
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Latest enquiries</h2>
-        <p className={styles.cardHint}>
-          Each row is a quote a visitor sent to WhatsApp, with the totals recomputed on the server.
-        </p>
+        <div className={styles.cardHead}>
+          <div><h2 className={styles.cardTitle}>Latest enquiries</h2><p className={styles.cardHint} style={{ marginBottom: 0 }}>The most recent conversations from your website.</p></div>
+          <Link href="/admin/enquiries?view=all" className="btn btn-ghost">View all <Icon name="ph-arrow-up-right" size={15} /></Link>
+        </div>
 
         {recent.data && recent.data.length > 0 ? (
           <HorizontalScroll label="Latest enquiries" controls="above">
@@ -112,7 +113,7 @@ export default async function AdminOverviewPage() {
             </table>
           </HorizontalScroll>
         ) : (
-          <p className={styles.muted}>No enquiries yet.</p>
+          <div className={styles.empty}><span className={styles.emptyIcon}><Icon name="ph-chat-teardrop-text" size={24} /></span><h3 className={styles.cardTitle}>Your next conversation starts here</h3><p className={styles.cardHint}>New website enquiries will appear here with their contact details and quote.</p></div>
         )}
 
         <div className={styles.actions}>
@@ -121,6 +122,15 @@ export default async function AdminOverviewPage() {
           </Link>
         </div>
       </section>
+      <aside className={styles.card}>
+        <p className={styles.eyebrow}>Day-to-day</p>
+        <h2 className={styles.cardTitle}>Keep things moving</h2>
+        <Link href="/admin/availability" className={styles.quickLink}><div><strong>Plan vehicle availability</strong><span>Review holds, bookings and workshop days.</span></div><Icon name="ph-arrow-up-right" size={17} /></Link>
+        <Link href="/admin/fleet" className={styles.quickLink}><div><strong>Maintain the fleet</strong><span>Keep rate cards and vehicle details current.</span></div><Icon name="ph-arrow-up-right" size={17} /></Link>
+        <Link href="/admin/services" className={styles.quickLink}><div><strong>Shape your services</strong><span>Update offerings and customer enquiry forms.</span></div><Icon name="ph-arrow-up-right" size={17} /></Link>
+        <Link href="/admin/settings" className={styles.quickLink}><div><strong>Review business settings</strong><span>Contact details, charges and operating rules.</span></div><Icon name="ph-arrow-up-right" size={17} /></Link>
+      </aside>
+      </div>
     </AdminShell>
   );
 }
@@ -128,18 +138,23 @@ export default async function AdminOverviewPage() {
 function Stat({
   label,
   value,
-  small = false,
+  hint,
+  href,
+  icon,
 }: {
   label: string;
   value: number | string;
-  small?: boolean;
+  hint: string;
+  href: string;
+  icon: string;
 }) {
   return (
-    <div className={styles.stat}>
-      <p className={styles.statLabel}>{label}</p>
-      <p className={styles.statValue} style={small ? { fontSize: "15px" } : undefined}>
+    <Link href={href} prefetch={false} className={styles.stat}>
+      <div className={styles.statTop}><p className={styles.statLabel}>{label}</p><span className={styles.statIcon}><Icon name={icon} size={20} /></span></div>
+      <p className={styles.statValue}>
         {value}
       </p>
-    </div>
+      <p className={styles.statHint}>{hint}</p>
+    </Link>
   );
 }

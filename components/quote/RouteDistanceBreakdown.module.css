@@ -1,0 +1,29 @@
+.section { min-width: 0; padding: 23px; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); background: var(--color-surface); }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 17px; }
+.header > svg { flex: none; color: var(--color-accent-text); }
+.kicker { margin: 0 0 7px; color: var(--color-neutral-400); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+.header h3 { margin: 0; font-family: var(--font-heading); font-size: 20px; font-weight: 500; letter-spacing: -.025em; }
+.legs { list-style: none; margin: 0; padding: 0; }
+.legs li { display: grid; grid-template-columns: 23px minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding-block: 14px; border-top: 1px solid var(--color-divider); }
+.number { display: grid; place-items: center; width: 23px; height: 23px; border-radius: var(--radius-sm); background: var(--color-bg); color: var(--color-neutral-400); font-size: 10px; }
+.places { min-width: 0; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.places small { display: block; margin-top: 4px; color: var(--color-neutral-400); font-size: 10px; line-height: 1.7; }
+.arrow { color: var(--color-accent-text); padding-inline: 4px; }
+.distance { max-width: 10ch; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; line-height: 1.7; overflow-wrap: anywhere; }
+.total { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 6px; padding-top: 18px; border-top: 1px solid var(--color-divider); font-size: 12px; }
+.total strong { font-family: var(--font-heading); font-size: 24px; font-weight: 600; letter-spacing: -.03em; }
+.note { margin: 13px 0 0; color: var(--color-neutral-400); font-size: 11px; line-height: 1.75; }
+@media (max-width: 480px) { .section { padding: 20px 16px; } .legs li { gap: 8px; } }
+@media (max-width: 767px) {
+  .section { padding: 15px 13px; }
+  .header { margin-bottom: 12px; }
+  .kicker { font-size: 12px; text-transform: none; letter-spacing: 0; }
+  .header h3 { font-size: 18px; }
+  .legs li { gap: 8px; padding-block: 11px; }
+  .places { font-size: 13px; line-height: 1.5; }
+  .places small { font-size: 12px; line-height: 1.5; }
+  .distance { font-size: 13px; }
+  .total { padding-top: 12px; font-size: 13px; }
+  .total strong { font-size: 22px; }
+  .note { margin-top: 10px; font-size: 12px; line-height: 1.5; }
+}

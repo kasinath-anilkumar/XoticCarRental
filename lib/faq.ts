@@ -31,8 +31,8 @@ function nightAnswer(catalog: Catalog, car?: Car): string {
   return `A pickup between ${nightWindowLabel(catalog.settings.pricingRules)} carries a night charge, plus one for each overnight halt on a multi-day trip.${amount} The pickup time determines the initial night charge.`;
 }
 
-function oneWayAnswer(catalog: Catalog): string {
-  return `The chauffeur has to bring the car home empty, so a one-way drop adds a return allowance of ${catalog.settings.pricingRules.oneWayReturnPercent}% of the distance at the car's extra-km rate. It appears as a separate line on the quote when applicable.`;
+function oneWayAnswer(): string {
+  return "The billed distance includes the garage to your pickup, your journey, and the final drop back to the garage. Those return kilometres are counted once; the calculator does not add another percentage return allowance on top.";
 }
 
 function tollsAnswer(catalog: Catalog): string {
@@ -54,7 +54,7 @@ export function carFaq(catalog: Catalog, car: Car): FaqItem[] {
     { q: "Is this self-drive?", a: NOT_SELF_DRIVE },
     { q: "What is driver bata?", a: bataAnswer(car) },
     { q: "Is there a night charge?", a: nightAnswer(catalog, car) },
-    { q: "What happens on a one-way drop?", a: oneWayAnswer(catalog) },
+    { q: "What happens on a one-way drop?", a: oneWayAnswer() },
     {
       q: `Can I take the ${car.name} outside ${city.name}?`,
       a: `Outstation estimates use the selected package per rental day, with extra km past the allowance at ${formatINR(car.extraKmRate)}/km. Check the car's listed service cities and confirm the itinerary with the operator.`,
@@ -82,7 +82,7 @@ export function cityFaq(catalog: Catalog, city: City): FaqItem[] {
     { q: "Is this self-drive?", a: NOT_SELF_DRIVE },
     { q: "What is driver bata?", a: bataAnswer(cheapest) },
     { q: "Is there a night charge?", a: nightAnswer(catalog, cheapest) },
-    { q: "What happens on a one-way drop?", a: oneWayAnswer(catalog) },
+    { q: "What happens on a one-way drop?", a: oneWayAnswer() },
     { q: "Are tolls and parking included?", a: tollsAnswer(catalog) },
     {
       q: `Which pickup points do you cover in ${city.name}?`,

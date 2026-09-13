@@ -178,7 +178,7 @@ export function LeadRow(props: LeadRowProps) {
         </HorizontalScroll>
       )}
 
-      <form action={formAction} className={styles.rowForm} style={{ marginTop: "16.8px" }}>
+      <form action={formAction} className={`${styles.rowForm} ${styles.formFooter}`}>
         {state && (
           <span className={state.ok ? styles.muted : ""} style={{ fontSize: "12px" }}>
             {state.message}

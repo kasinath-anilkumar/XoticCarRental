@@ -87,7 +87,7 @@ export function HorizontalScroll({ label, children, className = "", viewportClas
 
   return <div className={`${styles.root} ${className}`} data-horizontal-scroll={label} data-overflow={edges.overflow}>
     {controls === "above" && <div className={styles.toolbar} hidden={!edges.overflow}>
-      <span className={styles.hint}>More columns</span>{previous}{next}
+      <span className={styles.hint}>More to explore</span>{previous}{next}
     </div>}
     <div ref={frameRef} className={`${styles.frame} ${controls === "inline" ? styles.inline : ""}`}>
       {controls === "inline" && previous}

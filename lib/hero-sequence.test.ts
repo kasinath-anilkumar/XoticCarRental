@@ -188,7 +188,7 @@ describe("hero frame player", () => {
     },
   );
 
-  it("caps canvas DPR and repaints cover and contain synchronously on resize", async () => {
+  it("caps canvas DPR and repaints cover synchronously on resize", async () => {
     player = createHeroSequence({ canvas, frames });
     respond(0);
     await settle();
@@ -200,18 +200,46 @@ describe("hero frame player", () => {
     expect(cover[2]).toBeCloseTo(0);
     expect(cover[3]).toBeCloseTo(800);
     expect(cover[4]).toBeCloseTo(450);
-    player.resize(400, 300, true);
-    const contained = ctx.drawImage.mock.calls.at(-1)!;
-    expect(contained.slice(1)).toEqual([0, 56.25, 600, 337.5]);
-    expect(ctx.fillRect).toHaveBeenCalledTimes(1);
     const draws = ctx.drawImage.mock.calls.length;
-    player.resize(400, 300, true);
+    player.resize(400, 300);
     expect(ctx.drawImage).toHaveBeenCalledTimes(draws);
-    expect(ctx.fillRect).toHaveBeenCalledTimes(1);
+    expect(ctx.fillRect).not.toHaveBeenCalled();
     expect(ctx.clearRect).not.toHaveBeenCalled();
     player.resize(1920, 1200);
     expect(canvas.width).toBeLessThanOrEqual(1280);
     expect(canvas.width * canvas.height).toBeLessThanOrEqual(1280 * 720);
+  });
+
+  it("decodes a centred 9:16 crop for portrait surfaces and discards the other orientation", async () => {
+    Object.defineProperty(window.screen, "width", { value: 390 });
+    const crops: number[][] = [];
+    const fullDecodes: TestBitmap[] = [];
+    vi.stubGlobal("createImageBitmap", vi.fn((image: { index?: number; frame?: number }, ...args: unknown[]) => {
+      if (args.length === 0) {
+        const full = bitmap(image.index!, { resizeWidth: 1920, resizeHeight: 1080 });
+        fullDecodes.push(full);
+        return Promise.resolve(full);
+      }
+      if (args.length === 1) return Promise.resolve(bitmap(image.index!, args[0] as ImageBitmapOptions));
+      crops.push(args.slice(0, 4) as number[]);
+      return Promise.resolve(bitmap(image.index ?? image.frame!, args[4] as ImageBitmapOptions));
+    }));
+    player = createHeroSequence({ canvas, frames });
+    player.resize(360, 640, true);
+    expect([canvas.width, canvas.height]).toEqual([432, 768]);
+    await fillDemand();
+    expect(fullDecodes.length).toBeGreaterThan(0);
+    expect(fullDecodes.every((image) => !living.has(image))).toBe(true);
+    expect(crops.every((crop) => crop.join() === "656,0,608,1080")).toBe(true);
+    const portraitFrames = [...living];
+    expect(portraitFrames.every((image) => image.width === 432 && image.height === 768)).toBe(true);
+    expect(ctx.drawImage.mock.calls.at(-1)!.slice(1)).toEqual([0, 0, 432, 768]);
+
+    player.resize(390, 219);
+    expect(portraitFrames.every((image) => !living.has(image))).toBe(true);
+    await fillDemand();
+    expect([...living].every((image) => image.width === 768 && image.height === 432)).toBe(true);
+    expect(ctx.drawImage.mock.calls.at(-1)![0].width).toBe(768);
   });
 
   it("closes a bitmap decoded after disposal and never paints or signals readiness", async () => {

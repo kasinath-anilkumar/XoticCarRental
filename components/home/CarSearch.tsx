@@ -259,7 +259,7 @@ export function CarSearch({
                     setSelectedType(type);
                     setHighlightedIndex(0);
                   }}
-                  className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
+                  className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-sm px-2.5 py-1 text-[11px] font-medium transition-all ${
                     isActive
                       ? "bg-[var(--color-accent)] text-[var(--color-accent-ink)] shadow-xs"
                       : "bg-[var(--color-neutral-900)] text-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-800)] hover:text-text"
@@ -292,7 +292,7 @@ export function CarSearch({
           <ul
             ref={listRef}
             id={listboxId}
-            className="m-0 flex flex-1 list-none flex-col overflow-y-auto p-1.5 [scrollbar-width:thin]"
+            className="scroll-shadows m-0 flex min-h-0 flex-1 list-none flex-col overflow-y-auto p-1.5"
           >
             {filteredCars.length === 0 ? (
               <li className="flex flex-col items-center justify-center gap-2 py-8 text-center text-[13px] text-[var(--color-neutral-400)]">
@@ -387,7 +387,7 @@ export function CarSearch({
 
                         <div className="grid size-[20px] place-items-center">
                           {isSelected ? (
-                            <span className="grid size-[18px] place-items-center rounded-full bg-[var(--color-accent)] text-[var(--color-accent-ink)]">
+                            <span className="grid size-[18px] place-items-center rounded-sm bg-[var(--color-accent)] text-[var(--color-accent-ink)]">
                               <Icon name="ph-check" size={11} />
                             </span>
                           ) : isHighlighted ? (

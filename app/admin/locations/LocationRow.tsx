@@ -10,9 +10,9 @@ export interface LocationRowProps {
 }
 
 export function LocationRow(props: LocationRowProps) {
-  return <details className="border-t border-[var(--color-divider)] py-4">
-    <summary className="cursor-pointer text-sm"><strong>{props.name}</strong> ? {props.cityLabel} ? {props.isActive ? "Live" : "Hidden"}</summary>
-    <AdminForm action={updateLocation} submitLabel="Save location" className="mt-4">
+  return <details className={styles.record}>
+    <summary className={styles.recordSummary}><span className={styles.recordName}>{props.name}</span><span className={styles.recordMeta}>{props.cityLabel}{props.isAirport ? " / Airport" : ""}</span><span className={props.isActive ? styles.statusConfirmed : styles.status}>{props.isActive ? "Live" : "Hidden"}</span></summary>
+    <AdminForm action={updateLocation} submitLabel="Save location" className={styles.recordBody}>
       <input type="hidden" name="id" value={props.id} />
       <GeoRecordFields name={props.name} lat={props.lat} lng={props.lng} />
       <div className={styles.grid4}>

@@ -35,16 +35,16 @@ export function AdminForm({
   const [state, formAction, pending] = useActionState(action, null);
 
   return (
-    <form action={formAction} className={className}>
+    <form action={formAction} className={`${styles.form} ${className ?? ""}`} aria-busy={pending}>
       {state && (
-        <p className={state.ok ? styles.message : styles.messageError}>
+        <output className={state.ok ? styles.message : styles.messageError}>
           {state.message}
-        </p>
+        </output>
       )}
 
       {children}
 
-      <div className={inline ? styles.rowForm : styles.actions}>
+      <div className={inline ? styles.rowForm : styles.formFooter}>
         <button type="submit" className="btn btn-primary" disabled={pending}>
           {pending ? "Saving…" : submitLabel}
         </button>

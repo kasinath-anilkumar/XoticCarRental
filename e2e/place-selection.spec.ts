@@ -14,7 +14,7 @@ test("a searched pickup survives home, fleet and vehicle navigation without inve
   const carLink = page.getByRole("article").first().getByRole("link", { name: "Price & details" });
   await expect.poll(async () => new URL((await carLink.getAttribute("href"))!, page.url()).searchParams.get("from")).toBe(pickup.token);
   await carLink.click();
-  const calculatorLink = page.getByRole("link", { name: isMobile ? "Exact price" : "Get exact price for my route", exact: true });
+  const calculatorLink = page.getByRole("link", { name: isMobile ? "Price my route" : "Get exact price for my route", exact: true });
   await expect.poll(async () => new URL((await calculatorLink.getAttribute("href"))!, page.url()).searchParams.get("from")).toBe(pickup.token);
   await calculatorLink.click();
   await expect(page.getByRole("combobox", { name: "Pickup location" })).toHaveValue(pickup.name);
@@ -40,6 +40,8 @@ test("editing a selected service location clears its old coordinates and optiona
   await expect(page.locator('input[type="hidden"][name="city"]')).toHaveValue(pickup.token);
   await area.fill("Different place still being searched");
   await expect(page.locator('input[type="hidden"][name="city"]')).toHaveValue("");
+  // Dismiss suggestions before using the submit action directly underneath.
+  await area.press("Escape");
   await page.locator('form button[type="submit"]').click();
   expect(submissions).toHaveLength(0);
 

@@ -1,0 +1,19 @@
+@layer theme, base, vendor, app, components, utilities;
+@layer components {
+  .dialog { position: fixed; inset: 0; margin: 0; height: 100dvh; max-height: none; width: 100%; max-width: none; border: 0; background: transparent; padding: 0; }
+  .panel { --scroll-surface: #fff; --scroll-shadow-color: rgb(26 41 33 / .16); position: fixed; inset: 0 0 0 auto; z-index: 41; display: flex; flex-direction: column; width: min(440px, 94vw); height: 100dvh; overflow-y: auto; overscroll-behavior-y: contain; padding: 22px 26px calc(28px + env(safe-area-inset-bottom)); background-color: #fff; box-shadow: -20px 0 60px rgb(0 0 0 / .25); }
+  .panel:focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: -3px; }
+  .link { display: flex; align-items: center; gap: 14px; min-height: 60px; border-bottom: 1px solid #e1e7e3; font-family: var(--font-heading); font-size: 19px; letter-spacing: -.04em; color: #25332b; text-decoration: none; }
+  .link[aria-current] { color: #995016; }
+  .link > svg { margin-left: auto; flex: none; }
+  .number { font-family: var(--font-body); font-size: 10px; letter-spacing: 0; color: #65716a; }
+  .bottom { display: flex; flex-direction: column; gap: 20px; padding-top: 24px; margin-top: auto; }
+  .bottom p { font-size: 14px; color: #65716a; }
+  .bottom > a:last-child { align-self: center; min-height: 44px; font-size: 13px; color: #25332b; }
+  @media (max-width: 767px) {
+    .panel { padding: 16px 20px calc(20px + env(safe-area-inset-bottom)); }
+    .link { min-height: 50px; font-size: 17px; letter-spacing: -.02em; }
+    .bottom { gap: 12px; padding-top: 16px; }
+    .bottom p { font-size: 13px; line-height: 1.5; }
+  }
+}

@@ -7,6 +7,7 @@ import type { ResolvedPlace } from "@/lib/places";
 import type { LatLng } from "@/lib/route/types";
 
 import styles from "./RouteMap.module.css";
+import { createStopPopup } from "./stop-popup";
 // Leaflet's own CSS, wrapped in the vendor layer so our overrides win.
 import "./leaflet-vendor.css";
 
@@ -15,6 +16,8 @@ const ROUTE_COLOR = "#ff7a00";
 
 export interface RouteMapCanvasProps {
   stops: ResolvedPlace[];
+  /** Initial area only: it must not create a passenger stop or route. */
+  previewCenter?: LatLng;
   /** The driven route from `/api/directions`. Empty until it arrives. */
   path?: LatLng[];
 }
@@ -36,12 +39,14 @@ export interface RouteMapCanvasProps {
  * the dashed straight line this map used to draw, which is honest about being a
  * direction rather than a road.
  */
-export function RouteMapCanvas({ stops, path = [] }: RouteMapCanvasProps) {
+export function RouteMapCanvas({ stops, previewCenter, path = [] }: RouteMapCanvasProps) {
   const holder = useRef<HTMLDivElement | null>(null);
   const map = useRef<LeafletMap | null>(null);
   const releaseTouch = useRef<(() => void) | null>(null);
   const markers = useRef<Marker[]>([]);
   const line = useRef<Polyline | null>(null);
+  const previewLat = previewCenter?.[0];
+  const previewLng = previewCenter?.[1];
 
   useEffect(() => {
     let cancelled = false;
@@ -68,10 +73,6 @@ export function RouteMapCanvas({ stops, path = [] }: RouteMapCanvasProps) {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map.current);
 
-        // The panel it sits in can be laid out after the map initialises.
-        resizeObserver = new ResizeObserver(() => map.current?.invalidateSize());
-        resizeObserver.observe(holder.current);
-
         // On a touch screen the map used to eat the scroll: a finger dragged
         // over it panned the map instead of moving the page, which on the
         // calculator means the map sits in the middle of the form you are
@@ -97,6 +98,10 @@ export function RouteMapCanvas({ stops, path = [] }: RouteMapCanvasProps) {
       }
 
       const instance = map.current;
+      // Reconnect after a stop or preview-area change: the effect's cleanup
+      // disconnects the old observer even when the map instance is reused.
+      resizeObserver = new ResizeObserver(() => instance.invalidateSize());
+      resizeObserver.observe(holder.current);
       const points = stops.map((stop) => L.latLng(stop.lat, stop.lng));
 
       for (const marker of markers.current) marker.remove();
@@ -104,7 +109,6 @@ export function RouteMapCanvas({ stops, path = [] }: RouteMapCanvasProps) {
       line.current?.remove();
       line.current = null;
 
-      const ROLES = ["Pickup", "Drop", "Return"];
       stops.forEach((stop, index) => {
         const last = index === stops.length - 1 && stops.length > 1;
         const icon = L.divIcon({
@@ -115,11 +119,13 @@ export function RouteMapCanvas({ stops, path = [] }: RouteMapCanvasProps) {
         });
         const marker = L.marker([stop.lat, stop.lng], { icon, title: stop.name })
           .addTo(instance)
-          .bindPopup(`<strong>${ROLES[index] ?? "Stop"}</strong><br>${stop.name}`);
+          .bindPopup(createStopPopup(stop.name, index, stops.length));
         markers.current.push(marker);
       });
 
-      const road = path.length > 1 ? path.map(([lat, lng]) => L.latLng(lat, lng)) : null;
+      // Clearing the itinerary must also clear an old routing response while
+      // the map returns to the vehicle's preview area.
+      const road = stops.length > 0 && path.length > 1 ? path.map(([lat, lng]) => L.latLng(lat, lng)) : null;
 
       if (road) {
         line.current = L.polyline(road, { color: ROUTE_COLOR, weight: 4, opacity: 0.95 }).addTo(
@@ -145,6 +151,10 @@ export function RouteMapCanvas({ stops, path = [] }: RouteMapCanvasProps) {
         // 16 rather than 13: a pickup and a drop two streets apart used to be
         // framed as if they were two towns apart.
         instance.fitBounds(L.latLngBounds(frame), { padding: [30, 30], maxZoom: 16 });
+      } else if (previewLat !== undefined && previewLng !== undefined) {
+        // A city-scale overview is context, with no marker or invented leg.
+        // Keep vehicle changes immediate, including reduced-motion sessions.
+        instance.setView([previewLat, previewLng], 11, { animate: false });
       }
     });
 
@@ -152,7 +162,7 @@ export function RouteMapCanvas({ stops, path = [] }: RouteMapCanvasProps) {
       cancelled = true;
       resizeObserver?.disconnect();
     };
-  }, [stops, path]);
+  }, [stops, path, previewLat, previewLng]);
 
   // Torn down separately so a stop change does not destroy and rebuild the map.
   useEffect(

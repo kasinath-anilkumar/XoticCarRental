@@ -7,8 +7,8 @@ import { styles } from "../styles";
 
 export function NewRouteForm() {
   const [cityId, setCityId] = useState("");
-  return <details className={styles.card}>
-    <summary className="cursor-pointer text-lg">Publish a route fare</summary>
+  return <details className={`${styles.card} ${styles.createCard}`}>
+    <summary className={styles.recordSummary}><span className={styles.recordName}>Publish a route fare</span><span className={styles.recordMeta}>Set a measured road distance</span></summary>
     <p className={styles.cardHint}>Choose the city page and two saved pickup points. The destination may belong to another city.</p>
     <AdminForm action={createCityRoute} submitLabel="Add route">
       <div className={styles.grid4}>

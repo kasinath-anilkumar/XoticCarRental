@@ -1,0 +1,42 @@
+.panel { padding: 36px; border: 1px solid var(--color-divider); border-top: 3px solid var(--color-accent-solid); border-radius: var(--radius-sm); background: var(--color-surface); box-shadow: 0 16px 60px rgb(35 31 25 / .045); }
+.header { padding-bottom: 26px; }
+.eyebrow { margin: 0 0 12px; color: var(--color-accent-text); font-size: 12px; font-weight: 650; letter-spacing: .13em; text-transform: uppercase; }
+.header h2 { margin: 0; font-family: var(--font-heading); font-size: 28px; font-weight: 500; line-height: 1.25; letter-spacing: -.035em; }
+.header p:last-child { margin: 12px 0 0; font-size: 14px; line-height: 1.75; color: var(--color-neutral-400); }
+.group { min-width: 0; margin: 0 0 28px; border: 0; padding: 0; }
+.group legend { display: block; width: 100%; margin-bottom: 20px; padding: 0 0 12px; border-bottom: 1px solid var(--color-divider); font-size: 15px; font-weight: 650; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
+.panel :global(.field) { min-width: 0; }
+.panel :global(.field) > span, .panel :global(.field) > label { font-size: 13px; line-height: 1.5; }
+.panel :global(.input) { min-height: 48px; padding: 12px 13px; font-size: 15px; background: var(--color-bg); }
+.panel input[role="combobox"] { padding-inline: 36px; }
+.panel textarea:global(.input) { min-height: 110px; }
+.panel :global(.btn-block) { min-height: 52px; width: 100%; }
+.confirmation { text-align: center; padding-block: 48px; }
+.confirmation h3 { font-size: 26px; line-height: 1.35; margin: 18px 0; }
+.confirmation p { font-size: 15px; line-height: 1.75; }
+@media (min-width: 768px) {
+  .optionalSection, .optionalContent, .optionalFields { display: contents; }
+  .journeyFields :global(.field) { order: var(--field-order, 0); }
+}
+@media (max-width: 767px) {
+  .panel { padding: 18px 14px; box-shadow: none; }
+  .header { padding-bottom: 18px; }
+  .eyebrow { margin-bottom: 7px; font-size: 11px; letter-spacing: .06em; }
+  .header h2 { font-size: 23px; font-weight: 700; }
+  .header p:last-child { margin-top: 8px; font-size: 13px; line-height: 1.5; }
+  .group { margin-bottom: 20px; }
+  .group legend { margin-bottom: 12px; padding-bottom: 9px; font-size: 14px; }
+  .fields { grid-template-columns: minmax(0, 1fr); gap: 13px; }
+  .optionalSection { grid-column: 1 / -1; }
+  .optionalSection > h3 > button { min-height: 48px; font-size: 14px; }
+  .optionalFields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 13px; padding-top: 12px; }
+  .fields :global(.field) { grid-column: auto; }
+  .panel :global(.input) { width: 100%; min-width: 0; min-height: 46px; padding: 10px 11px; font-size: 16px; }
+  .panel input[role="combobox"] { padding-inline: 36px; }
+  .panel input[type="date"] { appearance: none; }
+  .panel textarea:global(.input) { min-height: 84px; }
+  .panel :global(.btn-block) { min-height: 48px; }
+  .confirmation { padding-block: 26px; }
+  .confirmation h3 { font-size: 23px; }
+}
